@@ -247,7 +247,7 @@ body.keyboard-open .room__compose {
 }
 .chat-editor .tiptap {
   /* standard input border, kept at 1px so the :focus border swap doesn't reflow */
-  @apply bg-surface rounded-3xl border border-solid border-line;
+  @apply bg-surface border-line rounded-3xl border border-solid;
 }
 .note-editor .tiptap {
   --tiptap-object-bg: var(--surface);

@@ -1,10 +1,9 @@
 <script lang="ts">
-  import * as nip19 from "nostr-tools/nip19"
   import {onMount} from "svelte"
   import {writable} from "svelte/store"
-  import {tryCatch, uniq} from "@welshman/lib"
-  import {fromNostrURI} from "@welshman/util"
+  import {uniq} from "@welshman/lib"
   import {loadMessagingRelayList} from "@welshman/app"
+  import {decodePubkey} from "@lib/util"
   import {preventDefault} from "@lib/html"
   import Field from "@lib/components/Field.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -39,22 +38,10 @@
 
   onMount(() => {
     return term.subscribe(t => {
-      if (t.match(/^[0-9a-f]{64}$/)) {
-        addPubkey(t)
-      }
+      const pubkey = decodePubkey(t)
 
-      if (t.match(/^(nostr:)?(npub1|nprofile1)/)) {
-        tryCatch(() => {
-          const {type, data} = nip19.decode(fromNostrURI(t))
-
-          if (type === "npub") {
-            addPubkey(data)
-          }
-
-          if (type === "nprofile") {
-            addPubkey(data.pubkey)
-          }
-        })
+      if (pubkey) {
+        addPubkey(pubkey)
       }
     })
   })

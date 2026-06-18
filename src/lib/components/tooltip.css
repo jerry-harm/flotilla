@@ -4,7 +4,7 @@
 
     &[data-tip]::before {
       content: attr(data-tip);
-      @apply bg-black text-white/90 absolute overflow-hidden rounded-xl text-xs text-ellipsis whitespace-nowrap opacity-0 px-2 py-1 z-tooltip max-w-32 pointer-events-none;
+      @apply z-tooltip pointer-events-none absolute max-w-32 overflow-hidden rounded-xl bg-black px-2 py-1 text-xs text-ellipsis whitespace-nowrap text-white/90 opacity-0;
       transition: opacity 0.15s ease;
     }
 

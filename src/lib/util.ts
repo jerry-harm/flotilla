@@ -1,6 +1,28 @@
-import {identity} from "@welshman/lib"
+import {identity, range, DAY, hexToBytes, bytesToHex} from "@welshman/lib"
+import {fromNostrURI} from "@welshman/util"
 import * as nip19 from "nostr-tools/nip19"
-import {range, DAY, hexToBytes, bytesToHex} from "@welshman/lib"
+
+export const decodePubkey = (entity: string): string | undefined => {
+  if (/^[a-f0-9]{64}$/i.test(entity)) {
+    return entity.toLowerCase()
+  }
+
+  try {
+    const decoded = nip19.decode(fromNostrURI(entity))
+
+    if (decoded.type === "npub") {
+      return decoded.data
+    }
+
+    if (decoded.type === "nprofile") {
+      return decoded.data.pubkey
+    }
+
+    return undefined
+  } catch {
+    return undefined
+  }
+}
 
 export const nsecEncode = (secret: string) => nip19.nsecEncode(hexToBytes(secret))
 

@@ -9,15 +9,17 @@
     style?: string
   }
 
-  const {src, alt, size = 5, style = undefined, ...props}: Props = $props()
+  const {src, alt, size = 5, style, class: className}: Props = $props()
+
+  const rem = size * 0.25
+
+  const imgStyle = $derived(
+    `width: ${rem}rem; height: ${rem}rem; min-width: ${rem}rem; min-height: ${rem}rem${style ? `; ${style}` : ""}`,
+  )
 </script>
 
 {#if src.includes("image/svg") || src.endsWith(".svg")}
-  <Icon icon={src} {size} {style} class={props.class} />
+  <Icon icon={src} {size} {style} class={className} />
 {:else}
-  <img
-    {src}
-    {alt}
-    {style}
-    class="h-{size} w-{size} min-w-{size} min-h-{size} aspect-square object-cover rounded-full {props.class}" />
+  <img {src} {alt} style={imgStyle} class="aspect-square object-cover {className}" />
 {/if}

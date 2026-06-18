@@ -29,10 +29,8 @@
   const openSpaces = () => pushModal(ProfileSpaces, {pubkey, url})
 
   onMount(async () => {
-    // Make sure we have their relay selections before we load their posts
     await loadRelayList(pubkey)
 
-    // Load groups and at least one note, regardless of time frame
     load({
       filters: [
         {authors: [pubkey], kinds: [ROOMS]},

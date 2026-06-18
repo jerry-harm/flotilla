@@ -38,6 +38,8 @@ import {
   loadFollowList,
   loadMuteList,
   loadProfile,
+  userFollowList,
+  getFollows,
   repository,
   shouldUnwrap,
   hasNegentropy,
@@ -251,6 +253,17 @@ const syncUserData = () => {
     loadFeedsForPubkey(pubkey)
   }
 
+  const syncFollowNetwork = ($userFollowList: List | undefined) => {
+    const author = $userFollowList?.event?.pubkey
+
+    if (!author) return
+
+    for (const follow of getFollows(author)) {
+      loadFollowList(follow)
+      loadMuteList(follow)
+    }
+  }
+
   const unsubscribeGroupList = merged([userGroupList]).subscribe(([$userGroupList]) => {
     syncGroupList($userGroupList)
   })
@@ -259,10 +272,13 @@ const syncUserData = () => {
     syncRelayList($userRelayList)
   })
 
+  const unsubscribeFollowList = userFollowList.subscribe(syncFollowNetwork)
+
   return () => {
     unsubscribersByKey.forEach(call)
     unsubscribeGroupList()
     unsubscribeRelayList()
+    unsubscribeFollowList()
   }
 }
 

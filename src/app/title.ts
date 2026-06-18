@@ -1,7 +1,8 @@
 import {append, identity, uniq} from "@welshman/lib"
-import {repository} from "@welshman/app"
+import {repository, displayProfileByPubkey} from "@welshman/app"
 import {displayPubkey, getTagValue} from "@welshman/util"
 import {PLATFORM_NAME} from "@app/env"
+import {decodePubkey} from "@lib/util"
 import {decodeRelay} from "@app/relays"
 import {getRoom, makeRoomId} from "@app/groups"
 import {splitChatId} from "@app/chats"
@@ -118,6 +119,14 @@ export const getPageTitle = ({page, pubkey}: PageTitleContext) => {
 
   if (routeId === "/chat/[chat]") {
     return makeTitle(getChatTitle(page.params.chat, pubkey))
+  }
+
+  if (routeId === "/people/[npub]") {
+    const profilePubkey = decodePubkey(page.params.npub!)
+
+    if (profilePubkey) {
+      return makeTitle(displayProfileByPubkey(profilePubkey))
+    }
   }
 
   if (routeId === "/spaces/[relay]/[h]") {

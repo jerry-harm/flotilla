@@ -7,12 +7,19 @@
   import {load, LOCAL_RELAY_URL} from "@welshman/net"
   import {page} from "$app/stores"
   import {goto} from "$app/navigation"
+  import {decodePubkey} from "@lib/util"
   import Spinner from "@lib/components/Spinner.svelte"
-  import {goToEvent} from "@app/routes"
+  import {goToEvent, makeProfilePath} from "@app/routes"
 
   const {bech32} = $page.params as MakeNonOptional<typeof $page.params>
 
   const attemptToNavigate = async () => {
+    const profilePubkey = decodePubkey(bech32)
+
+    if (profilePubkey) {
+      return goto(makeProfilePath(profilePubkey), {replaceState: true})
+    }
+
     const {type, data} = nip19.decode(bech32) as any
 
     if (!["nevent", "naddr"].includes(type) && data.relays.length > 0) {

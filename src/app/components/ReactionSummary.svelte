@@ -17,6 +17,7 @@
   import type {TrustedEvent, EventContent, Zap} from "@welshman/util"
   import {deriveArray, deriveEventsById, deriveItemsByKey} from "@welshman/store"
   import {load} from "@welshman/net"
+  import {Router} from "@welshman/router"
   import {pubkey, repository, getValidZap, displayProfileByPubkey} from "@welshman/app"
   import {isMobile} from "@lib/html"
   import Danger from "@assets/icons/danger-triangle.svg?dataurl"
@@ -113,15 +114,16 @@
 
   onMount(() => {
     const controller = new AbortController()
+    const relays = url ? [url] : Router.get().ForUser().getUrls()
 
-    if (url) {
+    if (relays.length > 0) {
       load({
-        relays: [url],
+        relays,
         signal: controller.signal,
         filters: getReplyFilters([event], {kinds: REACTION_KINDS}),
         onEvent: batch(300, (events: TrustedEvent[]) => {
           load({
-            relays: [url],
+            relays,
             filters: getReplyFilters(events, {kinds: [DELETE]}),
           })
         }),

@@ -1,6 +1,6 @@
 <script lang="ts">
   import cx from "classnames"
-  import {getProfile, loadProfile} from "@welshman/app"
+  import {loadProfile} from "@welshman/app"
   import {isMobile} from "@lib/html"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
 
@@ -22,17 +22,13 @@
         : {box: "h-8 w-8", overlap: "-mr-3", overflow: "text-xs"},
   )
 
-  for (const pubkey of pubkeys) {
-    loadProfile(pubkey)
-  }
-
-  const visiblePubkeys = $derived.by(() => {
-    const filtered = pubkeys.filter(pubkey => getProfile(pubkey)?.picture)
-
-    return filtered.length > 0 ? filtered : pubkeys.slice(0, 1)
+  $effect(() => {
+    for (const pk of pubkeys) {
+      loadProfile(pk)
+    }
   })
 
-  const displayPubkeys = $derived(visiblePubkeys.toSorted().slice(0, effectiveLimit))
+  const displayPubkeys = $derived([...pubkeys].toSorted().slice(0, effectiveLimit))
   const overflowCount = $derived(Math.max(0, pubkeys.length - effectiveLimit))
 </script>
 

@@ -56,7 +56,6 @@ import {
   spec,
   tryCatch,
   uniq,
-  uniqBy,
 } from "@welshman/lib"
 import {load} from "@welshman/net"
 import {Router} from "@welshman/router"
@@ -214,14 +213,14 @@ export const groupListPubkeysByUrl = derived(groupListsByPubkey, $groupListsByPu
     const tags = getListTags(list)
 
     for (const url of getRelayTagValues(tags)) {
-      addToMapKey(result, url, list.event.pubkey)
+      addToMapKey(result, normalizeRelayUrl(url), list.event.pubkey)
     }
 
     for (const tag of getGroupTags(tags)) {
       const url = tag[2] || ""
 
       if (isRelayUrl(url)) {
-        addToMapKey(result, url, list.event.pubkey)
+        addToMapKey(result, normalizeRelayUrl(url), list.event.pubkey)
       }
     }
   }
@@ -244,14 +243,15 @@ export const getSpaceUrlsFromGroupList = (groupList: List | undefined) => {
     }
   }
 
-  return uniqBy(normalizeRelayUrl, urls)
+  return uniq(urls.map(normalizeRelayUrl))
 }
 
 export const getSpaceRoomsFromGroupList = (url: string, groupList: List | undefined) => {
   const rooms: string[] = []
+  const normalizedUrl = normalizeRelayUrl(url)
 
   for (const [_, h, relay] of getGroupTags(getListTags(groupList))) {
-    if (url === relay) {
+    if (normalizedUrl === normalizeRelayUrl(relay)) {
       rooms.push(h)
     }
   }

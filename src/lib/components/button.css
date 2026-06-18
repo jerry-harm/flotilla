@@ -92,14 +92,15 @@
 
   /* sizes — height is explicit (not derived from padding/line-height) so sm/xs
      reliably change the button height even when the content is a fixed-size icon */
-  .button, .button-md {
-    @apply rounded-2xl h-10 px-4;
+  .button,
+  .button-md {
+    @apply h-10 rounded-2xl px-4;
   }
   .button-sm {
-    @apply rounded-xl text-sm h-8 gap-1 px-4;
+    @apply h-8 gap-1 rounded-xl px-4 text-sm;
   }
   .button-xs {
-    @apply rounded-xl text-xs h-7 gap-1 px-2;
+    @apply h-7 gap-1 rounded-xl px-2 text-xs;
   }
 
   /* shapes */

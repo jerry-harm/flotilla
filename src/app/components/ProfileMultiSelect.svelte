@@ -1,10 +1,10 @@
 <script lang="ts">
-  import * as nip19 from "nostr-tools/nip19"
   import {writable} from "svelte/store"
   import type {Writable} from "svelte/store"
   import {type Instance} from "tippy.js"
   import {append, remove, uniq} from "@welshman/lib"
   import {profileSearch} from "@welshman/app"
+  import {decodePubkey} from "@lib/util"
   import Suggestions from "@lib/components/Suggestions.svelte"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
@@ -38,22 +38,10 @@
   }
 
   const onInput = (e: any) => {
-    if (e.target.value.match(/^[a-f0-9]{64}$/)) {
-      selectPubkey(e.target.value)
-    }
+    const pubkey = decodePubkey(e.target.value)
 
-    try {
-      const {type, data} = nip19.decode(e.target.value) as any
-
-      if (type === "npub") {
-        selectPubkey(data)
-      }
-
-      if (type === "nprofile") {
-        selectPubkey(data.pubkey)
-      }
-    } catch (e) {
-      // pass
+    if (pubkey) {
+      selectPubkey(pubkey)
     }
   }
 

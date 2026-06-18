@@ -4,6 +4,7 @@
   import {preventDefault} from "@lib/html"
   import UserCircle from "@assets/icons/user-circle.svg?dataurl"
   import MapPoint from "@assets/icons/map-point.svg?dataurl"
+  import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Field from "@lib/components/Field.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -83,6 +84,24 @@
       {/snippet}
     </Field>
     {#if !isSignup}
+      <Field>
+        {#snippet label()}
+          <p>Website</p>
+        {/snippet}
+        {#snippet input()}
+          <label class="input flex w-full items-center gap-2">
+            <Icon icon={LinkRound} />
+            <input
+              bind:value={values.profile.website}
+              class="grow"
+              type="text"
+              placeholder="https://" />
+          </label>
+        {/snippet}
+        {#snippet info()}
+          A link to your personal site or portfolio.
+        {/snippet}
+      </Field>
       <Field>
         {#snippet label()}
           <p>Nostr Address</p>

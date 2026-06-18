@@ -319,77 +319,74 @@
 </SpaceBar>
 
 <div class="room flex min-h-0 min-w-0 flex-1 flex-col">
-  <div
-    bind:this={element}
-    onscroll={onScroll}
-    class="room__content scroll-container bg-surface">
-  {#if loadingForward && elements.length > 0}
-    <p class="py-20 flex justify-center">
-      <Spinner loading={loadingForward}>Looking for messages...</Spinner>
-    </p>
-  {/if}
-  {#each elements as { type, id, value, showPubkey }, i (id)}
-    {#if type === "new-messages"}
-      <div
-        {id}
-        class="flex items-center py-2 text-xs transition-colors"
-        class:opacity-0={showFixedNewMessages}>
-        <div class="h-px grow bg-primary text-primary-content"></div>
-        <p
-          class="rounded-full bg-primary text-primary-content px-2 py-1"
-          style="color: var(--primary-content)">
-          New Messages
-        </p>
-        <div class="h-px grow bg-primary text-primary-content"></div>
-      </div>
-    {:else if type === "date"}
-      <Divider>{value}</Divider>
-    {:else}
-      {@const event = value as TrustedEvent}
-      {#if event.kind === RELAY_ADD_MEMBER}
-        <RoomItemAddMember {url} {event} />
+  <div bind:this={element} onscroll={onScroll} class="room__content scroll-container bg-surface">
+    {#if loadingForward && elements.length > 0}
+      <p class="py-20 flex justify-center">
+        <Spinner loading={loadingForward}>Looking for messages...</Spinner>
+      </p>
+    {/if}
+    {#each elements as { type, id, value, showPubkey }, i (id)}
+      {#if type === "new-messages"}
+        <div
+          {id}
+          class="flex items-center py-2 text-xs transition-colors"
+          class:opacity-0={showFixedNewMessages}>
+          <div class="h-px grow bg-primary text-primary-content"></div>
+          <p
+            class="rounded-full bg-primary text-primary-content px-2 py-1"
+            style="color: var(--primary-content)">
+            New Messages
+          </p>
+          <div class="h-px grow bg-primary text-primary-content"></div>
+        </div>
+      {:else if type === "date"}
+        <Divider>{value}</Divider>
       {:else}
-        <RoomItem
-          {url}
-          {event}
-          {replyTo}
-          {showPubkey}
-          canEdit={canEditEvent}
-          onEdit={onEditEvent} />
+        {@const event = value as TrustedEvent}
+        {#if event.kind === RELAY_ADD_MEMBER}
+          <RoomItemAddMember {url} {event} />
+        {:else}
+          <RoomItem
+            {url}
+            {event}
+            {replyTo}
+            {showPubkey}
+            canEdit={canEditEvent}
+            onEdit={onEditEvent} />
+        {/if}
       {/if}
-    {/if}
-  {/each}
-  <p class="flex h-10 items-center justify-center py-20">
-    {#if loadingBackward}
-      <Spinner loading={loadingBackward}>Looking for messages...</Spinner>
-    {:else}
-      <Spinner>End of message history</Spinner>
-    {/if}
-  </p>
-  <div class="h-screen"></div>
+    {/each}
+    <p class="flex h-10 items-center justify-center py-20">
+      {#if loadingBackward}
+        <Spinner loading={loadingBackward}>Looking for messages...</Spinner>
+      {:else}
+        <Spinner>End of message history</Spinner>
+      {/if}
+    </p>
+    <div class="h-screen"></div>
   </div>
 
   <div class="room__compose bg-surface">
-  <div>
-    {#if parent}
-      <RoomComposeParent event={parent} clear={clearParent} verb="Replying to" />
-    {/if}
-    {#if share}
-      <RoomComposeParent event={share} clear={clearShare} verb="Sharing" />
-    {/if}
-    {#if eventToEdit}
-      <RoomComposeEdit clear={clearEventToEdit} />
-    {/if}
-  </div>
-  {#key eventToEdit}
-    <RoomCompose
-      {url}
-      {onSubmit}
-      {onEscape}
-      {onEditPrevious}
-      initialValues={eventToEdit}
-      bind:this={compose} />
-  {/key}
+    <div>
+      {#if parent}
+        <RoomComposeParent event={parent} clear={clearParent} verb="Replying to" />
+      {/if}
+      {#if share}
+        <RoomComposeParent event={share} clear={clearShare} verb="Sharing" />
+      {/if}
+      {#if eventToEdit}
+        <RoomComposeEdit clear={clearEventToEdit} />
+      {/if}
+    </div>
+    {#key eventToEdit}
+      <RoomCompose
+        {url}
+        {onSubmit}
+        {onEscape}
+        {onEditPrevious}
+        initialValues={eventToEdit}
+        bind:this={compose} />
+    {/key}
   </div>
 </div>
 

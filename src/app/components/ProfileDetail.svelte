@@ -1,17 +1,13 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import {removeUndefined} from "@welshman/lib"
-  import {deriveProfile, displayProfileByPubkey, loadMessagingRelayList} from "@welshman/app"
+  import {displayProfileByPubkey, loadMessagingRelayList} from "@welshman/app"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
-  import Code2 from "@assets/icons/code-2.svg?dataurl"
-  import Letter from "@assets/icons/letter-opened.svg?dataurl"
+  import UserCircle from "@assets/icons/user-circle.svg?dataurl"
   import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
   import MinusCircle from "@assets/icons/minus-circle.svg?dataurl"
   import Restart from "@assets/icons/restart.svg?dataurl"
   import {fly} from "@lib/transition"
   import Icon from "@lib/components/Icon.svelte"
-  import ImageIcon from "@lib/components/ImageIcon.svelte"
-  import Link from "@lib/components/Link.svelte"
   import Confirm from "@lib/components/Confirm.svelte"
   import Button from "@lib/components/Button.svelte"
   import Popover from "@lib/components/Popover.svelte"
@@ -20,9 +16,7 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import Profile from "@app/components/Profile.svelte"
   import ProfileInfo from "@app/components/ProfileInfo.svelte"
-  import EventInfo from "@app/components/EventInfo.svelte"
   import ProfileBadges from "@app/components/ProfileBadges.svelte"
-  import {pubkeyLink} from "@app/env"
   import {
     deriveUserIsSpaceAdmin,
     deriveSpaceBannedPubkeyItems,
@@ -31,7 +25,7 @@
   } from "@app/members"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
-  import {goToChat} from "@app/routes"
+  import {goToProfile} from "@app/routes"
 
   export type Props = {
     pubkey: string
@@ -39,8 +33,6 @@
   }
 
   const {pubkey, url}: Props = $props()
-
-  const profile = deriveProfile(pubkey, removeUndefined([url]))
 
   const userIsAdmin = deriveUserIsSpaceAdmin(url)
 
@@ -50,11 +42,9 @@
 
   const back = () => history.back()
 
-  const showInfo = () => pushModal(EventInfo, {url, event: $profile!.event})
+  const viewProfile = () => goToProfile(pubkey)
 
-  const openChat = () => goToChat([pubkey])
-
-  const toggleMenu = (pubkey: string) => {
+  const toggleMenu = () => {
     showMenu = !showMenu
   }
 
@@ -101,42 +91,30 @@
     <div class="flex flex-col gap-4">
       <div class="flex justify-between">
         <Profile showPubkey avatarSize={14} {pubkey} {url} />
-        {#if $profile || $userIsAdmin}
+        {#if $userIsAdmin}
           <div class="relative">
-            <Button
-              class="button button-ghost button-sm button-circle"
-              onclick={() => toggleMenu(pubkey)}>
+            <Button class="button button-circle button-ghost button-sm" onclick={toggleMenu}>
               <Icon icon={MenuDots} />
             </Button>
             {#if showMenu}
               <Popover hideOnClick onClose={closeMenu}>
                 <ul
                   transition:fly
-                  class="bg-surface menu absolute right-0 z-popover w-48 gap-1 rounded-2xl p-2 shadow-md">
-                  {#if $profile}
+                  class="menu bg-surface absolute right-0 z-popover w-48 gap-1 rounded-2xl p-2">
+                  {#if isBanned}
                     <li>
-                      <Button onclick={showInfo}>
-                        <Icon icon={Code2} />
-                        User Details
+                      <Button onclick={restoreMember}>
+                        <Icon icon={Restart} />
+                        Restore User
                       </Button>
                     </li>
-                  {/if}
-                  {#if $userIsAdmin}
-                    {#if isBanned}
-                      <li>
-                        <Button onclick={restoreMember}>
-                          <Icon icon={Restart} />
-                          Restore User
-                        </Button>
-                      </li>
-                    {:else}
-                      <li>
-                        <Button class="text-error" onclick={banMember}>
-                          <Icon icon={MinusCircle} />
-                          Ban User
-                        </Button>
-                      </li>
-                    {/if}
+                  {:else}
+                    <li>
+                      <Button class="text-error" onclick={banMember}>
+                        <Icon icon={MinusCircle} />
+                        Ban User
+                      </Button>
+                    </li>
                   {/if}
                 </ul>
               </Popover>
@@ -154,13 +132,9 @@
       Go back
     </Button>
     <div class="flex gap-2">
-      <Link external href={pubkeyLink(pubkey)} class="button button-neutral">
-        <ImageIcon alt="" src="/coracle.png" />
-        Open in Coracle
-      </Link>
-      <Button onclick={openChat} class="button button-primary">
-        <Icon icon={Letter} />
-        Message
+      <Button onclick={viewProfile} class="button button-primary">
+        <Icon icon={UserCircle} />
+        View Full Profile
       </Button>
     </div>
   </ModalFooter>

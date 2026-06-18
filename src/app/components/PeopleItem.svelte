@@ -1,12 +1,11 @@
 <script lang="ts">
   import UserCircle from "@assets/icons/user-circle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
-  import Button from "@lib/components/Button.svelte"
+  import Link from "@lib/components/Link.svelte"
   import Profile from "@app/components/Profile.svelte"
   import ProfileInfo from "@app/components/ProfileInfo.svelte"
   import ProfileBadges from "@app/components/ProfileBadges.svelte"
-  import ProfileDetail from "@app/components/ProfileDetail.svelte"
-  import {pushModal} from "@app/modal"
+  import {makeProfilePath} from "@app/routes"
 
   type Props = {
     pubkey: string
@@ -14,22 +13,20 @@
   }
 
   const {pubkey, url}: Props = $props()
-
-  const openProfile = () => pushModal(ProfileDetail, {pubkey, url})
 </script>
 
 <div class="card card-interactive flex flex-col gap-4">
   <div class="flex justify-between">
     <Profile {pubkey} {url} />
-    <Button onclick={openProfile} class="button button-primary hidden sm:flex">
+    <Link href={makeProfilePath(pubkey)} class="button button-primary hidden sm:flex">
       <Icon icon={UserCircle} />
       View Profile
-    </Button>
+    </Link>
   </div>
   <ProfileInfo {pubkey} {url} />
   <ProfileBadges {pubkey} {url} />
-  <Button onclick={openProfile} class="button button-primary sm:hidden">
+  <Link href={makeProfilePath(pubkey)} class="button button-primary sm:hidden">
     <Icon icon={UserCircle} />
     View Profile
-  </Button>
+  </Link>
 </div>
