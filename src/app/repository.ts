@@ -12,7 +12,7 @@ import {deriveRelay, repository, tracker} from "@welshman/app"
 import {sortEventsDesc} from "@welshman/util"
 import type {Filter} from "@welshman/util"
 import {load} from "@welshman/net"
-import {first} from "@welshman/lib"
+import {filter, first, spec} from "@welshman/lib"
 import {derived} from "svelte/store"
 export const deriveEvent = makeDeriveEvent({
   repository,
@@ -41,9 +41,6 @@ export const deriveLatestEventForUrl = (url: string, filters: Filter[] = [{}]) =
   )
 
 export const deriveRelaySignedEvents = (url: string, filters: Filter[] = [{}]) =>
-  derived(
-    [deriveRelay(url), deriveEventsForUrl(url, filters)],
-    ([relay, events]) => events,
-    // TODO: khatru doesn't support relay.self, uncomment when it's ready
-    // filter(spec({pubkey: relay.self}), events)
+  derived([deriveRelay(url), deriveEventsForUrl(url, filters)], ([relay, events]) =>
+    filter(spec({pubkey: relay?.self}), events),
   )

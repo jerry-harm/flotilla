@@ -1,9 +1,9 @@
 import {derived} from "svelte/store"
-import {first, now} from "@welshman/lib"
+import {now} from "@welshman/lib"
 import {APP_DATA, getTagValues} from "@welshman/util"
 import type {ManagementMethod} from "@welshman/util"
-import {deriveRelay, manageRelay} from "@welshman/app"
-import {deriveEventsForUrl} from "@app/repository"
+import {manageRelay} from "@welshman/app"
+import {deriveRelaySignedEvents} from "@app/repository"
 
 // NIP-78 app data published by the relay's self key. Each featured entry is a
 // ["content", <value>] tag (freeform text, intended to be a url or nevent).
@@ -11,13 +11,8 @@ export const FEATURED_CONTENT_D = "flotilla/featured-content"
 
 export const deriveFeaturedContent = (url: string) =>
   derived(
-    [deriveRelay(url), deriveEventsForUrl(url, [{kinds: [APP_DATA], "#d": [FEATURED_CONTENT_D]}])],
-    ([$relay, $events]) => {
-      const self = $relay?.self || $relay?.pubkey
-      const event = (self && $events.find(e => e.pubkey === self)) || first($events)
-
-      return getTagValues("content", event?.tags ?? [])
-    },
+    deriveRelaySignedEvents(url, [{kinds: [APP_DATA], "#d": [FEATURED_CONTENT_D]}]),
+    ([event]) => getTagValues("content", event?.tags ?? []),
   )
 
 // Publish the featured content list by asking the relay to sign it with its self

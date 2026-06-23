@@ -7,6 +7,7 @@
   import AltArrowDown from "@assets/icons/alt-arrow-down.svg?dataurl"
   import UsersGroup from "@assets/icons/users-group-rounded.svg?dataurl"
   import Home from "@assets/icons/home.svg?dataurl"
+  import GalleryWide from "@assets/icons/gallery-wide.svg?dataurl"
   import Danger from "@assets/icons/danger.svg?dataurl"
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import Exit from "@assets/icons/logout-3.svg?dataurl"
@@ -49,7 +50,8 @@
     userSpaceUrls,
     displayRoom,
   } from "@app/groups"
-  import {hasNip29} from "@app/relays"
+  import {hasNip29, deriveSupportedMethods} from "@app/relays"
+  import {BOARD} from "@app/pinboards"
   import {deriveEventsForUrl} from "@app/repository"
   import {deriveSpaceActionItems} from "@app/actionItems"
   import {notificationSettings, deriveShouldNotify, setSpaceNotifications} from "@app/settings"
@@ -75,6 +77,12 @@
   const spaceKinds = derived(
     deriveEventsForUrl(url, [{kinds: CONTENT_KINDS}]),
     $events => new Set($events.map(e => e.kind)),
+  )
+
+  const boardEvents = deriveEventsForUrl(url, [{kinds: [BOARD]}])
+  const supportedMethods = deriveSupportedMethods(url)
+  const showLibrary = $derived(
+    $boardEvents.length > 0 || $supportedMethods.some(m => (m as string) === "signevent"),
   )
 
   const roomSearch = derived(otherRooms, $otherRooms =>
@@ -228,6 +236,11 @@
       <SecondaryNavItem href={makeSpacePath(url, "directory")}>
         <Icon icon={UsersGroup} /> Directory
       </SecondaryNavItem>
+      {#if showLibrary}
+        <SecondaryNavItem href={makeSpacePath(url, "library")}>
+          <Icon icon={GalleryWide} /> Library
+        </SecondaryNavItem>
+      {/if}
       {#if ENABLE_ZAPS && $spaceKinds.has(ZAP_GOAL)}
         <SecondaryNavItem href={goalsPath}>
           <Icon icon={StarFallMinimalistic} /> Goals

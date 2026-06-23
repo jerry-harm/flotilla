@@ -1,5 +1,21 @@
+<script module lang="ts">
+  import {postJson, simpleCache} from "@welshman/lib"
+  import {dufflepud} from "@app/env"
+
+  // Cache previews by url so the same link isn't re-fetched across renders/instances.
+  const loadPreview = simpleCache(async ([url]: [string]) => {
+    const json = await postJson(dufflepud("link/preview"), {url})
+
+    if (!json?.title && !json?.image) {
+      throw new Error("Failed to load link preview")
+    }
+
+    return json
+  })
+</script>
+
 <script lang="ts">
-  import {call, ellipsize, displayUrl, postJson} from "@welshman/lib"
+  import {call, ellipsize, displayUrl} from "@welshman/lib"
   import {isRelayUrl, getTagValue} from "@welshman/util"
   import {Capacitor} from "@capacitor/core"
   import {preventDefault, stopPropagation} from "@lib/html"
@@ -9,7 +25,7 @@
   import ContentLinkUrl from "@app/components/ContentLinkUrl.svelte"
   import ContentLinkBlockImage from "@app/components/ContentLinkBlockImage.svelte"
   import {pushModal} from "@app/modal"
-  import {dufflepud, PLATFORM_URL, THUMBNAIL_URL} from "@app/env"
+  import {PLATFORM_URL, THUMBNAIL_URL} from "@app/env"
   import {IMAGE_CONTENT_TYPES, VIDEO_CONTENT_TYPES} from "@app/content"
   import {isRoomId} from "@app/groups"
 
@@ -33,16 +49,6 @@
     }
 
     return undefined
-  }
-
-  const loadPreview = async () => {
-    const json = await postJson(dufflepud("link/preview"), {url})
-
-    if (!json?.title && !json?.image) {
-      throw new Error("Failed to load link preview")
-    }
-
-    return json
   }
 
   const onError = () => {
@@ -73,7 +79,7 @@
           <ContentLinkBlockImage {value} {event} class="m-auto max-h-96 rounded-2xl" />
         </button>
       {:else}
-        {#await loadPreview()}
+        {#await loadPreview(url)}
           <div class="flex justify-center items-center my-12 w-full">
             <Spinner />
           </div>

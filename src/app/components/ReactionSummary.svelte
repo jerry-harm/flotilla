@@ -19,7 +19,7 @@
   import {load} from "@welshman/net"
   import {Router} from "@welshman/router"
   import {pubkey, repository, getValidZap, displayProfileByPubkey} from "@welshman/app"
-  import {isMobile} from "@lib/html"
+  import {isMobile, stopPropagation} from "@lib/html"
   import Danger from "@assets/icons/danger-triangle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -147,7 +147,7 @@
             tip: !noTooltip && !isMobile,
           },
         )}
-        onclick={onReportClick}>
+        onclick={stopPropagation(onReportClick)}>
         <Icon icon={Danger} />
         <span>{$reports.length}</span>
       </Button>
@@ -186,7 +186,7 @@
           "button-primary": isOwn,
           "button-neutral": !isOwn,
         })}
-        onclick={onClick}>
+        onclick={stopPropagation(onClick)}>
         <Reaction event={events[0]} />
         {#if events.length > 1}
           <span>{events.length}</span>

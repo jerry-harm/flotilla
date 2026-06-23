@@ -57,6 +57,7 @@ import {decodeRelay} from "@app/relays"
 import {loadFeedsForPubkey} from "@app/feeds"
 import {RELAY_ROLE} from "@app/members"
 import {FEATURED_CONTENT_D} from "@app/featured"
+import {BOARD, PIN} from "@app/pinboards"
 import {hasBlossomSupport} from "@app/uploads"
 import {LIVEKIT_PARTICIPANTS} from "@app/call"
 
@@ -300,6 +301,7 @@ const syncSpace = (url: string) => {
     filters: [
       {kinds: [...relayKinds, ...roomMetaKinds, ...roomDeleteKinds, ...CONTENT_KINDS, MESSAGE]},
       {kinds: [APP_DATA], "#d": [FEATURED_CONTENT_D]},
+      {kinds: [BOARD, PIN]},
       {kinds: [...REACTION_KINDS, POLL_RESPONSE], since},
       makeCommentFilter(CONTENT_KINDS, {since}),
     ],

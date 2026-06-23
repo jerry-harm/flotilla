@@ -1,0 +1,21 @@
+<script lang="ts">
+  import PinForm, {type PinFormValues} from "@app/components/PinForm.svelte"
+  import {createPin, referenceToPin} from "@app/pinboards"
+
+  type Props = {
+    url: string
+    address: string
+  }
+
+  const {url, address}: Props = $props()
+
+  const submit = async ({title, topics, value}: PinFormValues) => {
+    const params = referenceToPin(value)
+
+    if (!params) return "Please enter a valid URL or nostr link."
+
+    return createPin(url, {...params, boards: [address], title, topics})
+  }
+</script>
+
+<PinForm {url} heading="Add Link" action="Add link" successMessage="Link added!" {submit} />

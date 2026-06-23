@@ -35,7 +35,7 @@
   let muted = $state($isEventMuted(event))
 </script>
 
-<div class="flex flex-col gap-2 {restProps.class}" style={restProps.style}>
+<div class="@container flex flex-col gap-2 {restProps.class}" style={restProps.style}>
   {#if muted}
     <div class="flex items-center justify-between">
       <div class="flex gap-2 relative">
@@ -54,7 +54,7 @@
         {/if}
       {/if}
       <Button
-        class={cx("text-sm opacity-75", {"text-xs": minimal})}
+        class={cx("text-sm opacity-75 @max-sm:hidden", {"text-xs": minimal})}
         onclick={() => goToEvent(event)}>
         {formatTimestamp(event.created_at)}
       </Button>

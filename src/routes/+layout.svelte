@@ -47,6 +47,7 @@
   import * as lightning from "@app/lightning"
   import * as uploads from "@app/uploads"
   import * as appPolls from "@app/polls"
+  import * as pinboards from "@app/pinboards"
   import * as reports from "@app/reports"
   import * as relays from "@app/relays"
   import * as settings from "@app/settings"
@@ -116,6 +117,7 @@
     ...lightning,
     ...uploads,
     ...appPolls,
+    ...pinboards,
     ...reports,
     ...notifications,
   })
