@@ -84,11 +84,11 @@
     <SpaceJoinSettings {url} {error} bind:notifications />
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back} disabled={loading}>
+    <Button class="button button-link" onclick={back} disabled={loading}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={loading}>
+    <Button type="submit" class="button button-primary" disabled={loading}>
       <Spinner {loading}>
         {error ? "Request Access" : "Join Space"}
       </Spinner>

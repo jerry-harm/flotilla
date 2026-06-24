@@ -22,6 +22,6 @@
     })
 </script>
 
-<EmojiButton {onEmoji} class="btn join-item btn-xs">
+<EmojiButton {onEmoji} class="button button-neutral button-xs join-item">
   <Icon icon={SmileCircle} size={4} />
 </EmojiButton>

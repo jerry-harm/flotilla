@@ -19,9 +19,10 @@
 </script>
 
 <div
-  class="relative border-l-2 border-solid border-primary bg-base-300 px-2 py-1 pr-8"
+  class="bg-surface-more relative border-l-2 border-solid px-2 py-1 pr-8"
+  style="border-color: var(--primary)"
   transition:slide>
-  <p class="text-xs text-primary">{verb} @{displayProfileByPubkey(event.pubkey)}</p>
+  <p class="text-primary text-xs">{verb} @{displayProfileByPubkey(event.pubkey)}</p>
   {#key event.id}
     <NoteContentMinimal trimParent {event} />
   {/key}

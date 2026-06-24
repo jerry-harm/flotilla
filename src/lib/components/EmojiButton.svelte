@@ -31,12 +31,12 @@
 <svelte:document onmousemove={onMouseMove} />
 
 <Tippy
-  class="flex"
   bind:popover
+  class="flex {props.class}"
   component={EmojiPicker}
   props={{onClick}}
   params={{trigger: "manual", interactive: true, ...tippyParams}}>
-  <Button onclick={open} class={props.class}>
+  <Button onclick={open}>
     {@render props.children?.()}
   </Button>
 </Tippy>

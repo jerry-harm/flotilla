@@ -16,7 +16,6 @@
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
-  import PageContent from "@lib/components/PageContent.svelte"
   import Divider from "@lib/components/Divider.svelte"
   import ThunkToast from "@app/components/ThunkToast.svelte"
   import SpaceBar from "@app/components/SpaceBar.svelte"
@@ -311,7 +310,7 @@
   {/snippet}
   {#snippet action()}
     <Button
-      class="btn btn-neutral btn-sm btn-square"
+      class="button button-neutral button-sm button-square"
       aria-label="Search"
       onclick={() => pushModal(SpaceSearch, {url})}>
       <Icon size={4} icon={Magnifier} />
@@ -319,7 +318,11 @@
   {/snippet}
 </SpaceBar>
 
-<PageContent bind:element onscroll={onScroll} class="flex-col-reverse !mb-0">
+<div class="room flex min-h-0 min-w-0 flex-1 flex-col">
+  <div
+    bind:this={element}
+    onscroll={onScroll}
+    class="room__content scroll-container bg-surface">
   {#if loadingForward && elements.length > 0}
     <p class="py-20 flex justify-center">
       <Spinner loading={loadingForward}>Looking for messages...</Spinner>
@@ -331,9 +334,13 @@
         {id}
         class="flex items-center py-2 text-xs transition-colors"
         class:opacity-0={showFixedNewMessages}>
-        <div class="h-px grow bg-primary"></div>
-        <p class="rounded-full bg-primary px-2 py-1 text-primary-content">New Messages</p>
-        <div class="h-px grow bg-primary"></div>
+        <div class="h-px grow bg-primary text-primary-content"></div>
+        <p
+          class="rounded-full bg-primary text-primary-content px-2 py-1"
+          style="color: var(--primary-content)">
+          New Messages
+        </p>
+        <div class="h-px grow bg-primary text-primary-content"></div>
       </div>
     {:else if type === "date"}
       <Divider>{value}</Divider>
@@ -360,9 +367,9 @@
     {/if}
   </p>
   <div class="h-screen"></div>
-</PageContent>
+  </div>
 
-<div class="chat__compose bg-base-200">
+  <div class="room__compose bg-surface">
   <div>
     {#if parent}
       <RoomComposeParent event={parent} clear={clearParent} verb="Replying to" />
@@ -383,11 +390,12 @@
       initialValues={eventToEdit}
       bind:this={compose} />
   {/key}
+  </div>
 </div>
 
 {#if showScrollButton}
   <div in:fade class="chat__scroll-down">
-    <Button class="btn btn-circle btn-neutral" onclick={scrollToBottom}>
+    <Button class="button button-neutral button-circle" onclick={scrollToBottom}>
       <Icon icon={AltArrowDown} />
     </Button>
   </div>
@@ -396,7 +404,7 @@
 {#if showFixedNewMessages}
   <div class="relative z-popover flex justify-center">
     <div transition:fly={{duration: 200}} class="fixed top-12 mt-sai">
-      <Button class="btn btn-primary btn-xs rounded-full" onclick={scrollToNewMessages}>
+      <Button class="button button-primary button-xs button-pill" onclick={scrollToNewMessages}>
         New Messages
       </Button>
     </div>

@@ -77,24 +77,26 @@
     </ModalHeader>
     <div class="flex flex-col gap-2">
       {#if $bans.length === 0}
-        <div class="card2 bg-base-200 p-4 text-sm opacity-70">No banned users.</div>
+        <div class="card bg-surface p-4 text-sm opacity-70">No banned users.</div>
       {/if}
       {#each $bans as { pubkey, reason } (pubkey)}
-        <div class="card2 bg-alt relative">
+        <div class="card relative">
           <div class="flex items-center justify-between gap-2">
             <div class="min-w-0 flex-1">
               <Profile {pubkey} {url} />
             </div>
             {#if canUnban || canRestore}
               <div class="relative">
-                <Button class="btn btn-circle btn-ghost btn-sm" onclick={() => toggleMenu(pubkey)}>
+                <Button
+                  class="button button-ghost button-sm button-circle"
+                  onclick={() => toggleMenu(pubkey)}>
                   <Icon icon={MenuDots} />
                 </Button>
                 {#if menuPubkey === pubkey}
                   <Popover hideOnClick onClose={closeMenu}>
                     <ul
                       transition:fly
-                      class="menu absolute right-0 z-popover mt-2 w-48 gap-1 rounded-box bg-base-100 p-2 shadow-md">
+                      class="menu bg-surface absolute right-0 z-popover mt-2 w-48 gap-1 rounded-2xl p-2">
                       {#if canUnban}
                         <li>
                           <Button onclick={() => unbanMember(pubkey)}>
@@ -122,7 +124,7 @@
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Got it
     </Button>

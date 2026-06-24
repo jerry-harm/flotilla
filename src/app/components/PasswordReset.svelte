@@ -94,11 +94,11 @@
     <StringMultiInput bind:value={otps} placeholder="Enter your confirmation codes..." />
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={loading || otps.length < 2}>
+    <Button type="submit" class="button button-primary" disabled={loading || otps.length < 2}>
       <Spinner {loading}>Continue</Spinner>
       <Icon icon={AltArrowRight} />
     </Button>

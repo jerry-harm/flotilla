@@ -13,7 +13,7 @@
   const maxLength = 5500
 </script>
 
-<div class={cx("text-sm", {"card2 card2-sm shadow-none": props.event.kind !== MESSAGE})}>
+<div class={cx("text-sm", {"card card-sm shadow-none": props.event.kind !== MESSAGE})}>
   {#if path && !isMobile}
     <Link href={path}>
       <NoteContent {...props} {minLength} {maxLength} />

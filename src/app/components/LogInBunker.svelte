@@ -1,4 +1,5 @@
 <script lang="ts">
+  import cx from "classnames"
   import {Capacitor} from "@capacitor/core"
   import {onMount, onDestroy} from "svelte"
   import type {Nip46ResponseWithResult} from "@welshman/signer"
@@ -151,20 +152,20 @@
       <BunkerConnect {controller} />
     {:else}
       <BunkerUrl {controller} />
-      <Button class="btn {$bunker ? 'btn-neutral' : 'btn-primary'}" onclick={selectConnect}
+      <Button class={cx(`button button-${$bunker ? "neutral" : "primary"}`)} onclick={selectConnect}
         >Log in with a QR code instead</Button>
       {#if isIos}
-        <Button class="btn btn-neutral" onclick={openSigner}>Open in Signer</Button>
+        <Button class="button button-neutral" onclick={openSigner}>Open in Signer</Button>
       {/if}
     {/if}
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back} disabled={$loading}>
+    <Button class="button button-link" onclick={back} disabled={$loading}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
     {#if mode === "bunker"}
-      <Button type="submit" class="btn btn-primary" disabled={$loading || !$bunker}>
+      <Button type="submit" class="button button-primary" disabled={$loading || !$bunker}>
         <Spinner loading={$loading}>Next</Spinner>
         <Icon icon={AltArrowRight} />
       </Button>

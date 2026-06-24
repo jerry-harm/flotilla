@@ -142,10 +142,10 @@
             <span class="text-sm opacity-75">No icon selected</span>
           {/if}
           <div class="flex gap-2">
-            <IconPickerButton onSelect={handleIconSelect} class="btn btn-primary btn-sm">
+            <IconPickerButton onSelect={handleIconSelect} class="button button-primary button-sm">
               <Icon icon={StickerSmileSquare} size={4} />
             </IconPickerButton>
-            <label class="btn btn-neutral btn-sm cursor-pointer">
+            <label class="button button-neutral button-sm">
               <Icon icon={UploadMinimalistic} size={4} />
               <input type="file" accept="image/*" class="hidden" onchange={handleImageUpload} />
             </label>
@@ -158,7 +158,7 @@
         <p>Name</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input input-group flex w-full items-center gap-2">
           {#if imagePreview}
             <ImageIcon src={imagePreview} alt="" class="rounded-lg" />
           {:else}
@@ -173,7 +173,7 @@
         <p>Description</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input input-group flex w-full items-center gap-2">
           <input bind:value={values.about} class="grow" type="text" />
         </label>
       {/snippet}
@@ -184,10 +184,7 @@
           <p>Room type</p>
         {/snippet}
         {#snippet input()}
-          <select
-            class="select select-bordered w-full"
-            bind:value={roomType}
-            aria-label="Room type">
+          <select class="select input w-full" bind:value={roomType} aria-label="Room type">
             <option value={RoomType.Text}>Text</option>
             <option value={RoomType.Voice}>Voice</option>
           </select>

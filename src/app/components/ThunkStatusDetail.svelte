@@ -39,7 +39,7 @@
   }
 </script>
 
-<div class="card2 bg-alt flex min-w-72 max-w-sm flex-col gap-3 px-4 py-3 shadow-lg">
+<div class="card flex min-w-72 max-w-sm flex-col gap-3 px-4 py-3">
   <span class="flex items-center gap-2 text-sm font-medium">
     <Icon icon={Danger} class="text-error" size={4} />
     {title}
@@ -60,7 +60,9 @@
           <p class="break-all">{displayRelayUrl(url)}</p>
           <p class="text-xs opacity-60">{addPeriod(relayMessage(status, detail))}</p>
         </div>
-        <Button class="link shrink-0 px-1" onclick={stopPropagation(() => retry(url))}>
+        <Button
+          class="button button-link shrink-0 px-1"
+          onclick={stopPropagation(() => retry(url))}>
           Retry
         </Button>
       </div>

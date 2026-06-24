@@ -11,6 +11,6 @@
 
 <div
   data-component="PageBar"
-  class="relative bg-base-100 p-4 shadow-md h-20 md:h-12 flex flex-col justify-center z-nav {props.class}">
+  class="bg-surface relative p-4 shadow-md h-20 md:h-12 flex flex-col justify-center z-nav {props.class}">
   {@render children?.()}
 </div>

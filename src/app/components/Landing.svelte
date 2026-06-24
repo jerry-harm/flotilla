@@ -24,7 +24,7 @@
       <p class="text-center">The chat app built for self-hosted communities.</p>
     </div>
     <Button onclick={logIn}>
-      <CardButton class="btn-primary">
+      <CardButton primary>
         {#snippet icon()}
           <div><Icon icon={Login} size={7} /></div>
         {/snippet}
@@ -36,7 +36,7 @@
         {/snippet}
       </CardButton>
     </Button>
-    <Button onclick={signUp} class="btn-neutral">
+    <Button onclick={signUp}>
       <CardButton>
         {#snippet icon()}
           <div><Icon icon={AddCircle} size={7} /></div>

@@ -21,13 +21,13 @@
     </ModalHeader>
     <div class="flex flex-col gap-2">
       {#each pubkeys as pubkey (pubkey)}
-        <div class="card2 bg-alt">
+        <div class="card">
           <Profile {pubkey} />
         </div>
       {/each}
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-primary" onclick={() => history.back()}>Got it</Button>
+    <Button class="button button-primary" onclick={() => history.back()}>Got it</Button>
   </ModalFooter>
 </Modal>

@@ -164,13 +164,13 @@
 <Modal tag="form" onsubmit={preventDefault(submit)}>
   <ModalBody>
     {@render header?.()}
-    <div class="col-8 relative">
+    <div class="flex flex-col gap-8 relative">
       <Field>
         {#snippet label()}
           <p>Title*</p>
         {/snippet}
         {#snippet input()}
-          <label class="input input-bordered flex w-full items-center gap-2">
+          <label class="input flex w-full items-center gap-2">
             <!-- svelte-ignore a11y_autofocus -->
             <input
               autofocus={!isMobile}
@@ -205,10 +205,10 @@
         {/snippet}
         {#snippet input()}
           <div class="join grid grid-cols-2">
-            <label class="join-item input input-bordered flex w-full items-center gap-2">
+            <label class="input flex w-full items-center gap-2">
               <input bind:value={price} class="grow w-32" type="number" />
             </label>
-            <CurrencyInput class="join-item" bind:value={currency} />
+            <CurrencyInput bind:value={currency} />
           </div>
         {/snippet}
       </Field>
@@ -218,7 +218,7 @@
             <p>Status*</p>
           {/snippet}
           {#snippet input()}
-            <select class="select select-bordered w-full" bind:value={status}>
+            <select class="select input w-full" bind:value={status}>
               <option value="active">Active</option>
               <option value="sold">Sold</option>
             </select>
@@ -236,11 +236,11 @@
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back} disabled={loading}>
+    <Button onclick={back} disabled={loading} class="button button-link">
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={loading}>
+    <Button type="submit" disabled={loading} class="button button-primary">
       <Spinner {loading}>Save Listing</Spinner>
     </Button>
   </ModalFooter>

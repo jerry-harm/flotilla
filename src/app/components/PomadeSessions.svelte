@@ -6,6 +6,7 @@
   import {fly} from "@lib/transition"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Badge from "@lib/components/Badge.svelte"
   import Popover from "@lib/components/Popover.svelte"
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
   import {pushToast} from "@app/toast"
@@ -69,7 +70,7 @@
 </script>
 
 {#if sessions.length > 0}
-  <div class="flex flex-col gap-4 border-t border-solid border-base-100 pt-4">
+  <div class="flex flex-col gap-4 border-t border-solid pt-4" style="border-color: var(--line)">
     <strong>Other Sessions</strong>
     {#each sessions as sessionItem (sessionItem.client)}
       <div class="flex flex-col gap-2">
@@ -84,7 +85,7 @@
           </div>
           <div class="relative">
             <Button
-              class="btn btn-circle btn-ghost btn-sm"
+              class="button button-ghost button-sm button-circle"
               onclick={() => toggleMenu(sessionItem.client)}>
               <Icon icon={MenuDots} />
             </Button>
@@ -92,7 +93,7 @@
               <Popover hideOnClick onClose={closeMenu}>
                 <ul
                   transition:fly
-                  class="menu absolute right-0 z-popover mt-2 w-48 gap-1 rounded-box bg-base-100 p-2 shadow-md">
+                  class="menu bg-surface absolute right-0 z-popover mt-2 w-48 gap-1 rounded-2xl p-2">
                   <li>
                     <Button onclick={() => deleteSession(sessionItem)}>
                       <Icon icon={TrashBin2} />
@@ -105,12 +106,12 @@
           </div>
         </div>
         <div class="flex gap-1">
-          <div class="badge badge-neutral">
+          <Badge variant="neutral">
             Created {formatDate(sessionItem.created_at)}
-          </div>
-          <div class="badge badge-neutral">
+          </Badge>
+          <Badge variant="neutral">
             Active {formatDate(sessionItem.last_activity)}
-          </div>
+          </Badge>
         </div>
       </div>
     {/each}

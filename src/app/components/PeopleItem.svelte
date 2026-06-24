@@ -18,17 +18,17 @@
   const openProfile = () => pushModal(ProfileDetail, {pubkey, url})
 </script>
 
-<div class="card2 card2-interactive col-4">
+<div class="card card-interactive flex flex-col gap-4">
   <div class="flex justify-between">
     <Profile {pubkey} {url} />
-    <Button onclick={openProfile} class="btn btn-primary hidden sm:flex">
+    <Button onclick={openProfile} class="button button-primary hidden sm:flex">
       <Icon icon={UserCircle} />
       View Profile
     </Button>
   </div>
   <ProfileInfo {pubkey} {url} />
   <ProfileBadges {pubkey} {url} />
-  <Button onclick={openProfile} class="btn btn-primary sm:hidden">
+  <Button onclick={openProfile} class="button button-primary sm:hidden">
     <Icon icon={UserCircle} />
     View Profile
   </Button>

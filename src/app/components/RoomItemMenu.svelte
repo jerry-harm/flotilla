@@ -61,7 +61,7 @@
     })
 </script>
 
-<ul class="menu whitespace-nowrap rounded-box bg-base-100 p-2 shadow-md">
+<ul class="menu bg-surface whitespace-nowrap rounded-2xl p-2">
   <li>
     <Button onclick={showInfo}>
       <Icon size={4} icon={Code2} />

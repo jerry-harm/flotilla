@@ -19,19 +19,19 @@
   }
 </script>
 
-<div class="join border border-solid border-neutral text-xs">
+<div class="join text-xs">
   <ChatMessageEmojiButton {event} {pubkeys} />
   {#if replyTo}
-    <Button class="btn join-item btn-xs" onclick={reply}>
+    <Button class="button button-neutral button-xs join-item" onclick={reply}>
       <Icon size={4} icon={Reply} />
     </Button>
   {/if}
   {#if edit}
-    <Button class="btn join-item btn-xs" onclick={onEdit}>
+    <Button class="button button-neutral button-xs join-item" onclick={onEdit}>
       <Icon size={4} icon={Pen} />
     </Button>
   {/if}
-  <Button class="btn join-item btn-xs" onclick={showInfo}>
+  <Button class="button button-neutral button-xs join-item" onclick={showInfo}>
     <Icon size={4} icon={Code2} />
   </Button>
 </div>

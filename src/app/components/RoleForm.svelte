@@ -39,10 +39,7 @@
       <p>Name</p>
     {/snippet}
     {#snippet input()}
-      <input
-        bind:value={values.label}
-        class="input input-bordered w-full"
-        placeholder="Moderator" />
+      <input bind:value={values.label} class="input w-full" placeholder="Moderator" />
     {/snippet}
   </Field>
   <Field>
@@ -50,8 +47,7 @@
       <p>Description</p>
     {/snippet}
     {#snippet input()}
-      <textarea bind:value={values.description} class="textarea textarea-bordered w-full" rows="2"
-      ></textarea>
+      <textarea bind:value={values.description} class="textarea input w-full" rows="2"></textarea>
     {/snippet}
   </Field>
   <Field>
@@ -61,26 +57,26 @@
     {#snippet input()}
       <div class="flex items-center gap-3">
         <div
-          class="h-8 w-8 shrink-0 rounded-full border-2 border-base-300"
-          style="background-color: {roleColor(values.color)}">
+          class="h-8 w-8 shrink-0 rounded-full border-2"
+          style="background-color: {roleColor(values.color)}; border-color: var(--line)">
         </div>
         <input
           type="range"
           min="0"
           max="255"
           bind:value={values.color}
-          class="range range-sm grow"
+          class="range grow"
           style="color: {roleColor(values.color)}; --range-shdw: {roleColor(values.color)}" />
       </div>
     {/snippet}
   </Field>
 </div>
 <ModalFooter>
-  <Button class="btn btn-link" onclick={back}>
+  <Button class="button button-link" onclick={back}>
     <Icon icon={AltArrowLeft} />
     Go back
   </Button>
-  <Button class="btn btn-primary" onclick={submit} disabled={loading || !values.label}>
+  <Button class="button button-primary" onclick={submit} disabled={loading || !values.label}>
     <Spinner {loading}>Save changes</Spinner>
   </Button>
 </ModalFooter>

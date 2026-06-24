@@ -6,6 +6,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Link from "@lib/components/Link.svelte"
   import Button from "@lib/components/Button.svelte"
+  import PageContent from "@lib/components/PageContent.svelte"
   import CardButton from "@lib/components/CardButton.svelte"
   import {goToSpace} from "@app/routes"
   import {PLATFORM_NAME, PLATFORM_RELAYS} from "@app/env"
@@ -19,14 +20,14 @@
   })
 </script>
 
-<div class="hero min-h-screen overflow-auto pb-8">
-  <div class="hero-content">
-    <div class="column content gap-4">
+<div class="m-auto min-h-screen overflow-auto pb-8 h-full flex items-center">
+  <div class="p-4">
+    <PageContent class="flex flex-col gap-4">
       <h1 class="text-center text-5xl">Welcome to</h1>
       <h1 class="mb-4 text-center text-5xl font-bold uppercase">{PLATFORM_NAME}</h1>
-      <div class="col-3">
+      <div class="flex flex-col gap-3">
         <Link href="/spaces">
-          <CardButton class="btn-neutral">
+          <CardButton>
             {#snippet icon()}
               <Icon icon={AddCircle} size={7} />
             {/snippet}
@@ -39,7 +40,7 @@
           </CardButton>
         </Link>
         <Button onclick={openChat}>
-          <CardButton class="btn-neutral">
+          <CardButton>
             {#snippet icon()}
               <Icon icon={ChatRound} size={7} />
             {/snippet}
@@ -52,6 +53,6 @@
           </CardButton>
         </Button>
       </div>
-    </div>
+    </PageContent>
   </div>
 </div>

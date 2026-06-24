@@ -1,0 +1,335 @@
+/* ============================================================================
+   base.css — Tailwind token registration (theme-independent)
+   ----------------------------------------------------------------------------
+   The @theme block below registers our semantic tokens with Tailwind so it
+   emits themed utilities (bg-surface, text-content, text-content-muted,
+   border-line-more, bg-primary-bold, shadow-lg, …).
+   ============================================================================ */
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-bold: var(--primary-bold);
+  --color-primary-content: var(--primary-content);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-soft: var(--secondary-soft);
+  --color-secondary-bold: var(--secondary-bold);
+  --color-secondary-content: var(--secondary-content);
+
+  --color-success: var(--success);
+  --color-success-content: var(--success-content);
+  --color-warning: var(--warning);
+  --color-warning-content: var(--warning-content);
+  --color-error: var(--error);
+  --color-error-content: var(--error-content);
+
+  --color-backdrop: var(--backdrop);
+  --color-surface: var(--surface);
+  --color-surface-more: var(--surface-more);
+  --color-surface-less: var(--surface-less);
+
+  --color-content: var(--content);
+  --color-content-muted: var(--content-muted);
+  --color-content-subtle: var(--content-subtle);
+
+  --color-line: var(--line);
+  --color-line-more: var(--line-more);
+  --color-line-less: var(--line-less);
+
+  --shadow: 6px 6px 0 color-mix(in srgb, var(--primary) 12%, transparent);
+  --shadow-sm: 4px 4px 0 color-mix(in srgb, var(--primary) 10%, transparent);
+  --shadow-lg: 8px 8px 0 color-mix(in srgb, var(--primary) 15%, transparent);
+  --shadow-inset: inset 0 -4px 0 rgba(0, 0, 0, 0.05);
+  --shadow-inset-strong: inset 0 -3px 0 rgba(0, 0, 0, 0.1);
+
+  --border-thin: 1px;
+  --border-thick: 1px;
+
+  --font-body: "Lato", sans-serif;
+  --font-heading: "Lato", sans-serif;
+  --font-fancy: "Lato", sans-serif;
+}
+
+:root {
+  --sait: var(--safe-area-inset-top, env(safe-area-inset-top));
+  --saib: var(--safe-area-inset-bottom, env(safe-area-inset-bottom));
+  --sail: var(--safe-area-inset-left, env(safe-area-inset-left));
+  --sair: var(--safe-area-inset-right, env(safe-area-inset-right));
+
+  text-size-adjust: 100%;
+}
+
+@layer base {
+  body {
+    @apply text-content font-body bg-surface-less;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading font-bold;
+  }
+
+  button {
+    @apply cursor-pointer text-left;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus,
+  [contenteditable]:focus {
+    @apply outline-none;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Layout helpers
+   ---------------------------------------------------------------------------- */
+
+@utility heading {
+  @apply font-heading text-center text-2xl font-bold;
+}
+@utility subheading {
+  @apply font-heading text-center text-xl font-bold;
+}
+@utility superheading {
+  @apply font-heading text-center text-4xl font-extrabold;
+}
+@utility cv {
+  content-visibility: auto;
+}
+@utility pt-sai {
+  padding-top: var(--sait);
+}
+@utility pr-sai {
+  padding-right: var(--sair);
+}
+@utility pb-sai {
+  padding-bottom: var(--saib);
+}
+@utility pl-sai {
+  padding-left: var(--sail);
+}
+@utility px-sai {
+  padding-left: var(--sail);
+  padding-right: var(--sair);
+}
+@utility py-sai {
+  padding-top: var(--sait);
+  padding-bottom: var(--saib);
+}
+@utility p-sai {
+  padding: var(--sait) var(--sair) var(--saib) var(--sail);
+}
+@utility mt-sai {
+  margin-top: var(--sait);
+}
+@utility mr-sai {
+  margin-right: var(--sair);
+}
+@utility mb-sai {
+  margin-bottom: var(--saib);
+}
+@utility ml-sai {
+  margin-left: var(--sail);
+}
+@utility mx-sai {
+  margin-left: var(--sail);
+  margin-right: var(--sair);
+}
+@utility my-sai {
+  margin-top: var(--sait);
+  margin-bottom: var(--saib);
+}
+@utility m-sai {
+  margin: var(--sait) var(--sair) var(--saib) var(--sail);
+}
+@utility top-sai {
+  top: var(--sait);
+}
+@utility right-sai {
+  right: var(--sair);
+}
+@utility bottom-sai {
+  bottom: var(--saib);
+}
+@utility left-sai {
+  left: var(--sail);
+}
+
+/* ----------------------------------------------------------------------------
+   Keyboard-open adjustments
+   ---------------------------------------------------------------------------- */
+
+body.keyboard-open {
+  --saib: 0px;
+}
+body.keyboard-open .hide-on-keyboard {
+  @apply hidden;
+}
+body.keyboard-open .room__compose {
+  @apply mb-0;
+}
+
+/* ----------------------------------------------------------------------------
+   Fonts shared/default across all themes
+   ---------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: "Satoshis";
+  font-style: normal;
+  font-weight: 400;
+  src:
+    local(""),
+    url("/fonts/Satoshi Symbol.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Lato";
+  font-style: normal;
+  font-weight: 400;
+  src:
+    local(""),
+    url("/fonts/Lato-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Lato";
+  font-style: bold;
+  font-weight: 600;
+  src:
+    local(""),
+    url("/fonts/Lato-Bold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Lato";
+  font-style: italic;
+  font-weight: 400;
+  src:
+    local(""),
+    url("/fonts/Italic.ttf") format("truetype");
+}
+
+/* ----------------------------------------------------------------------------
+   Integrations — rewired onto the shared tokens (unlayered so they win over
+   third-party defaults)
+   ---------------------------------------------------------------------------- */
+
+/* tiptap editor */
+.input-editor,
+.chat-editor,
+.note-editor {
+  @apply -m-1 p-1;
+}
+.tiptap {
+  --tiptap-object-bg: var(--surface);
+  --tiptap-object-fg: var(--content);
+  --tiptap-active-bg: var(--primary);
+  --tiptap-active-fg: var(--primary-content);
+  @apply min-h-10 overflow-y-auto px-4 py-2;
+  max-height: 350px;
+}
+.tiptap-suggestions {
+  --tiptap-object-bg: var(--surface);
+  --tiptap-object-fg: var(--content);
+  --tiptap-active-bg: var(--surface-more);
+  --tiptap-active-fg: var(--content);
+}
+.tiptap-suggestions__item {
+  border-left: 2px solid var(--surface);
+}
+.tiptap-suggestions__selected {
+  border-left-color: var(--primary);
+}
+.tiptap p.is-editor-empty:first-child::before {
+  @apply opacity-40;
+}
+.chat-editor .tiptap {
+  /* standard input border, kept at 1px so the :focus border swap doesn't reflow */
+  @apply bg-surface rounded-3xl border border-solid border-line;
+}
+.note-editor .tiptap {
+  --tiptap-object-bg: var(--surface);
+  @apply bg-surface block h-auto min-h-32 w-full rounded-2xl;
+  border: var(--border-thin) solid var(--line);
+  padding: 0.65rem;
+  padding-bottom: 1.5rem;
+}
+.input-editor .tiptap {
+  --tiptap-object-bg: var(--surface);
+  @apply bg-surface block h-auto rounded-2xl;
+  border: var(--border-thin) solid var(--line);
+  padding: 0.65rem;
+}
+
+/* link-content (tiptap pill) */
+.link-content {
+  @apply bg-surface text-content max-w-full overflow-hidden px-1 text-ellipsis whitespace-nowrap;
+  border-radius: 3px;
+}
+
+/* welshman/content */
+.welshman-content a {
+  @apply text-primary cursor-pointer underline underline-offset-2;
+}
+.welshman-content-error a {
+  @apply underline;
+}
+
+/* date picker */
+.picker {
+  --date-picker-foreground: var(--content);
+  --date-picker-background: var(--surface-more);
+  --date-picker-highlight-border: var(--primary);
+  --date-picker-selected-color: var(--primary-content);
+  --date-picker-selected-background: var(--primary);
+}
+.date-time-field {
+  @apply bg-surface rounded-2xl px-0;
+  border: var(--border-thin) solid var(--line);
+}
+.date-time-field input {
+  height: 100% !important;
+  width: 100% !important;
+  border-radius: var(--radius-2xl) !important;
+  border: none !important;
+  background: inherit !important;
+  color: inherit !important;
+  padding: 0.7rem 1rem !important;
+}
+
+/* tippy popover */
+.tippy-target {
+  @apply z-tooltip pointer-events-none fixed inset-0;
+}
+.tippy-target > * {
+  @apply pointer-events-auto;
+}
+.tippy-box {
+  @apply rounded-3xl;
+  box-shadow: var(--shadow-lg);
+}
+
+/* emoji picker */
+emoji-picker {
+  --background: var(--surface);
+  --border-color: var(--surface-more);
+  --border-radius: var(--radius-2xl);
+  --button-active-background: var(--surface-more);
+  --button-hover-background: var(--surface);
+  --indicator-color: var(--primary);
+  --input-border-color: var(--line);
+  --input-font-color: var(--content);
+  --outline-color: var(--primary);
+}
+
+/* content width for fixed elements (sidebar offsets) */
+.left-content {
+  left: var(--sail);
+}
+@media (min-width: 768px) {
+  .left-content {
+    left: calc(18.5rem + var(--sail));
+  }
+}

@@ -164,7 +164,7 @@
         <p>Title*</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input flex w-full items-center gap-2">
           <input bind:value={title} class="grow" type="text" />
         </label>
       {/snippet}
@@ -174,18 +174,17 @@
         <p>Summary</p>
       {/snippet}
       {#snippet input()}
-        <div
-          class="relative z-feature flex gap-2 border-t border-solid border-base-100 bg-base-100">
+        <div class="relative z-feature flex gap-2">
           <div class="input-editor grow overflow-hidden">
             <EditorContent {editor} />
           </div>
           <Button
             data-tip="Add an image"
-            class="center btn tooltip"
+            class="button button-neutral tip"
             onclick={selectFiles}
             disabled={loading}>
             {#if $uploading}
-              <span class="loading loading-spinner loading-xs"></span>
+              <Spinner size="xs" />
             {:else}
               <Icon icon={GallerySend} />
             {/if}
@@ -214,7 +213,7 @@
         <p>Location (optional)</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input flex w-full items-center gap-2">
           <Icon icon={MapPoint} />
           <input bind:value={location} class="grow" type="text" />
         </label>
@@ -222,11 +221,11 @@
     </Field>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back} disabled={loading}>
+    <Button class="button button-link" onclick={back} disabled={loading}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={$uploading || loading}>
+    <Button class="button button-primary" type="submit" disabled={$uploading || loading}>
       <Spinner loading={$uploading || loading}>Save Event</Spinner>
     </Button>
   </ModalFooter>

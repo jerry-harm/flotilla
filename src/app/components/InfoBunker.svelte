@@ -37,5 +37,5 @@
         href="https://nostrapps.com#signers">nostrapps.com</Link
       >.
     </p>
-    <Button class="btn btn-primary" onclick={() => history.back()}>Got it</Button>
+    <Button class="button button-primary" onclick={() => history.back()}>Got it</Button>
   </ModalBody></Modal>

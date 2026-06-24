@@ -58,25 +58,25 @@
 <Modal>
   <ModalBody>
     <div class="flex flex-col gap-2">
-      <Button class="btn btn-neutral" onclick={showInfo}>
+      <Button class="button button-neutral" onclick={showInfo}>
         <Icon size={4} icon={Code2} />
         Message Info
       </Button>
-      <Button class="btn btn-neutral w-full" onclick={copyText}>
+      <Button class="button button-neutral w-full" onclick={copyText}>
         <Icon size={4} icon={Copy} />
         Copy Text
       </Button>
-      <Button class="btn btn-neutral w-full" onclick={sendReply}>
+      <Button class="button button-neutral w-full" onclick={sendReply}>
         <Icon size={4} icon={Reply} />
         Send Reply
       </Button>
       {#if edit}
-        <Button class="btn btn-neutral w-full" onclick={sendEdit}>
+        <Button class="button button-neutral w-full" onclick={sendEdit}>
           <Icon size={4} icon={Pen} />
           Edit Message
         </Button>
       {/if}
-      <Button class="btn btn-primary w-full" onclick={showEmojiPicker}>
+      <Button class="button button-primary w-full" onclick={showEmojiPicker}>
         <Icon size={4} icon={SmileCircle} />
         Send Reaction
       </Button>

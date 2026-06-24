@@ -99,11 +99,11 @@
     <StringMultiInput bind:value={otps} placeholder="Enter your login codes..." />
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back} disabled={loading}>
+    <Button class="button button-link" onclick={back} disabled={loading}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={loading || otps.length < 3}>
+    <Button type="submit" class="button button-primary" disabled={loading || otps.length < 3}>
       <Spinner {loading}>Log In</Spinner>
       <Icon icon={AltArrowRight} />
     </Button>

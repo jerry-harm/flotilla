@@ -9,6 +9,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import ComposeMenu from "@app/components/ComposeMenu.svelte"
   import EditorContent from "@app/editor/EditorContent.svelte"
   import {makeEditor} from "@app/editor"
@@ -108,34 +109,32 @@
 <form class="relative flex gap-2 p-2" onsubmit={preventDefault(submit)}>
   <div class="join">
     <Button
-      class="center join-item h-10 w-10 min-w-10 rounded-full border border-solid border-base-200 bg-base-300"
+      class="join-item h-10 w-10 min-w-10 button button-neutral"
       disabled={$uploading}
       onclick={uploadFiles}>
       {#if $uploading}
-        <span class="loading loading-spinner loading-xs"></span>
+        <Spinner size="xs" />
       {:else}
         <Icon icon={GallerySend} />
       {/if}
     </Button>
     <Tippy
       bind:popover
+      class="join-item h-10 w-10 min-w-10 button button-neutral"
       component={ComposeMenu}
       props={{url, h, onClick: hidePopover}}
       params={{trigger: "manual", interactive: true}}>
-      <Button
-        class="center join-item h-10 w-10 min-w-10 rounded-full border border-solid border-base-200 bg-base-300"
-        disabled={$uploading}
-        onclick={showPopover}>
+      <Button disabled={$uploading} onclick={showPopover}>
         <Icon icon={WidgetAdd} />
       </Button>
     </Tippy>
   </div>
-  <div class="chat-editor grow overflow-hidden">
+  <div class="chat-editor grow overflow-hidden rounded-box">
     <EditorContent {autofocus} {editor} />
   </div>
   <Button
     data-tip="{window.navigator.platform.includes('Mac') ? 'cmd' : 'ctrl'}+enter to send"
-    class="center tooltip tooltip-left absolute right-4 h-10 w-10 min-w-10 rounded-full"
+    class="button button-primary button-circle flex justify-center items-center tip tip-left h-10 w-10 min-w-10"
     disabled={$uploading}
     onclick={submit}>
     <Icon icon={Plane} />

@@ -15,9 +15,7 @@
 </script>
 
 <div class={cx("fixed bottom-20 mb-sai right-4 z-nav hide-on-keyboard md:hidden", className)}>
-  <Button
-    class="btn btn-primary border-none shadow-xl hover:opacity-90 transition-all size-[50px] rounded-xl p-0"
-    {onclick}>
+  <Button class="button button-primary button-square size-[50px]" {onclick}>
     <div class="flex items-center justify-center">
       {@render children?.()}
     </div>

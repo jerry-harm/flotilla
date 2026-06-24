@@ -41,7 +41,7 @@
   })
 </script>
 
-<div class="flex flex-col gap-2 card2 card2-sm bg-alt">
+<div class="flex flex-col gap-2 card card-sm">
   <div class="flex items-center justify-between gap-2">
     <label class="flex min-w-0 grow items-center gap-2">
       {#if !closed}
@@ -49,14 +49,14 @@
           <input
             name={event.id}
             type="radio"
-            class="radio radio-primary radio-sm"
+            class="radio"
             checked={selected}
             onclick={stopPropagation(noop)}
             onchange={onselect} />
         {:else}
           <input
             type="checkbox"
-            class="checkbox checkbox-primary checkbox-sm"
+            class="checkbox"
             checked={selected}
             onclick={stopPropagation(noop)}
             onchange={onselect} />
@@ -66,5 +66,5 @@
     </label>
     <span class="whitespace-nowrap text-xs opacity-75">{votes} vote{votes === 1 ? "" : "s"}</span>
   </div>
-  <progress class="progress progress-primary" value={$tweenedVotes} max={$tweenedMax}></progress>
+  <progress class="progress" value={$tweenedVotes} max={$tweenedMax}></progress>
 </div>

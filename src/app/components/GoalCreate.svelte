@@ -145,13 +145,13 @@
       <ModalTitle>Create a Funding Goal</ModalTitle>
       <ModalSubtitle>Request contributions for your fundraiser.</ModalSubtitle>
     </ModalHeader>
-    <div class="col-8 relative">
+    <div class="flex flex-col gap-8 relative">
       <Field>
         {#snippet label()}
           <p>Title*</p>
         {/snippet}
         {#snippet input()}
-          <label class="input input-bordered flex w-full items-center gap-2">
+          <label class="input flex w-full items-center gap-2">
             <!-- svelte-ignore a11y_autofocus -->
             <input
               autofocus={!isMobile}
@@ -175,11 +175,11 @@
         </Field>
         <Button
           data-tip="Add an image"
-          class="tooltip tooltip-left absolute bottom-1 right-2"
+          class="tip tip-left absolute bottom-1 right-2"
           onclick={selectFiles}
           disabled={loading}>
           {#if $uploading}
-            <span class="loading loading-spinner loading-xs"></span>
+            <Spinner size="xs" />
           {:else}
             <Icon icon={Paperclip} size={3} />
           {/if}
@@ -192,7 +192,7 @@
           {/snippet}
           {#snippet input()}
             <div class="flex grow justify-end">
-              <label class="input input-bordered flex w-auto items-center gap-2">
+              <label class="input flex w-auto items-center gap-2">
                 <Icon icon={Bolt} />
                 <input bind:value={amount} type="number" class="w-28 grow" />
                 <p class="shrink-0 opacity-50">sats</p>
@@ -201,7 +201,7 @@
           {/snippet}
         </FieldInline>
         <input
-          class="range range-primary -mt-2 w-full"
+          class="range -mt-2 w-full"
           type="range"
           min="1000"
           max="100000"
@@ -211,11 +211,11 @@
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back} disabled={loading}>
+    <Button class="button button-link" onclick={back} disabled={loading}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={$uploading || loading}>
+    <Button type="submit" class="button button-primary" disabled={$uploading || loading}>
       <Spinner {loading}>Create Goal</Spinner>
     </Button>
   </ModalFooter>

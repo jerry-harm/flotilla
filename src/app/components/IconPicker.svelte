@@ -43,7 +43,7 @@
   }
 </script>
 
-<label class="input input-bordered flex w-full items-center gap-2">
+<label class="input flex w-full items-center gap-2">
   <Icon icon={Magnifier} />
   <input bind:value={searchTerm} class="grow" type="text" placeholder="Search icons..." />
 </label>
@@ -53,7 +53,7 @@
       <button
         type="button"
         title={icon.name}
-        class="flex aspect-square items-center justify-center rounded-box transition-colors hover:bg-primary hover:text-primary-content"
+        class="flex aspect-square items-center justify-center rounded-2xl transition-colors hover:bg-primary hover:text-primary-content"
         onclick={() => handleSelect(icon.url)}>
         <Icon icon={icon.url} class="h-6 w-6" />
       </button>

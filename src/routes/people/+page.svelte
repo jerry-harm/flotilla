@@ -39,10 +39,10 @@
 </script>
 
 <Page>
-  <PageContent class="col-2 p-2 sm:col-4 sm:p-4">
+  <PageContent>
     <ContentSearch>
       {#snippet input()}
-        <label class="row-2 input input-bordered w-full">
+        <label class="flex gap-2 input input-group w-full">
           <Icon icon={Magnifier} />
           <!-- svelte-ignore a11y_autofocus -->
           <input
@@ -54,7 +54,7 @@
         </label>
       {/snippet}
       {#snippet content()}
-        <div class="col-2 h-full" bind:this={element}>
+        <div class="flex flex-col gap-2 h-full" bind:this={element}>
           {#each pubkeys.slice(0, limit) as pubkey (pubkey)}
             <PeopleItem {pubkey} />
           {/each}

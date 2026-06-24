@@ -17,6 +17,7 @@
     icon: string
     size?: number
     class?: string
+    style?: string
   } = $props()
 
   const px = size * 4
@@ -68,5 +69,6 @@
 
 <div
   class="inline-block {restProps.class}"
-  style="mask-image: url({src}); width: {px}px; height: {px}px; min-width: {px}px; min-height: {px}px; background-color: currentcolor;">
+  style="mask-image: url({src}); width: {px}px; height: {px}px; min-width: {px}px; min-height: {px}px; background-color: currentcolor; {restProps.style ??
+    ''}">
 </div>

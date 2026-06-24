@@ -19,7 +19,7 @@
 </script>
 
 <Link
-  class="cv col-2 card2 bg-alt w-full cursor-pointer shadow-md"
+  class="cv flex flex-col gap-2 card card-interactive w-full"
   href={makePollPath(url, event.id)}>
   <NoteContent {event} {url} />
   <div class="flex w-full flex-col items-end justify-between gap-2 sm:flex-row">

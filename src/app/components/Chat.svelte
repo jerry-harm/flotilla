@@ -39,7 +39,6 @@
   import Icon from "@lib/components/Icon.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import PageBar from "@lib/components/PageBar.svelte"
-  import PageContent from "@lib/components/PageContent.svelte"
   import Divider from "@lib/components/Divider.svelte"
   import Button from "@lib/components/Button.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
@@ -252,12 +251,12 @@
       <div class="ellipsize flex items-center gap-4 whitespace-nowrap">
         <Button class="flex flex-col gap-1 sm:flex-row sm:gap-2" onclick={showMembers}>
           {#if others.length === 0}
-            <div class="row-2">
+            <div class="flex gap-2">
               <ProfileCircle pubkey={$pubkey!} size={5} />
               <ProfileName pubkey={$pubkey!} />
             </div>
           {:else if others.length === 1}
-            <div class="row-2">
+            <div class="flex gap-2">
               <ProfileCircle pubkey={others[0]} size={5} />
               <ProfileName pubkey={others[0]} />
             </div>
@@ -282,11 +281,11 @@
   </div>
 </PageBar>
 
-<PageContent class="flex flex-col-reverse gap-2 py-2 !mb-0">
+<div class="flex flex-col-reverse gap-4 py-2 bg-surface scroll-container h-screen overflow-y-auto">
   {#if missingRelayLists.length > 0}
     <div class="py-12">
-      <div class="card2 col-2 m-auto max-w-md items-center text-center">
-        <p class="row-2 text-lg text-error">
+      <div class="card flex flex-col gap-2 m-auto max-w-md items-center text-center">
+        <p class="flex gap-2 text-lg text-error">
           <Icon icon={Danger} />
           Direct messages are not enabled
         </p>
@@ -324,9 +323,9 @@
     {@render info?.()}
   </p>
   <div class="h-screen"></div>
-</PageContent>
+</div>
 
-<div class="chat__compose bg-base-200">
+<div class="room__compose bg-surface">
   <div>
     {#if parent}
       <ChatComposeParent event={parent} clear={clearParent} verb="Replying to" />

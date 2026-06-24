@@ -3,6 +3,7 @@
   import {goto} from "$app/navigation"
   import {loadProfile, displayProfileByPubkey} from "@welshman/app"
   import SecondaryNavItem from "@lib/components/SecondaryNavItem.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ProfileCircles from "@app/components/ProfileCircles.svelte"
   import RoomImage from "@app/components/RoomImage.svelte"
@@ -73,11 +74,11 @@
   {replaceState}
   {notification}
   onclick={handleClick}
-  class={cx("items-start!", isActive && "bg-base-100! text-base-content!")}>
+  class={cx("items-start!", isActive && "bg-surface! text-content!")}>
   <div class="flex w-full min-w-0 flex-col gap-2">
     <div class="flex gap-2 items-center">
       {#if isJoining}
-        <span class="loading loading-spinner loading-sm"></span>
+        <Spinner size="sm" />
       {:else}
         <RoomImage {url} {h} size={4} />
       {/if}
@@ -91,8 +92,9 @@
             <div
               class={cx(
                 "inline-flex shrink-0 items-center justify-center rounded-full transition-shadow",
-                $isParticipantSpeaking(p) && "ring-2 ring-success",
-              )}>
+                $isParticipantSpeaking(p) && "ring-2",
+              )}
+              style={$isParticipantSpeaking(p) ? "--tw-ring-color: var(--success)" : undefined}>
               <ProfileCircle pubkey={p.pubkey} size={5} class="h-5 w-5" />
             </div>
             <span class="ellipsize min-w-0 flex-1 text-xs opacity-70">

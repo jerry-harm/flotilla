@@ -1,6 +1,7 @@
 <script lang="ts">
   import cx from "classnames"
   import {page} from "$app/stores"
+  import Link from "@lib/components/Link.svelte"
   import Button from "@lib/components/Button.svelte"
 
   const {
@@ -15,35 +16,28 @@
 
   const active = $derived($page.url?.pathname?.startsWith(prefix || href || "bogus"))
 
-  const wrapperClass = $derived(
-    cx("relative h-14 w-14 p-1", {
-      "tooltip tooltip-right": title,
+  const className = $derived(
+    cx(restProps.class, "primary-nav__nav-item", {
+      "primary-nav__nav-item--active": active,
+      "tip tip-right": title,
     }),
-  )
-
-  const innerClass = $derived(
-    cx(
-      "flex h-full w-full cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-base-300",
-      restProps.class,
-      {"bg-base-300 border border-solid border-base-content/20": active},
-    ),
   )
 </script>
 
-<div class={wrapperClass} data-tip={title}>
-  {#if onclick}
-    <Button {onclick} class={innerClass}>
-      {@render children?.()}
-      {#if !active && notification}
-        <div class="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary"></div>
-      {/if}
-    </Button>
-  {:else}
-    <a {href} class={innerClass}>
-      {@render children?.()}
-      {#if !active && notification}
-        <div class="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary"></div>
-      {/if}
-    </a>
-  {/if}
-</div>
+{#if onclick}
+  <Button {onclick} data-tip={title} class={className}>
+    {@render children?.()}
+    {#if !active && notification}
+      <div class="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary text-primary-content">
+      </div>
+    {/if}
+  </Button>
+{:else}
+  <Link {href} data-tip={title} class={className}>
+    {@render children?.()}
+    {#if !active && notification}
+      <div class="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary text-primary-content">
+      </div>
+    {/if}
+  </Link>
+{/if}

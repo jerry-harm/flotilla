@@ -201,9 +201,9 @@
   const panelChrome = $derived(
     cx(
       mobile &&
-        "flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden bg-base-200 px-2 pt-4 md:hidden pb-[calc(3.5rem+var(--saib))]",
+        "flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden bg-surface px-2 pt-4 md:hidden pb-[calc(3.5rem+var(--saib))]",
       !mobile &&
-        "flex min-h-0 w-full min-w-0 flex-1 flex-col gap-2 overflow-hidden bg-base-200 px-2 pb-2 pt-4",
+        "flex min-h-0 w-full min-w-0 flex-1 flex-col gap-2 overflow-hidden bg-surface px-2 pb-2 pt-4",
       className,
     ),
   )
@@ -213,11 +213,11 @@
   {@const media = $mediaStateByIdentity(tile.liveKitIdentity)}
   <div
     class={cx(
-      "relative isolate overflow-hidden rounded-box shadow-sm",
+      "relative isolate overflow-hidden rounded-2xl shadow-sm",
       layout === "spotlight" && "min-h-0 flex-1",
       layout === "default" && "aspect-video w-full min-h-0",
       layout === "strip" && "aspect-video w-44 shrink-0",
-      tile.source === Track.Source.ScreenShare ? "bg-black" : "bg-base-100",
+      tile.source === Track.Source.ScreenShare ? "bg-black" : "bg-surface",
     )}>
     {#if tile.track}
       <VideoCallTile
@@ -239,8 +239,7 @@
           size={3} />
       </div>
     {/if}
-    <span
-      class="pointer-events-none absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] truncate rounded bg-base-100/80 px-1.5 py-0.5 text-xs">
+    <span class="pointer-events-none absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] truncate rounded bg-base-100/80 px-1.5 py-0.5 text-xs">
       {labelFor(tile.liveKitIdentity, tile.source)}{tile.isLocal ? " (you)" : ""}
     </span>
     {#if videoTiles.length > 1}
@@ -249,8 +248,9 @@
         data-tip={pinned ? "Exit spotlight" : "Spotlight"}
         aria-pressed={pinned}
         class={cx(
-          "absolute right-1 top-1 z-20 btn btn-xs btn-square",
-          pinned ? "btn-primary" : "btn-ghost bg-base-100",
+          `button button-${pinned ? "primary" : "ghost"} button-xs button-square`,
+          "absolute right-1 top-1 z-20",
+          !pinned && "bg-surface",
         )}
         onclick={spotlightHandlerFor(tileKey(tile))}>
         <Icon icon={Pin} size={3} />
@@ -288,7 +288,7 @@
     {/if}
   {:else}
     <div
-      class="flex min-h-[12rem] flex-1 flex-col items-center justify-center gap-2 rounded-box bg-base-200/50 p-4 text-center text-sm opacity-80">
+      class="flex min-h-[12rem] flex-1 flex-col items-center justify-center gap-2 rounded-2xl bg-surface p-4 text-center text-sm opacity-80">
       <p>No one is sharing video yet.</p>
       <p class="text-xs">
         Participants appear here when they turn on their camera or share their screen.

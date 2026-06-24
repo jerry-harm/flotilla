@@ -1,4 +1,5 @@
 <script lang="ts">
+  import cx from "classnames"
   import {onMount} from "svelte"
   import {Capacitor} from "@capacitor/core"
   import {getNip07, getNip55, Nip55Signer} from "@welshman/signer"
@@ -13,6 +14,7 @@
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import SignUp from "@app/components/SignUp.svelte"
   import InfoNostr from "@app/components/InfoNostr.svelte"
   import LogInBunker from "@app/components/LogInBunker.svelte"
@@ -101,9 +103,9 @@
       allows you to own your social identity.
     </p>
     {#if getNip07()}
-      <Button {disabled} onclick={loginWithNip07} class="btn btn-primary">
+      <Button {disabled} onclick={loginWithNip07} class="button button-primary">
         {#if loading === "nip07"}
-          <span class="loading loading-spinner mr-3"></span>
+          <Spinner size="sm" class="mr-3" />
         {:else}
           <Icon icon={Widget} />
         {/if}
@@ -111,9 +113,9 @@
       </Button>
     {/if}
     {#each signers as app}
-      <Button {disabled} class="btn btn-primary" onclick={() => loginWithNip55(app)}>
+      <Button {disabled} class="button button-primary" onclick={() => loginWithNip55(app)}>
         {#if loading === "nip55"}
-          <span class="loading loading-spinner mr-3"></span>
+          <Spinner size="sm" class="mr-3" />
         {:else}
           <img src={app.iconUrl} alt={app.name} width="20" height="20" />
         {/if}
@@ -121,7 +123,7 @@
       </Button>
     {/each}
     {#if hasPomade && !hasSigner}
-      <Button {disabled} onclick={loginWithEmail} class="btn btn-primary">
+      <Button {disabled} onclick={loginWithEmail} class="button button-primary">
         <Icon icon={Letter} />
         Log in with Email
       </Button>
@@ -129,18 +131,18 @@
     <Button
       onclick={loginWithBunker}
       {disabled}
-      class="btn {hasSigner || hasPomade ? 'btn-neutral' : 'btn-primary'}">
+      class={cx(`button button-${hasSigner || hasPomade ? "neutral" : "primary"}`)}>
       <Icon icon={Cpu} />
       Log in with Remote Signer
     </Button>
     {#if hasPomade && hasSigner}
-      <Button {disabled} onclick={loginWithEmail} class="btn">
+      <Button {disabled} onclick={loginWithEmail}>
         <Icon icon={Letter} />
         Log in with Email
       </Button>
     {/if}
     {#if !hasSigner}
-      <Button {disabled} onclick={loginWithKey} class="btn btn-neutral">
+      <Button {disabled} onclick={loginWithKey} class="button button-neutral">
         <Icon icon={Key} />
         Log in with Key
       </Button>
@@ -150,7 +152,7 @@
         external
         {disabled}
         href="https://nostrapps.com#signers"
-        class="btn {hasSigner || hasPomade ? '' : 'btn-neutral'}">
+        class="button {hasSigner || hasPomade ? '' : 'button-neutral'}">
         <Icon icon={Compass} />
         Browse Signer Apps
       </Link>

@@ -53,7 +53,7 @@
         <p>Reason*</p>
       {/snippet}
       {#snippet input()}
-        <select class="select select-bordered" bind:value={reason}>
+        <select class="select input" bind:value={reason}>
           <option disabled selected>Choose a reason</option>
           <option>Nudity</option>
           <option>Malware</option>
@@ -73,7 +73,7 @@
         <p>Details</p>
       {/snippet}
       {#snippet input()}
-        <textarea class="textarea textarea-bordered" bind:value={content}></textarea>
+        <textarea class="textarea input" bind:value={content}></textarea>
       {/snippet}
       {#snippet info()}
         <p>Please provide any additional details relevant to your report.</p>
@@ -81,11 +81,11 @@
     </Field>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={loading}>
+    <Button type="submit" class="button button-primary" disabled={loading}>
       <Spinner {loading}>Send Report</Spinner>
       <Icon icon={AltArrowRight} />
     </Button>

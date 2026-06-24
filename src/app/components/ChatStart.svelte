@@ -73,11 +73,11 @@
     </Field>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={pubkeys.length === 0}>
+    <Button type="submit" class="button button-primary" disabled={pubkeys.length === 0}>
       Create Chat
       <Icon icon={AltArrowRight} />
     </Button>

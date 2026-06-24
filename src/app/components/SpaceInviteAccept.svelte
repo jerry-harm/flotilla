@@ -105,10 +105,10 @@
         <p>Invite Link*</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input flex w-full items-center gap-2">
           <Icon icon={LinkRound} />
           <input bind:value={invite} class="grow" type="text" />
-          <Button onclick={toggleScanner} class="center">
+          <Button onclick={toggleScanner} class="flex items-center justify-center">
             <Icon icon={QrCode} />
           </Button>
         </label>
@@ -120,7 +120,7 @@
     {#if inviteData}
       <div class="-my-4">
         <div transition:slideAndFade class="flex flex-col gap-4 py-4">
-          <div class="card2 bg-alt flex flex-col gap-4">
+          <div class="card flex flex-col gap-4">
             <p class="opacity-75">You're about to join:</p>
             <RelaySummary url={inviteData.url} />
             <SpaceJoinSettings url={inviteData.url} {error} bind:notifications />
@@ -130,11 +130,11 @@
     {/if}
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={!inviteData || loading}>
+    <Button type="submit" class="button button-primary" disabled={!inviteData || loading}>
       <Spinner {loading}>Join Space</Spinner>
       <Icon icon={AltArrowRight} />
     </Button>

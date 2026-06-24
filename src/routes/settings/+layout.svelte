@@ -12,7 +12,6 @@
   import Bell from "@assets/icons/bell.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Page from "@lib/components/Page.svelte"
-  import PageContent from "@lib/components/PageContent.svelte"
   import SecondaryNav from "@lib/components/SecondaryNav.svelte"
   import SecondaryNavItem from "@lib/components/SecondaryNavItem.svelte"
   import SecondaryNavSection from "@lib/components/SecondaryNavSection.svelte"
@@ -69,7 +68,5 @@
 </SecondaryNav>
 
 <Page>
-  <PageContent>
-    {@render children?.()}
-  </PageContent>
+  {@render children?.()}
 </Page>

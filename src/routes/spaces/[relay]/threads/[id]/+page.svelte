@@ -150,7 +150,7 @@
 <SpaceBar {back} class="!h-auto min-h-20 py-3">
   {#snippet title()}
     <div class="flex min-w-0 flex-col gap-0.5">
-      <h1 class="ellipsize text-base leading-none font-bold sm:text-xl">
+      <h1 class="ellipsize font-bold sm:text-xl">
         {getTagValue("title", $event?.tags || []) || ""}
       </h1>
       <p class="text-xs opacity-75">
@@ -164,9 +164,9 @@
   {/snippet}
 </SpaceBar>
 
-<PageContent class="flex flex-col">
+<PageContent noPad class="flex flex-col">
   {#if $event}
-    <div class="border-y border-base-content/15 bg-base-100">
+    <div class="bg-surface border-y" style="border-color: var(--line)">
       {#each pagePosts as post (post.id)}
         <ThreadPost {url} event={post} threadPubkey={$event.pubkey} onReply={openReply} />
       {/each}
@@ -184,7 +184,7 @@
         onSubmit={closeReply} />
     {:else}
       <div class="flex justify-end p-4">
-        <Button class="btn btn-primary" onclick={openThreadReply}>
+        <Button class="button button-primary" onclick={openThreadReply}>
           <Icon icon={Reply} />
           Reply to thread
         </Button>

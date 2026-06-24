@@ -76,7 +76,7 @@
     <strong>Threads</strong>
   {/snippet}
   {#snippet action()}
-    <Button class="btn btn-sm btn-primary" onclick={createThread}>
+    <Button class="button button-primary button-sm" onclick={createThread}>
       <Icon icon={Add} />
       Create
     </Button>

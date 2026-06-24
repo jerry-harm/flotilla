@@ -10,6 +10,7 @@
   import {errorMessage} from "@lib/util"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
@@ -60,11 +61,11 @@
     {#each $relays.toSorted() as url (url)}
       <RelayItem {url}>
         <Button
-          class="btn btn-sm btn-neutral"
+          class="button button-neutral button-sm"
           disabled={loading.has(url)}
           onclick={() => remove(url)}>
           {#if loading.has(url)}
-            <span class="loading loading-spinner loading-sm"></span>
+            <Spinner size="sm" />
           {:else}
             <Icon icon={CloseCircle} />
           {/if}
@@ -79,11 +80,11 @@
     {/each}
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button class="btn btn-primary" onclick={add}>
+    <Button class="button button-primary" onclick={add}>
       Add Relays
       <Icon icon={AltArrowRight} />
     </Button>

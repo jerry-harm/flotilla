@@ -53,7 +53,7 @@
         <p>Confirmation Code*</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input flex w-full items-center gap-2">
           <Icon icon={Key} />
           <input bind:value={challenge} />
         </label>
@@ -68,11 +68,11 @@
     <ProgressBar current={step} total={totalSteps} />
   {/if}
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back} disabled={loading}>
+    <Button class="button button-link" onclick={back} disabled={loading}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={loading || !challenge}>
+    <Button type="submit" class="button button-primary" disabled={loading || !challenge}>
       <Spinner {loading}>Log In</Spinner>
       <Icon icon={AltArrowRight} />
     </Button>

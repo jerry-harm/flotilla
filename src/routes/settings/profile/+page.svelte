@@ -18,6 +18,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import FieldInline from "@lib/components/FieldInline.svelte"
   import Button from "@lib/components/Button.svelte"
+  import PageContent from "@lib/components/PageContent.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ContentMinimal from "@app/components/ContentMinimal.svelte"
@@ -78,8 +79,8 @@
   let showAdvanced = $state(false)
 </script>
 
-<div class="content column gap-4">
-  <div class="card2 bg-alt shadow-md col-2">
+<PageContent>
+  <div class="card shadow-md flex flex-col gap-2">
     <div class="flex justify-between gap-2">
       <div class="flex max-w-full gap-3">
         <div class="py-1">
@@ -96,7 +97,9 @@
           </div>
         </div>
       </div>
-      <Button class="center btn btn-circle btn-neutral -mr-2 -mt-2 h-12 w-12" onclick={startEdit}>
+      <Button
+        class="button button-neutral button-circle flex justify-center items-center -mr-2 -mt-2 h-12 w-12"
+        onclick={startEdit}>
         <Icon icon={PenNewSquare} />
       </Button>
     </div>
@@ -104,7 +107,7 @@
       <ContentMinimal event={{content: $profile?.about || "", tags: []}} />
     {/key}
   </div>
-  <div class="card2 bg-alt col-4 shadow-md">
+  <div class="card flex flex-col gap-4 shadow-md">
     {#if $session?.method === SessionMethod.Pomade}
       <FieldInline>
         {#snippet label()}
@@ -112,7 +115,7 @@
           <p>Email Address</p>
         {/snippet}
         {#snippet input()}
-          <label class="input input-bordered flex w-full items-center gap-2">
+          <label class="input flex w-full items-center gap-2">
             <Icon icon={UserRounded} />
             <input readonly value={$session.email} class="grow" />
           </label>
@@ -127,8 +130,8 @@
         </p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center justify-between gap-2">
-          <div class="row-2 grow items-center">
+        <label class="input flex w-full items-center justify-between gap-2">
+          <div class="flex gap-2 grow items-center">
             <Icon icon={LinkRound} />
             <input readonly class="ellipsize grow" value={npub} />
           </div>
@@ -153,7 +156,7 @@
           </p>
         {/snippet}
         {#snippet input()}
-          <label class="input input-bordered flex w-full items-center gap-2">
+          <label class="input flex w-full items-center gap-2">
             <Icon icon={LinkRound} />
             <input readonly value={$session.secret} class="grow" type="password" />
             <Button class="flex items-center" onclick={copyNsec}>
@@ -169,14 +172,15 @@
     <SignerStatus />
     {#if $session?.method === SessionMethod.Pomade}
       <div class="flex flex-col lg:flex-row gap-4 lg:gap-2 justify-end">
-        <Button class="btn" onclick={startPasswordReset}>
+        <Button onclick={startPasswordReset}>
           <Spinner {loading}>Update your password</Spinner>
         </Button>
-        <Button class="btn btn-primary" onclick={startRecovery}>Start holding your own keys</Button>
+        <Button class="button button-primary" onclick={startRecovery}
+          >Start holding your own keys</Button>
       </div>
     {/if}
   </div>
-  <div class="card2 bg-alt shadow-md">
+  <div class="card shadow-md">
     <div class="flex items-center justify-between">
       <strong class="flex items-center gap-3">
         <Icon icon={Settings} />
@@ -192,11 +196,11 @@
     </div>
     {#if showAdvanced}
       <div transition:slideAndFade class="flex flex-col gap-2 pt-4">
-        <Button class="btn btn-error" onclick={startDelete}>
+        <Button class="button button-error" onclick={startDelete}>
           <Icon icon={TrashBin2} />
           Delete your profile
         </Button>
       </div>
     {/if}
   </div>
-</div>
+</PageContent>

@@ -68,7 +68,7 @@
       </Button>
       <input
         type="text"
-        class="input input-bordered w-full"
+        class="input w-full"
         value={item}
         {placeholder}
         oninput={e => updateItem(index, e.currentTarget.value)} />
@@ -78,7 +78,7 @@
     </div>
   {/each}
   {#if allowAdd}
-    <Button onclick={addItem} class="btn btn-link w-fit px-0">
+    <Button class="button button-link w-fit px-0" onclick={addItem}>
       <Icon icon={AddCircle} size={5} />
       {#if addLabel}
         {@render addLabel?.()}

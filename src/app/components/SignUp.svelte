@@ -1,4 +1,5 @@
 <script lang="ts">
+  import cx from "classnames"
   import type {ClientOptions} from "@pomade/core"
   import type {Profile} from "@welshman/util"
   import {makeProfile, makeSecret, RELAYS, MESSAGING_RELAYS, makeEvent} from "@welshman/util"
@@ -100,18 +101,20 @@
       Censorship resistant digital spaces for communities. Meet new people, own your identity.
     </p>
     {#if hasPomade}
-      <Button onclick={flows.email.start} class="btn btn-primary">
+      <Button onclick={flows.email.start} class="button button-primary">
         <Icon icon={Letter} />
         Sign up with email
       </Button>
     {/if}
-    <Button onclick={flows.nostr.start} class="btn {hasPomade ? 'btn-neutral' : 'btn-primary'}">
+    <Button
+      onclick={flows.nostr.start}
+      class={cx(`button button-${hasPomade ? "neutral" : "primary"}`)}>
       <Icon icon={Key} />
       Generate a key
     </Button>
     <div class="text-sm">
       Already have an account?
-      <Button class="link" onclick={login}>Log in instead</Button>
+      <Button class="button button-link" onclick={login}>Log in instead</Button>
     </div>
   </ModalBody>
 </Modal>

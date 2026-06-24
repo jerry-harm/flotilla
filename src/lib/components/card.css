@@ -1,0 +1,64 @@
+@layer components {
+  .card {
+    @apply text-content bg-surface border-line rounded-3xl border-solid p-6;
+    border-width: var(--border-thick);
+    /* clip fill to the padding box so the opaque border owns the rounded
+       corners — otherwise the bg bleeds past the arc and specks white */
+    background-clip: padding-box;
+    box-shadow: var(--shadow-lg);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      border-color 0.2s ease;
+
+    &.card-sm {
+      @apply rounded-2xl p-4;
+      box-shadow: var(--shadow);
+    }
+
+    &.card-interactive {
+      @apply cursor-pointer;
+
+      &:hover {
+        @apply border-primary;
+      }
+    }
+
+    &.card-flat {
+      box-shadow: none;
+    }
+  }
+
+  /* nested cards & cards in dialogs lose their shadow */
+  .card .card,
+  .dialog .card {
+    box-shadow: none;
+  }
+}
+
+[data-fl-theme="clay"] .card {
+  box-shadow: var(--shadow-lg), var(--shadow-inset);
+}
+
+[data-fl-theme="clay"] .card-sm {
+  box-shadow: var(--shadow), var(--shadow-inset);
+}
+
+/* cards nested in another card (or a dialog) drop the raised clay treatment and
+   read flat — no offset shadow / inset, hairline border */
+[data-fl-theme="clay"] .card .card,
+[data-fl-theme="clay"] .dialog .card {
+  box-shadow: none;
+  border-width: 1px;
+}
+
+[data-fl-theme="clay"] .card-interactive:hover {
+  box-shadow:
+    10px 10px 0 rgba(var(--shadow-color), 0.18),
+    var(--shadow-inset);
+}
+
+[data-fl-theme="clay"] .card-interactive:active {
+  transform: translateY(2px);
+  box-shadow: 2px 2px 0 rgba(var(--shadow-color), 0.3);
+}

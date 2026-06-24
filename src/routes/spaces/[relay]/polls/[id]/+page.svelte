@@ -67,23 +67,23 @@
 <PageContent class="flex flex-col gap-2 p-2 sm:gap-4 sm:p-4">
   {#if $event}
     <div class="flex flex-col gap-3">
-      <NoteCard event={$event} {url} class="card2 bg-alt z-feature w-full">
-        <div class="col-3 ml-12 flex flex-col gap-3">
+      <NoteCard event={$event} {url} class="card z-feature w-full">
+        <div class="flex flex-col gap-3 ml-12 flex flex-col gap-3">
           <NoteContent showEntire event={$event} {url} />
           <CommentActions segment="polls" showActivity {url} event={$event} />
         </div>
       </NoteCard>
       {#if !showAll && $comments.length > 4}
         <div class="flex justify-center">
-          <Button class="btn btn-link" onclick={expand}>
+          <Button class="button button-link" onclick={expand}>
             <Icon icon={SortVertical} />
             Show all {$comments.length} comments
           </Button>
         </div>
       {/if}
       {#each $comments.slice(0, showAll ? undefined : 4) as reply (reply.id)}
-        <NoteCard event={reply} {url} class="card2 bg-alt z-feature w-full">
-          <div class="col-3 ml-12">
+        <NoteCard event={reply} {url} class="card z-feature w-full">
+          <div class="flex flex-col gap-3 ml-12">
             <NoteContent showEntire event={reply} {url} />
             <CommentActions segment="polls" event={reply} {url} />
           </div>
@@ -94,7 +94,7 @@
       <EventReply {url} event={$event} onClose={closeReply} onSubmit={closeReply} />
     {:else}
       <div class="flex justify-end">
-        <Button class="btn btn-primary" onclick={openReply}>Comment on this poll</Button>
+        <Button class="button button-primary" onclick={openReply}>Comment on this poll</Button>
       </div>
     {/if}
   {:else}

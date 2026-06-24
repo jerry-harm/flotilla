@@ -40,6 +40,11 @@ export const PLATFORM_NAME = import.meta.env.VITE_PLATFORM_NAME
 
 export const PLATFORM_ACCENT = import.meta.env.VITE_PLATFORM_ACCENT
 
+// components visual preset (see src/lib/components/theme.css). Selected per
+// deployment via VITE_THEME, which is assumed to be set to a known theme
+// (e.g. "clay" or "flat") — there is no default.
+export const FL_THEME = import.meta.env.VITE_THEME
+
 export const PLATFORM_DESCRIPTION = import.meta.env.VITE_PLATFORM_DESCRIPTION
 
 export const POMADE_SIGNERS = fromCsv(import.meta.env.VITE_POMADE_SIGNERS)

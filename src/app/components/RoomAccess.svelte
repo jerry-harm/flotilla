@@ -18,19 +18,19 @@
 
 {#if $room.isHidden}
   <Button
-    class="btn btn-neutral btn-sm tooltip tooltip-left"
+    class="button button-neutral button-sm tip tip-left"
     data-tip="This room is not visible to non-members.">
     <Icon size={4} icon={EyeClosed} />
   </Button>
 {:else if $room.isPrivate}
   <Button
-    class="btn btn-neutral btn-sm tooltip tooltip-left"
+    class="button button-neutral button-sm tip tip-left"
     data-tip="Only members can view messages.">
     <Icon size={4} icon={Lock} />
   </Button>
 {:else if $room.isRestricted}
   <Button
-    class="btn btn-neutral btn-sm tooltip tooltip-left"
+    class="button button-neutral button-sm tip tip-left"
     data-tip="Only members can send messages.">
     <Icon size={4} icon={Microphone} />
   </Button>

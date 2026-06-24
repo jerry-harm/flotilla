@@ -3,6 +3,7 @@
   import Check from "@assets/icons/check.svg?dataurl"
   import DangerTriangle from "@assets/icons/danger-triangle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
+  import Button from "@lib/components/Button.svelte"
   import RelayList from "@app/components/RelayList.svelte"
   import {pushModal} from "@app/modal"
 
@@ -22,9 +23,8 @@
     pushModal(RelayList, {title, subtitle, relays, addRelay, removeRelay, matchRelay})
 </script>
 
-<button
-  type="button"
-  class="btn font-normal flex h-[unset] w-full flex-nowrap py-4 text-left items-start justify-between"
+<Button
+  class="font-normal flex h-[unset] w-full flex-nowrap py-4 text-left items-start justify-between"
   {onclick}>
   <div class="flex grow flex-row items-start gap-4">
     <div class="flex h-7 w-7 shrink-0 items-center justify-center">
@@ -47,4 +47,4 @@
     {/if}
     {$relays.length}
   </div>
-</button>
+</Button>

@@ -79,28 +79,26 @@
   <label
     for={id}
     aria-label="Drag and drop files here."
-    style="background-image: url({url});"
-    class="relative flex h-24 w-24 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-solid border-base-content bg-base-300 bg-cover bg-center transition-all"
+    style="background-image: url({url}); border-color: {active ? 'var(--primary)' : 'var(--line)'};"
+    class="bg-surface-more relative flex h-24 w-24 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-solid bg-cover bg-center transition-all"
     class:transparent={!url}
-    class:border-primary={active}
     ondragenter={stopPropagation(preventDefault(onDragEnter))}
     ondragover={stopPropagation(preventDefault(onDragOver))}
     ondragleave={stopPropagation(preventDefault(onDragLeave))}
     ondrop={stopPropagation(preventDefault(onDrop))}>
     <div
-      class="absolute right-0 top-0 h-5 w-5 overflow-hidden rounded-full bg-primary"
-      class:bg-error={url}
-      class:bg-primary={!url}>
+      class="absolute right-0 top-0 h-5 w-5 overflow-hidden rounded-full"
+      style="background: {url ? 'var(--error)' : 'var(--primary)'};">
       {#if url}
         <span
           role="button"
           tabindex="-1"
           onmousedown={stopPropagation(onClear)}
           ontouchstart={stopPropagation(onClear)}>
-          <Icon icon={CloseCircle} class="scale-150 bg-base-300!" />
+          <Icon icon={CloseCircle} class="scale-150 bg-surface-more!" />
         </span>
       {:else}
-        <Icon icon={AddCircle} class="scale-150 bg-base-300!" />
+        <Icon icon={AddCircle} class="scale-150 bg-surface-more!" />
       {/if}
     </div>
     {#if !url}

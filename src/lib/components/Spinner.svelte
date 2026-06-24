@@ -1,20 +1,30 @@
 <script lang="ts">
-  import {slide, fade} from "svelte/transition"
+  import type {Snippet} from "svelte"
+  import cx from "classnames"
 
-  interface Props {
+  const {
+    children,
+    size = "md",
+    loading = true,
+    ...restProps
+  }: {
+    children?: Snippet
+    size?: "md" | "sm" | "xs"
     loading?: boolean
-    children?: import("svelte").Snippet
     class?: string
-  }
+  } = $props()
 
-  const {loading = false, children, ...props}: Props = $props()
+  const spinnerClass = $derived(
+    cx("spinner", {
+      "spinner-sm": size === "sm",
+      "spinner-xs": size === "xs",
+    }),
+  )
 </script>
 
-<span class="flex min-h-10 items-center justify-center {props.class}">
+<div class={cx("flex items-center gap-2", restProps.class)}>
   {#if loading}
-    <span class="pr-3" transition:slide|local={{axis: "x"}}>
-      <span class="loading loading-spinner" transition:fade|local={{duration: 100}}></span>
-    </span>
+    <span class={spinnerClass}></span>
   {/if}
   {@render children?.()}
-</span>
+</div>

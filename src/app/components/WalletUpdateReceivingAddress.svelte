@@ -4,6 +4,7 @@
   import {errorMessage} from "@lib/util"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
@@ -62,14 +63,14 @@
       <ModalSubtitle>Update your lightning address for receiving payments.</ModalSubtitle>
     </ModalHeader>
 
-    <div class="column gap-4">
-      <div class="column gap-2">
+    <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-2">
         <span> Lightning Address </span>
         <input
           type="text"
           placeholder="user@domain.com"
           bind:value={address}
-          class="input input-bordered flex w-full"
+          class="input flex w-full"
           disabled={loading} />
         <p class="text-xs opacity-75">
           You can enter one manually or use your connected wallet's address (if available). Leave
@@ -78,16 +79,19 @@
       </div>
 
       {#if walletLud16 && walletLud16 !== address}
-        <div class="card bg-base-200 p-4">
+        <div class="card card-sm bg-surface p-4">
           <div class="flex items-center justify-between gap-3">
-            <div class="column gap-1">
+            <div class="flex flex-col gap-1">
               <div class="flex items-center gap-2">
                 <Icon icon={Wallet} size={4} />
                 <span class="text-sm font-medium">Wallet Address</span>
               </div>
               <p class="text-xs opacity-75">{walletLud16}</p>
             </div>
-            <Button class="btn btn-outline btn-sm" onclick={useWalletAddress} disabled={loading}>
+            <Button
+              class="button button-outline button-sm"
+              onclick={useWalletAddress}
+              disabled={loading}>
               Use This
             </Button>
           </div>
@@ -96,10 +100,10 @@
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-neutral" onclick={back} disabled={loading}>Cancel</Button>
-    <Button class="btn btn-primary" onclick={save} disabled={loading}>
+    <Button class="button button-neutral" onclick={back} disabled={loading}>Cancel</Button>
+    <Button class="button button-primary" onclick={save} disabled={loading}>
       {#if loading}
-        <span class="loading loading-spinner loading-sm"></span>
+        <Spinner size="sm" />
       {:else}
         <Icon icon={CheckCircle} />
       {/if}

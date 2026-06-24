@@ -12,7 +12,8 @@
 </script>
 
 <div
-  class="relative flex h-8 items-center justify-between border-l-2 border-solid border-primary bg-base-300 px-2 pr-7 text-xs"
+  class="bg-surface-more relative flex h-8 items-center justify-between border-l-2 border-solid px-2 pr-7 text-xs"
+  style="border-color: var(--primary)"
   transition:slide>
   <p class="text-primary">Editing message</p>
   <Button onclick={clear} class="flex items-center">

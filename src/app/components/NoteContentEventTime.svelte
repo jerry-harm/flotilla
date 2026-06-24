@@ -12,7 +12,7 @@
   <div class="flex grow flex-col">
     <CalendarEventHeader event={props.event} />
     <div class="flex py-2 opacity-50">
-      <div class="h-px grow bg-base-content opacity-25"></div>
+      <div class="h-px grow opacity-25" style="background-color: var(--line)"></div>
     </div>
     <Content {...props} />
   </div>

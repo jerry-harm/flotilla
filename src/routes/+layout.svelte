@@ -1,5 +1,5 @@
 <script lang="ts">
-  import "@src/app.css"
+  import "@lib/components/theme.css"
   import "@welshman/editor/index.css"
   import * as nip19 from "nostr-tools/nip19"
   import type {Unsubscriber} from "svelte/store"
@@ -270,6 +270,7 @@
     unsubscribers.push(
       theme.subscribe($theme => {
         document.body.setAttribute("data-theme", $theme)
+        document.body.setAttribute("data-fl-theme", env.FL_THEME)
       }),
       userSettingsValues.subscribe($userSettingsValues => {
         // @ts-ignore
@@ -300,7 +301,7 @@
 {#await unsubscribe}
   <!-- pass -->
 {:then}
-  <div class={isMobile ? "mobile" : ""}>
+  <div class={isMobile ? "fl mobile" : "fl"} data-fl-theme={env.FL_THEME}>
     <AppContainer>
       {@render children()}
     </AppContainer>

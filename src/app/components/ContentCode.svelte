@@ -3,7 +3,7 @@
 </script>
 
 <code
-  class="w-full overflow-auto whitespace-pre rounded bg-neutral px-1 text-neutral-content text-sm"
+  class="bg-surface-more text-content w-full overflow-auto whitespace-pre rounded px-1 text-sm"
   class:block={isBlock}>
   {value.trim()}
 </code>

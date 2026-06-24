@@ -61,7 +61,7 @@
         <p>Nickname</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input flex w-full items-center gap-2">
           <Icon icon={UserCircle} />
           <input bind:value={values.profile.name} class="grow" type="text" />
         </label>
@@ -75,10 +75,8 @@
         <p>About You</p>
       {/snippet}
       {#snippet input()}
-        <textarea
-          class="textarea textarea-bordered leading-4 w-full"
-          rows="5"
-          bind:value={values.profile.about}></textarea>
+        <textarea class="textarea input leading-4 w-full" rows="5" bind:value={values.profile.about}
+        ></textarea>
       {/snippet}
       {#snippet info()}
         Give a brief introduction to why you're here.
@@ -90,14 +88,14 @@
           <p>Nostr Address</p>
         {/snippet}
         {#snippet input()}
-          <label class="input input-bordered flex w-full items-center gap-2">
+          <label class="input flex w-full items-center gap-2">
             <Icon icon={MapPoint} />
             <input bind:value={values.profile.nip05} class="grow" type="text" />
           </label>
         {/snippet}
         {#snippet info()}
           <p>
-            <Button class="link" onclick={() => pushModal(InfoHandle)}
+            <Button class="button button-link" onclick={() => pushModal(InfoHandle)}
               >What is a nostr address?</Button>
           </p>
         {/snippet}

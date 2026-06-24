@@ -67,14 +67,14 @@
 
 <PageContent class="flex flex-col gap-2 p-2 sm:gap-4 sm:p-4">
   {#if $event}
-    <div class="card2 bg-alt col-3 z-feature">
+    <div class="card flex flex-col gap-3 z-feature">
       <div class="flex items-start gap-4">
         <CalendarEventDate event={$event} />
         <div class="flex min-w-0 grow flex-col gap-1">
           <CalendarEventHeader event={$event} />
           <CalendarEventMeta event={$event} {url} />
           <div class="flex py-2 opacity-50">
-            <div class="h-px grow bg-base-content opacity-25"></div>
+            <div class="h-px grow opacity-25" style="background-color: var(--line)"></div>
           </div>
           <Content showEntire event={$event} {url} />
         </div>
@@ -85,15 +85,15 @@
     </div>
     {#if !showAll && $replies.length > 4}
       <div class="flex justify-center">
-        <Button class="btn btn-link" onclick={expand}>
+        <Button class="button button-link" onclick={expand}>
           <Icon icon={SortVertical} />
           Show all {$replies.length} replies
         </Button>
       </div>
     {/if}
     {#each sortBy(e => e.created_at, $replies).slice(0, showAll ? undefined : 4) as reply (reply.id)}
-      <NoteCard event={reply} {url} class="card2 bg-alt z-feature w-full">
-        <div class="col-3 ml-12">
+      <NoteCard event={reply} {url} class="card z-feature w-full">
+        <div class="flex flex-col gap-3 ml-12">
           <NoteContent showEntire event={reply} {url} />
           <CalendarEventActions event={reply} {url} />
         </div>
@@ -103,7 +103,7 @@
       <EventReply {url} event={$event} onClose={closeReply} onSubmit={closeReply} />
     {:else}
       <div class="flex justify-end px-2 pb-2">
-        <Button class="btn btn-primary" onclick={openReply}>
+        <Button class="button button-primary" onclick={openReply}>
           <Icon icon={Reply} />
           Leave comment
         </Button>

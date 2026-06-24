@@ -46,18 +46,18 @@
 
 <div class="flex grow flex-wrap justify-end gap-2">
   {#if h && showRoom}
-    <Link href={makeSpacePath(url, h)} class="btn btn-neutral btn-xs rounded-full">
+    <Link href={makeSpacePath(url, h)} class="button button-neutral button-xs rounded-full">
       Posted in #<RoomName {h} {url} />
     </Link>
   {/if}
   <div class="flex min-w-0 flex-wrap gap-2">
     {#each uniq(topics) as topic (topic)}
-      <button type="button" class="btn btn-xs rounded-full font-normal">
+      <button type="button" class="button button-xs rounded-full font-normal">
         #{normalizeTopic(topic)}
       </button>
     {/each}
   </div>
-  <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tooltip-left" />
+  <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
   <ThunkStatusOrDeleted {event}>
     <ClassifiedStatus {event} />
   </ThunkStatusOrDeleted>

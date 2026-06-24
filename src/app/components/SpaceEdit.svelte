@@ -144,10 +144,10 @@
             <span class="text-sm opacity-75">No icon selected</span>
           {/if}
           <div class="flex gap-2">
-            <IconPickerButton onSelect={handleIconSelect} class="btn btn-primary btn-sm">
+            <IconPickerButton onSelect={handleIconSelect} class="button button-primary button-sm">
               <Icon icon={StickerSmileSquare} size={4} />
             </IconPickerButton>
-            <label class="btn btn-neutral btn-sm cursor-pointer">
+            <label class="button button-neutral button-sm cursor-pointer">
               <Icon icon={UploadMinimalistic} size={4} />
               <input type="file" accept="image/*" class="hidden" onchange={handleImageUpload} />
             </label>
@@ -160,7 +160,7 @@
         <p>Name</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input flex w-full items-center gap-2">
           {#if imagePreview}
             <ImageIcon src={imagePreview} alt="" />
           {:else}
@@ -175,18 +175,17 @@
         <p class="flex flex-col items-start h-full">Description</p>
       {/snippet}
       {#snippet input()}
-        <textarea
-          bind:value={values.description}
-          class="min-h-24 textarea textarea-bordered flex w-full"></textarea>
+        <textarea bind:value={values.description} class="min-h-24 textarea input flex w-full"
+        ></textarea>
       {/snippet}
     </FieldInline>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={loading}>
+    <Button type="submit" class="button button-primary" disabled={loading}>
       <Spinner {loading}>Save Changes</Spinner>
     </Button>
   </ModalFooter>

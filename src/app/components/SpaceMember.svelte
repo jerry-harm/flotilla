@@ -86,10 +86,10 @@
   }
 </script>
 
-<div class="card2 card2-sm relative">
+<div class="card card-interactive card-sm relative">
   <button
     type="button"
-    class="absolute inset-0 cursor-pointer rounded-box"
+    class="absolute inset-0 cursor-pointer rounded-2xl"
     aria-label="View {displayProfileByPubkey(pubkey)}'s profile"
     onclick={openProfile}>
   </button>
@@ -109,14 +109,16 @@
     </div>
     {#if canAssign || canUnassign || canUnallow || canBan}
       <div class="pointer-events-auto relative shrink-0">
-        <Button class="btn btn-square btn-ghost btn-sm" onclick={() => (menuOpen = !menuOpen)}>
+        <Button
+          class="button button-ghost button-sm button-square"
+          onclick={() => (menuOpen = !menuOpen)}>
           <Icon icon={MenuDots} />
         </Button>
         {#if menuOpen}
           <Popover hideOnClick onClose={closeMenu}>
             <ul
               transition:fly
-              class="menu absolute right-0 z-popover mt-2 w-52 gap-1 rounded-box bg-base-100 p-2 shadow-md">
+              class="menu bg-surface absolute right-0 z-popover mt-2 w-52 gap-1 rounded-2xl p-2">
               {#if canAssign || canUnassign}
                 <li>
                   <Button onclick={editRoles}>

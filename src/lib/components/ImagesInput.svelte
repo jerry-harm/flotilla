@@ -87,8 +87,10 @@
   <div class="grid grid-cols-3 gap-3" role="list">
     {#each value as item, index (index)}
       <div
-        class="relative aspect-square cursor-move"
-        class:border-primary={draggedIndex === index}
+        class="relative aspect-square cursor-move rounded-2xl"
+        style:border={draggedIndex === index
+          ? "var(--border-thin) solid var(--primary)"
+          : undefined}
         draggable="true"
         role="listitem"
         aria-label="Draggable image"
@@ -98,9 +100,9 @@
         <img
           src={getImageUrl(item)}
           alt="Upload preview"
-          class="h-full w-full object-cover rounded-box" />
+          class="h-full w-full object-cover rounded-2xl" />
         <Button
-          class="absolute right-1 top-1 w-5 h-5 flex justify-center items-center rounded-full bg-base-100"
+          class="button button-neutral bg-surface absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full"
           onclick={() => removeItem(index)}>
           <Icon icon={CloseCircle} size={6} />
         </Button>
@@ -108,8 +110,8 @@
     {/each}
     <label
       for={id}
-      class="flex cursor-pointer aspect-square items-center justify-center rounded-lg border-2 border-dashed border-base-content text-sm"
-      class:border-primary={dropActive}
+      class="flex aspect-square cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed text-sm"
+      style:border-color={dropActive ? "var(--primary)" : "var(--line-strong)"}
       aria-label="Drag and drop images here or click to select"
       ondragenter={stopPropagation(preventDefault(onDragEnter))}
       ondragover={stopPropagation(preventDefault(onDragOver))}
@@ -117,7 +119,7 @@
       ondrop={stopPropagation(preventDefault(onDrop))}>
       <div class="flex flex-col items-center gap-2 text-center">
         <Icon icon={GallerySend} size={8} />
-        <p class="text-sm opacity-70">Drag and drop images or click to select</p>
+        <p class="text-muted text-sm">Drag and drop images or click to select</p>
       </div>
     </label>
   </div>

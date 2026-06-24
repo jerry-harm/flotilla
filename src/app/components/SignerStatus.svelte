@@ -28,7 +28,7 @@
 </script>
 
 {#if $session && $session.method !== SessionMethod.Anonymous}
-  <div class="card2 bg-alt flex flex-col gap-4">
+  <div class="card flex flex-col gap-4">
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between">
         <span class="text-xl font-bold">Signer Status</span>
@@ -69,7 +69,7 @@
       </div>
     </div>
     {#if isDisconnected}
-      <Button class="btn btn-outline btn-error" onclick={logout}>Logout to Reconnect</Button>
+      <Button class="button button-error" onclick={logout}>Logout to Reconnect</Button>
     {:else}
       <PomadeSessions />
     {/if}

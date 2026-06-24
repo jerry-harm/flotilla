@@ -37,29 +37,29 @@
   })
 </script>
 
-<div class="flex flex-col items-center gap-3 border-t border-base-content/10 py-4">
+<div class="flex flex-col items-center gap-3 divider py-4">
   <p class="text-sm opacity-75">Page {page} of {pageCount}</p>
   <div class="join">
-    <Button class="btn join-item btn-sm" disabled={page <= 1} onclick={goFirst}>
+    <Button class="button-sm" disabled={page <= 1} onclick={goFirst}>
       <Icon icon={DoubleAltArrowLeft} size={4} />
     </Button>
-    <Button class="btn join-item btn-sm" disabled={page <= 1} onclick={goPrev}>
+    <Button class="button-sm" disabled={page <= 1} onclick={goPrev}>
       <Icon icon={AltArrowLeft} size={4} />
     </Button>
     {#each pages as p, i (p)}
       {#if i > 0 && p - pages[i - 1] > 1}
-        <Button class="btn join-item btn-sm btn-disabled" disabled>…</Button>
+        <Button class="button-sm" disabled>…</Button>
       {/if}
       <Button
-        class={cx("btn join-item btn-sm", page === p && "btn-primary")}
+        class={cx(`button button-${page === p ? "primary" : "neutral"} button-sm`)}
         onclick={() => goToPage(p)}>
         {p}
       </Button>
     {/each}
-    <Button class="btn join-item btn-sm" disabled={page >= pageCount} onclick={goNext}>
+    <Button class="button-sm" disabled={page >= pageCount} onclick={goNext}>
       <Icon icon={AltArrowRight} size={4} />
     </Button>
-    <Button class="btn join-item btn-sm" disabled={page >= pageCount} onclick={goLast}>
+    <Button class="button-sm" disabled={page >= pageCount} onclick={goLast}>
       <Icon icon={DoubleAltArrowRight} size={4} />
     </Button>
   </div>

@@ -96,7 +96,7 @@
         <p>Email*</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input input-group flex w-full items-center gap-2">
           <Icon icon={Letter} />
           <input type="email" bind:value={email} />
         </label>
@@ -107,24 +107,24 @@
         <p>Password*</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input input-group flex w-full items-center gap-2">
           <Icon icon={Key} />
           <input type="password" bind:value={password} />
         </label>
       {/snippet}
     </FieldInline>
     <p class="text-sm">
-      Forgot your password? <Button class="link" onclick={loginWithOTP}
+      Forgot your password? <Button class="button button-link" onclick={loginWithOTP}
         >Log in with a one-time access code</Button
       >.
     </p>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back} disabled={loading}>
+    <Button class="button button-link" onclick={back} disabled={loading}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={loading || !email || !password}>
+    <Button type="submit" class="button button-primary" disabled={loading || !email || !password}>
       <Spinner {loading}>Log in</Spinner>
       <Icon icon={AltArrowRight} />
     </Button>

@@ -8,5 +8,5 @@
 </script>
 
 <Button class="m-auto h-screen w-screen cursor-pointer p-4" onclick={back}>
-  <ContentLinkBlockImage {value} {event} class="m-auto max-h-full max-w-full rounded-box" />
+  <ContentLinkBlockImage {value} {event} class="m-auto max-h-full max-w-full rounded-2xl" />
 </Button>

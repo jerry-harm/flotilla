@@ -134,15 +134,17 @@
     </ModalHeader>
     <div>
       {#if loading}
-        <p class="center">
+        <p class="flex-justify-center items-center">
           <Spinner {loading}>Requesting an invite link...</Spinner>
         </p>
       {:else if isGenericError}
-        <p class="center text-center">
+        <p class="flex-justify-center items-center">
           Unable to reach the relay. Please check your connection and try again.
         </p>
       {:else if isExplicitAuthError}
-        <p class="center">Oops! It looks like you're not a member of this relay.</p>
+        <p class="flex-justify-center items-center">
+          Oops! It looks like you're not a member of this relay.
+        </p>
       {:else}
         <div class="flex flex-col items-center gap-6">
           <div class="w-48">
@@ -153,13 +155,13 @@
               <div class="flex w-full gap-2">
                 {#if canShare}
                   <Button
-                    class="input input-bordered flex w-12 shrink-0 items-center justify-center p-0"
+                    class="input flex w-12 shrink-0 items-center justify-center p-0"
                     onclick={shareInvite}>
                     <Icon icon={Upload} />
                   </Button>
                 {/if}
 
-                <label class="input input-bordered flex min-w-0 flex-1 items-center gap-2">
+                <label class="input flex min-w-0 flex-1 items-center gap-2">
                   <Icon icon={LinkRound} class="shrink-0" />
                   <input bind:value={invite} class="min-w-0 flex-1 truncate" type="text" readonly />
                   <Button class="shrink-0" onclick={copyInvite}>
@@ -195,18 +197,18 @@
   </ModalBody>
   <ModalFooter>
     {#if canAddMembers}
-      <Button class="btn btn-link" onclick={back}>
+      <Button class="button button-link" onclick={back}>
         <Icon icon={AltArrowLeft} />
         Go back
       </Button>
       <Button
-        class="btn btn-primary"
+        class="button button-primary"
         onclick={addMembers}
         disabled={adding || pubkeys.length === 0}>
         <Spinner loading={adding}>Save</Spinner>
       </Button>
     {:else}
-      <Button class="btn btn-primary grow" onclick={back}>Done</Button>
+      <Button class="button button-primary grow" onclick={back}>Done</Button>
     {/if}
   </ModalFooter>
 </Modal>

@@ -40,17 +40,17 @@
   {#each displayPubkeys as pubkey (pubkey)}
     <div
       class={cx(
-        "z-feature inline-block flex items-center justify-center rounded-full bg-base-100",
+        "z-feature inline-block flex items-center justify-center rounded-full bg-surface",
         dimensions.box,
         dimensions.overlap,
       )}>
-      <ProfileCircle class={cx(dimensions.box, "bg-base-300")} {pubkey} {size} />
+      <ProfileCircle class={cx(dimensions.box, "bg-surface-more")} {pubkey} {size} />
     </div>
   {/each}
   {#if overflowCount > 0}
     <div
       class={cx(
-        "z-feature inline-flex items-center justify-center rounded-full bg-neutral font-medium text-neutral-content",
+        "z-feature inline-flex items-center justify-center rounded-full bg-surface font-medium text-content",
         dimensions.box,
         dimensions.overlap,
         dimensions.overflow,

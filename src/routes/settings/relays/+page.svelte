@@ -22,6 +22,7 @@
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import ForbiddenCircle from "@assets/icons/forbidden-circle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
+  import PageContent from "@lib/components/PageContent.svelte"
   import RelaySettingsItem from "@app/components/RelaySettingsItem.svelte"
   import RelaySettingsHealthChecks from "@app/components/RelaySettingsHealthChecks.svelte"
   import {hasNip50} from "@app/relays"
@@ -43,9 +44,9 @@
   })
 </script>
 
-<div class="content flex flex-col gap-4">
+<PageContent>
   <RelaySettingsHealthChecks />
-  <div class="card2 bg-alt flex flex-col gap-4 shadow-md">
+  <div class="card flex flex-col gap-4 shadow-md">
     <strong class="flex items-center gap-3 text-lg">
       <Icon icon={Server} />
       Your Relays
@@ -92,4 +93,4 @@
       addRelay={addBlockedRelay}
       removeRelay={removeBlockedRelay} />
   </div>
-</div>
+</PageContent>

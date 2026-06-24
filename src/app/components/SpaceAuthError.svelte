@@ -54,20 +54,19 @@
         url,
       )}:
     </p>
-    <p class="bg-alt card2 welshman-content">
+    <p class="card welshman-content">
       {@html renderAsHtml(parse({content: ucFirst(error)}))}
     </p>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go Home
     </Button>
     <div class="flex gap-2">
-      <Button class="btn btn-outline btn-error" onclick={leaveSpace} disabled={loading}>
-        Leave Space
-      </Button>
-      <Button type="submit" class="btn btn-primary" disabled={loading}>
+      <Button class="button button-error" onclick={leaveSpace} disabled={loading}
+        >Leave Space</Button>
+      <Button type="submit" class="button button-primary" disabled={loading}>
         Request Access
         <Icon icon={AltArrowRight} />
       </Button>

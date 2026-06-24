@@ -24,7 +24,7 @@
 
 <div class="flex flex-col gap-2">
   {#each spaceUrls as url (url)}
-    <div class="card2 bg-alt flex flex-row items-center gap-2">
+    <div class="card flex flex-row items-center gap-2">
       <div class="shrink-0">
         <RelayIcon {url} size={12} />
       </div>
@@ -34,18 +34,18 @@
           {url}
         </div>
       </div>
-      <Link class="btn btn-primary" href={makeSpacePath(url)}>
+      <Link class="button button-primary" href={makeSpacePath(url)}>
         Go to space
         <Icon icon={AltArrowRight} />
       </Link>
     </div>
   {:else}
-    <div class="card2 bg-alt text-center">
+    <div class="card text-center">
       <p class="opacity-75">No spaces found for this user</p>
     </div>
   {/each}
   <ModalFooter>
-    <Button onclick={back} class="hidden md:btn md:btn-link">
+    <Button onclick={back} class="button button-link hidden md:flex">
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>

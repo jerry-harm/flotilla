@@ -85,7 +85,7 @@
         <p>Your Key*</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input input-group flex w-full items-center gap-2">
           <Icon icon={Key} />
           <input type="password" bind:value={keyInput} placeholder="nsec1..." />
         </label>
@@ -97,14 +97,14 @@
           <p>Password*</p>
         {/snippet}
         {#snippet input()}
-          <label class="input input-bordered flex w-full items-center gap-2">
+          <label class="input input-group flex w-full items-center gap-2">
             <Icon icon={Key} />
             <input type="password" bind:value={password} placeholder="Your password" />
           </label>
         {/snippet}
       </FieldInline>
     {/if}
-    <div class="card2 card2-sm bg-alt flex flex-col gap-2 text-sm">
+    <div class="card card-sm flex flex-col gap-2 text-sm">
       <strong class="flex items-center gap-2">
         <Icon icon={Danger} />
         Please note!
@@ -117,11 +117,11 @@
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back} disabled={loading}>
+    <Button class="button button-link" onclick={back} disabled={loading}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={!canSubmit}>
+    <Button type="submit" class="button button-primary" disabled={!canSubmit}>
       <Spinner {loading}>Log in</Spinner>
       <Icon icon={AltArrowRight} />
     </Button>

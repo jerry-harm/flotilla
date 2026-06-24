@@ -60,7 +60,7 @@
         <p>Invite code*</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input input-group flex w-full items-center gap-2">
           <Icon icon={LinkRound} />
           <input bind:value class="grow" type="text" />
         </label>
@@ -68,11 +68,11 @@
     </Field>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={loading}>
+    <Button type="submit" class="button button-primary" disabled={loading}>
       <Spinner {loading}>Join Space</Spinner>
       <Icon icon={AltArrowRight} />
     </Button>

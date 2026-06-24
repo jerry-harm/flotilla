@@ -35,11 +35,11 @@
     <p class="text-center">Your local database will be cleared.</p>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={loading}>
+    <Button type="submit" class="button button-primary" disabled={loading}>
       <Spinner {loading}>Log Out</Spinner>
     </Button>
   </ModalFooter>

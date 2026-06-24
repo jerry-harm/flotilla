@@ -108,7 +108,7 @@
         {/snippet}
         {#snippet input()}
           <select
-            class="select select-bordered w-full"
+            class="select input w-full"
             bind:value={selectedDeviceId}
             disabled={startWithoutMic}
             aria-label="Microphone">
@@ -124,11 +124,11 @@
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={goBack}>
+    <Button class="button button-link" onclick={goBack}>
       <Icon icon={AltArrowLeft} />
       Don't join
     </Button>
-    <Button class="btn btn-primary" onclick={joinVoice}>
+    <Button class="button button-primary" onclick={joinVoice}>
       Join voice
       <Icon icon={AltArrowRight} />
     </Button>

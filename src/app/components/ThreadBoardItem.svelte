@@ -25,7 +25,7 @@
   const goToThread = () => goto(path)
 </script>
 
-<tr class="cursor-pointer hover:bg-base-200/40 text-sm" onclick={goToThread}>
+<tr class="cursor-pointer transition-colors hover:bg-surface text-sm" onclick={goToThread}>
   <td class="px-4 py-2 align-top">
     <Link href={path} class="ellipsize font-semibold">
       {title || "Untitled thread"}

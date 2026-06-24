@@ -70,7 +70,7 @@
     <strong>Goals</strong>
   {/snippet}
   {#snippet action()}
-    <Button class="btn btn-primary btn-sm" onclick={createGoal}>
+    <Button class="button button-primary button-sm" onclick={createGoal}>
       <Icon icon={Add} />
       Create
     </Button>

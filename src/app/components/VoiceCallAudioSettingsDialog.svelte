@@ -95,7 +95,7 @@
         {/snippet}
         {#snippet input()}
           <select
-            class="select select-bordered w-full"
+            class="select input w-full"
             bind:value={selectedInput}
             onchange={onInputChange}
             aria-label="Microphone">
@@ -115,7 +115,7 @@
           {/snippet}
           {#snippet input()}
             <select
-              class="select select-bordered w-full"
+              class="select input w-full"
               bind:value={selectedOutput}
               onchange={onOutputChange}
               aria-label="Speaker">
@@ -135,7 +135,7 @@
         {/snippet}
         {#snippet input()}
           <select
-            class="select select-bordered w-full"
+            class="select input w-full"
             bind:value={selectedVideo}
             onchange={onVideoChange}
             aria-label="Camera">
@@ -151,6 +151,6 @@
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-primary w-full" onclick={onDone}>Done</Button>
+    <Button class="button button-primary button-block" onclick={onDone}>Done</Button>
   </ModalFooter>
 </Modal>

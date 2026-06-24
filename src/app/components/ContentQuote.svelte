@@ -48,20 +48,21 @@
       <NoteContent {url} event={$quote} />
     {:else if $quote.kind === MESSAGE}
       <div
-        class="border-l-2 border-solid border-l-primary py-1 pl-2 opacity-90"
-        style="background-color: color-mix(in srgb, var(--color-primary) 10%, var(--color-base-300) 90%);">
+        class="border-l-2 border-solid py-1 pl-2 opacity-90"
+        style="border-left-color: var(--primary); background-color: color-mix(in srgb, var(--primary) 10%, var(--surface-more) 90%);">
         <NoteContentMinimal trimParent {url} event={$quote} />
       </div>
     {:else}
       <NoteCard
         event={$quote}
         {url}
-        class="border border-solid border-base-content/20 rounded-box p-4">
+        class="border border-solid rounded-2xl p-4"
+        style="border-color: var(--line)">
         <NoteContentMinimal {url} event={$quote} />
       </NoteCard>
     {/if}
   {:else}
-    <div class="rounded-box p-4">
+    <div class="rounded-2xl p-4">
       <Spinner loading>Loading event...</Spinner>
     </div>
   {/if}

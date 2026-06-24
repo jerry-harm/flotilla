@@ -12,6 +12,7 @@
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import {errorMessage} from "@lib/util"
   import QRCode from "@app/components/QRCode.svelte"
   import {createInvoice} from "@app/lightning"
@@ -67,21 +68,21 @@
       <ModalSubtitle>Use your wallet to receive Bitcoin payments over lightning.</ModalSubtitle>
     </ModalHeader>
     {#if invoice}
-      <div class="card2 bg-alt flex flex-col gap-2">
+      <div class="card flex flex-col gap-2">
         <div class="flex flex-col items-center gap-6 pt-4">
           <QRCode code={invoice.paymentRequest} class="w-full max-w-64" />
           <p class="text-center text-sm opacity-75">Scan with your wallet, or click to copy.</p>
         </div>
       </div>
     {:else}
-      <div class="card2 bg-alt flex flex-col gap-2">
+      <div class="card flex flex-col gap-2">
         <FieldInline>
           {#snippet label()}
             Amount (satoshis)
           {/snippet}
           {#snippet input()}
             <div class="flex grow justify-end">
-              <label class="input input-bordered flex items-center gap-2">
+              <label class="input flex items-center gap-2">
                 <Icon icon={Bolt} />
                 <input bind:value={sats} type="number" class="w-14" placeholder="0" />
               </label>
@@ -93,19 +94,19 @@
     {/if}
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
     {#if invoice}
-      <Button class="btn btn-neutral" onclick={reset} disabled={loading}>
+      <Button class="button button-neutral" onclick={reset} disabled={loading}>
         <Icon icon={Refresh} />
         Re-generate
       </Button>
     {:else}
-      <Button class="btn btn-primary" onclick={create} disabled={loading}>
+      <Button class="button button-primary" onclick={create} disabled={loading}>
         {#if loading}
-          <span class="loading loading-spinner loading-sm"></span>
+          <Spinner size="sm" />
         {:else}
           <Icon icon={Bolt} />
         {/if}

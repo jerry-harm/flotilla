@@ -8,7 +8,7 @@
   const {...props}: Props = $props()
 </script>
 
-<div class="col-1 h-full {props.class}">
+<div class="content-search {props.class}">
   <div class="z-feature">
     <div class="content-sizing">
       {@render props.input?.()}

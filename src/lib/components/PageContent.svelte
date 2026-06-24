@@ -5,16 +5,14 @@
   interface Props {
     element?: Element
     children?: Snippet
+    noPad?: boolean
     [key: string]: any
   }
 
-  let {children, element = $bindable(), ...props}: Props = $props()
+  let {children, element = $bindable(), noPad, ...props}: Props = $props()
 
   const className = $derived(
-    cx(
-      props.class,
-      "scroll-container z-feature flex flex-col min-h-0 w-full min-w-0 overflow-y-auto overflow-x-hidden mb-14 md:mb-0",
-    ),
+    cx("page__content scroll-container", props.class, {"page__content--no-pad": noPad}),
   )
 </script>
 

@@ -27,24 +27,20 @@
   )
 
   const innerClass = $derived(
-    cx(
-      "relative text-base-content text-base-content grow pointer-events-auto",
-      "rounded-t-box sm:rounded-box",
-      {
-        "bg-alt shadow-m max-h-[90vh] flex flex-col max-w-full pb-sai sm:pb-0": !fullscreen,
-      },
-    ),
+    cx("dialog relative text-content grow pointer-events-auto", "rounded-t-2xl sm:rounded-3xl", {
+      "bg-surface max-h-[90vh] flex flex-col max-w-full pb-sai sm:pb-0": !fullscreen,
+    }),
   )
 
   const buttonClass = $derived(
-    cx("absolute right-3 z-tooltip btn btn-circle btn-neutral btn-sm", {
+    cx("absolute right-3 z-tooltip", {
       "top-3": fullscreen,
       "-top-4 mr-sai": !fullscreen,
     }),
   )
 </script>
 
-<div class="dialog center fixed inset-0 z-modal">
+<div class="dialog flex justify-center items-center fixed inset-0 z-modal">
   <button
     type="button"
     aria-label="Close dialog"
@@ -53,9 +49,14 @@
     onclick={onClose}>
   </button>
   <div class={wrapperClass}>
-    <div class={innerClass} transition:fly>
+    <div
+      class={innerClass}
+      style={!fullscreen ? "box-shadow: var(--shadow-lg)" : undefined}
+      transition:fly>
       {#if !noEscape}
-        <Button class={buttonClass} onclick={onClose}>
+        <Button
+          class={cx("button button-neutral button-sm button-circle", buttonClass)}
+          onclick={onClose}>
           <Icon icon={Close} size={6} />
         </Button>
       {/if}

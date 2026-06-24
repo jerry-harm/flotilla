@@ -84,12 +84,12 @@
     {#key $toast.id}
       <div
         role="alert"
-        class="alert relative flex justify-center whitespace-normal text-left"
-        class:bg-base-100={theme === "info"}
-        class:text-base-content={theme === "info"}
-        class:alert-error={theme === "error"}>
+        class="card relative flex justify-center whitespace-normal text-left"
+        class:text-content={theme === "info"}
+        class:text-error={theme === "error"}
+        style={theme === "error" ? "border-color: var(--error)" : ""}>
         <Button
-          class="absolute -top-2 -right-2 btn btn-circle btn-neutral btn-xs hidden md:inline-flex flex justify-center items-center"
+          class="button button-neutral button-xs button-circle absolute -top-2 -right-2 hidden md:inline-flex flex justify-center items-center"
           onclick={onClose}>
           <Icon icon={Close} size={4} />
         </Button>
@@ -97,7 +97,7 @@
           {#if $toast.message}
             {@html renderAsHtml(parse({content: $toast.message}))}
             {#if $toast.action}
-              <Button class="cursor-pointer underline" onclick={onActionClick}>
+              <Button class="button button-link cursor-pointer underline" onclick={onActionClick}>
                 {$toast.action.message}
               </Button>
             {/if}

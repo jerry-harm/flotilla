@@ -28,7 +28,7 @@
 </script>
 
 <PageContent class="flex flex-col gap-4 p-4">
-  <div class="card2 bg-alt flex flex-col gap-4">
+  <div class="card flex flex-col gap-4">
     <div class="flex justify-between">
       <div class="relative flex gap-4">
         <div class="relative">
@@ -42,9 +42,9 @@
         </div>
       </div>
       {#if $userIsAdmin}
-        <Button class="btn btn-primary" onclick={startEdit}>
+        <Button class="button button-primary" onclick={startEdit}>
           <Icon icon={Pen} />
-          Edit
+          <span class="hidden sm:inline">Edit</span>
         </Button>
       {/if}
     </div>
@@ -66,7 +66,7 @@
       </div>
     {/if}
     {#if $relay}
-      {@const {pubkey, software, version, supported_nips, limitation} = $relay}
+      {@const {pubkey, software, version, limitation} = $relay}
       <div class="flex flex-wrap gap-1">
         {#if pubkey}
           <div class="badge badge-neutral text-wrap h-auto">
@@ -87,11 +87,6 @@
           <div class="badge badge-neutral text-wrap h-auto">
             <span class="ellipsize">Version: {version}</span>
           </div>
-        {/if}
-        {#if Array.isArray(supported_nips)}
-          <p class="badge badge-neutral text-wrap h-auto">
-            <span class="ellipsize">Supported NIPs: {supported_nips.join(", ")}</span>
-          </p>
         {/if}
         {#if limitation?.auth_required}
           <p class="badge badge-warning">

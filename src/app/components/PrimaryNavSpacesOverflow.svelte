@@ -8,8 +8,7 @@
   const {urls}: Props = $props()
 </script>
 
-<div
-  class="flex max-h-[80vh] flex-col overflow-y-auto rounded-box border border-solid border-base-content/15 bg-base-200 p-1 shadow-xl">
+<div class="flex max-h-[80vh] flex-col overflow-y-auto rounded-2xl border border-solid bg-surface p-1 shadow-xl border-line">
   {#each urls as url (url)}
     <PrimaryNavItemSpace {url} showTooltip={false} />
   {/each}

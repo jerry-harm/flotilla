@@ -84,7 +84,7 @@
       {/if}
     </div>
   </div>
-  <label class="input input-bordered flex items-center relative">
+  <label class="input input-group flex items-center relative">
     <input
       list="time-options"
       class="grow"

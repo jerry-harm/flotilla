@@ -32,7 +32,7 @@
         <Link
           replaceState
           href="/settings/alerts"
-          class="aspect-square btn h-[unset] btn-neutral flex flex-col gap-2 text-center">
+          class="aspect-square button button-neutral h-[unset] flex flex-col gap-2 text-center">
           <Icon icon={Bell} size={5} />
           Alerts
         </Link>
@@ -40,7 +40,7 @@
           <Link
             replaceState
             href="/settings/wallet"
-            class="aspect-square btn h-[unset] btn-neutral flex flex-col gap-2 text-center">
+            class="aspect-square button button-neutral h-[unset] flex flex-col gap-2 text-center">
             <Icon icon={Wallet} size={5} />
             Wallet
           </Link>
@@ -48,21 +48,21 @@
         <Link
           replaceState
           href="/settings/relays"
-          class="aspect-square btn h-[unset] btn-neutral flex flex-col gap-2 text-center">
+          class="aspect-square button button-neutral h-[unset] flex flex-col gap-2 text-center">
           <Icon icon={Server} size={5} />
           Relays
         </Link>
         <Link
           replaceState
           href="/settings/content"
-          class="aspect-square btn h-[unset] btn-neutral flex flex-col gap-2 text-center">
+          class="aspect-square button button-neutral h-[unset] flex flex-col gap-2 text-center">
           <Icon icon={GalleryMinimalistic} size={5} />
           Content
         </Link>
         <Link
           replaceState
           href="/settings/privacy"
-          class="aspect-square btn h-[unset] btn-neutral flex flex-col gap-2 text-center">
+          class="aspect-square button button-neutral h-[unset] flex flex-col gap-2 text-center">
           <Icon icon={Shield} size={5} />
           Privacy
         </Link>

@@ -76,17 +76,17 @@
       <ModalSubtitle>on <RelayName {url} class="text-primary" /></ModalSubtitle>
     </ModalHeader>
     {#if $roles.length === 0}
-      <div class="card2 bg-base-200 p-4 text-sm opacity-70">
+      <div class="card bg-surface p-4 text-sm opacity-70">
         No roles yet. Create one to start organizing members.
       </div>
     {:else}
       <div class="flex flex-col gap-2">
         {#each $roles as role (role.id)}
-          <div class="card2 card2-sm bg-alt flex justify-between gap-2">
+          <div class="card card-sm flex justify-between gap-2">
             <RoleItem {role} />
             <div class="relative shrink-0">
               <Button
-                class="btn btn-square btn-ghost btn-sm"
+                class="button button-ghost button-sm button-square"
                 onclick={() => (menuRoleId = menuRoleId === role.id ? undefined : role.id)}>
                 <Icon icon={MenuDots} />
               </Button>
@@ -94,7 +94,7 @@
                 <Popover hideOnClick onClose={closeMenu}>
                   <ul
                     transition:fly
-                    class="menu absolute right-0 z-popover mt-2 w-52 gap-1 rounded-box bg-base-100 p-2 shadow-md">
+                    class="menu bg-surface absolute right-0 z-popover mt-2 w-52 gap-1 rounded-2xl p-2">
                     <li>
                       <Button onclick={() => addMembers(role)}>
                         <Icon icon={AddCircle} />
@@ -123,11 +123,11 @@
     {/if}
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button class="btn btn-primary" onclick={createRole}>
+    <Button class="button button-primary" onclick={createRole}>
       <Icon icon={AddCircle} />
       Create Role
     </Button>

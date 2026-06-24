@@ -188,13 +188,13 @@
       <ModalTitle>Create a Poll</ModalTitle>
       <ModalSubtitle>Ask a question and collect votes right in the feed.</ModalSubtitle>
     </ModalHeader>
-    <div class="col-8 relative">
+    <div class="flex flex-col gap-8 relative">
       <Field>
         {#snippet label()}
           <p>Question*</p>
         {/snippet}
         {#snippet input()}
-          <label class="input input-bordered flex w-full items-center gap-2">
+          <label class="input flex w-full items-center gap-2">
             <!-- svelte-ignore a11y_autofocus -->
             <input
               autofocus={!isMobile}
@@ -224,7 +224,7 @@
                 <div class="cursor-move opacity-70" aria-label="Drag handle">
                   <Icon icon={HamburgerMenu} size={4} />
                 </div>
-                <label class="input input-bordered flex w-full items-center gap-2">
+                <label class="input flex w-full items-center gap-2">
                   <input
                     value={option.value}
                     class="grow"
@@ -232,12 +232,14 @@
                     placeholder={`Option ${index + 1}`}
                     oninput={e => updateOption(option.id, e.currentTarget.value)} />
                 </label>
-                <Button class="btn btn-ghost btn-sm" onclick={() => removeOption(option.id)}>
+                <Button
+                  class="button button-ghost button-sm"
+                  onclick={() => removeOption(option.id)}>
                   <Icon icon={MinusCircle} size={4} />
                 </Button>
               </div>
             {/each}
-            <Button class="btn btn-outline btn-sm self-end" onclick={addOption}>
+            <Button class="button button-outline button-sm self-end" onclick={addOption}>
               <Icon icon={PlusCircle} size={4} />
               Add option
             </Button>
@@ -251,7 +253,7 @@
             Poll type
           {/snippet}
           {#snippet input()}
-            <select class="select select-bordered w-full max-w-xs" bind:value={pollType}>
+            <select class="select input w-full max-w-xs" bind:value={pollType}>
               <option value="singlechoice">Single choice</option>
               <option value="multiplechoice">Multiple choice</option>
             </select>
@@ -269,11 +271,11 @@
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back} disabled={loading}>
+    <Button class="button button-link" onclick={back} disabled={loading}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={loading}>
+    <Button type="submit" class="button button-primary" disabled={loading}>
       <Spinner {loading}>Create Poll</Spinner>
     </Button>
   </ModalFooter>

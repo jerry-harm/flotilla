@@ -86,7 +86,7 @@
       </div>
     {/each}
   </div>
-  <label class="input input-bordered flex w-full items-center gap-2" bind:this={label}>
+  <label class="input flex w-full items-center gap-2" bind:this={label}>
     <Icon icon={Magnifier} />
     <input
       bind:value={$term}

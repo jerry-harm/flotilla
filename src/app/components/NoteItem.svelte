@@ -40,11 +40,11 @@
     })
 </script>
 
-<NoteCard {event} {url} class="cv card2">
+<NoteCard {event} {url} class="cv card card-interactive">
   <NoteContent {event} expandMode="inline" />
   <div class="flex w-full justify-between gap-2">
-    <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tooltip-right">
-      <EmojiButton {onEmoji} class="btn btn-neutral btn-xs h-[26px] rounded-box">
+    <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-right">
+      <EmojiButton {onEmoji} class="button button-neutral button-xs h-[26px] rounded-2xl">
         <Icon icon={SmileCircle} size={4} />
       </EmojiButton>
     </ReactionSummary>

@@ -109,14 +109,14 @@
 </script>
 
 <div class="relative">
-  <Button class="btn btn-circle btn-ghost btn-sm" onclick={toggleMenu}>
+  <Button class="button button-ghost button-sm button-circle" onclick={toggleMenu}>
     <Icon icon={MenuDots} />
   </Button>
   {#if isOpen}
     <Popover hideOnClick onClose={closeMenu}>
       <ul
         transition:fly
-        class="menu absolute right-0 z-popover mt-2 w-48 gap-1 rounded-box bg-base-100 p-2 shadow-md">
+        class="menu bg-surface absolute right-0 z-popover mt-2 w-48 gap-1 rounded-2xl p-2">
         {#if event.pubkey === $pubkey}
           <li>
             <Button onclick={deleteReport}>

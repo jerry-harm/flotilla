@@ -43,7 +43,10 @@
     <strong>Recent Activity</strong>
   {/snippet}
   {#snippet action()}
-    <Button class="btn btn-neutral btn-sm btn-square" aria-label="Search" onclick={openSearch}>
+    <Button
+      class="button button-neutral button-sm button-square"
+      aria-label="Search"
+      onclick={openSearch}>
       <Icon size={4} icon={Magnifier} />
     </Button>
   {/snippet}

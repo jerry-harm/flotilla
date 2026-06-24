@@ -8,4 +8,4 @@
   const {children}: Props = $props()
 </script>
 
-<p class="text-center text-sm opacity-75">{@render children()}</p>
+<p class="text-muted text-center text-sm">{@render children()}</p>

@@ -66,23 +66,23 @@
 <PageContent class="flex flex-col gap-2 p-2 sm:gap-4 sm:p-4">
   {#if $event}
     <div class="flex flex-col gap-3">
-      <NoteCard event={$event} {url} class="card2 bg-alt z-feature w-full">
-        <div class="col-3 ml-12">
+      <NoteCard event={$event} {url} class="card z-feature w-full">
+        <div class="flex flex-col gap-3 ml-12">
           <NoteContent showEntire event={{...$event, content: summary}} {url} />
           <GoalActions showRoom event={$event} {url} />
         </div>
       </NoteCard>
       {#if !showAll && $replies.length > 4}
         <div class="flex justify-center">
-          <Button class="btn btn-link" onclick={expand}>
+          <Button class="button button-link" onclick={expand}>
             <Icon icon={SortVertical} />
             Show all {$replies.length} replies
           </Button>
         </div>
       {/if}
       {#each $replies.slice(0, showAll ? undefined : 4) as reply (reply.id)}
-        <NoteCard event={reply} {url} class="card2 bg-alt z-feature w-full">
-          <div class="col-3 ml-12">
+        <NoteCard event={reply} {url} class="card z-feature w-full">
+          <div class="flex flex-col gap-3 ml-12">
             <NoteContent showEntire event={reply} {url} />
             <CommentActions segment="goals" event={reply} {url} />
           </div>
@@ -93,7 +93,7 @@
       <EventReply {url} event={$event} onClose={closeReply} onSubmit={closeReply} />
     {:else}
       <div class="flex justify-end">
-        <Button class="btn btn-primary" onclick={openReply}>
+        <Button class="button button-primary" onclick={openReply}>
           <Icon icon={Reply} />
           Comment on this goal
         </Button>

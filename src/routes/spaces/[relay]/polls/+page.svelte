@@ -70,7 +70,7 @@
     <strong>Polls</strong>
   {/snippet}
   {#snippet action()}
-    <Button class="btn btn-primary btn-sm" onclick={createPoll}>
+    <Button class="button button-primary button-sm" onclick={createPoll}>
       <Icon icon={Add} />
       Create
     </Button>

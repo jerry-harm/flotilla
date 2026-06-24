@@ -46,8 +46,8 @@
       <p class="text-sm opacity-75">{daysOld === 1 ? "day" : "days"} old</p>
     </div>
   </div>
-  <progress class="progress progress-primary" value={zapAmount} max={goalAmount}></progress>
-  <ZapButton {url} {event} class="btn btn-primary lg:m-auto lg:px-20">
+  <progress class="progress" value={zapAmount} max={goalAmount}></progress>
+  <ZapButton {url} {event} class="button button-primary lg:m-auto lg:px-20">
     <Icon icon={Bolt} />
     Contribute to this goal
   </ZapButton>

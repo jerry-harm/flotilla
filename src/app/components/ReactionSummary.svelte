@@ -18,9 +18,10 @@
   import {deriveArray, deriveEventsById, deriveItemsByKey} from "@welshman/store"
   import {load} from "@welshman/net"
   import {pubkey, repository, getValidZap, displayProfileByPubkey} from "@welshman/app"
-  import {isMobile, preventDefault, stopPropagation} from "@lib/html"
+  import {isMobile} from "@lib/html"
   import Danger from "@assets/icons/danger-triangle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
+  import Button from "@lib/components/Button.svelte"
   import Reaction from "@app/components/Reaction.svelte"
   import ReportDetails from "@app/components/ReportDetails.svelte"
   import {REACTION_KINDS} from "@app/content"
@@ -136,15 +137,18 @@
 {#if $reactions.length > 0 || $zaps.length || $reports.length > 0 || children}
   <div class="flex min-w-0 flex-wrap gap-2">
     {#if url && $reports.length > 0 && $userIsAdmin}
-      <button
-        type="button"
+      <Button
         data-tip={`This content has been reported as "${displayList(reportReasons)}".`}
-        class="btn btn-error btn-xs tooltip-right flex items-center gap-1 rounded-full font-normal"
-        class:tooltip={!noTooltip && !isMobile}
-        onclick={stopPropagation(preventDefault(onReportClick))}>
+        class={cx(
+          "button button-error button-xs tip-right flex items-center gap-1 rounded-full font-normal",
+          {
+            tip: !noTooltip && !isMobile,
+          },
+        )}
+        onclick={onReportClick}>
         <Icon icon={Danger} />
         <span>{$reports.length}</span>
-      </button>
+      </Button>
     {/if}
     {#each groupedZaps.entries() as [key, zaps]}
       {@const amount = fromMsats(sum(zaps.map(zap => zap.invoiceAmount)))}
@@ -152,21 +156,20 @@
       {@const isOwn = $pubkey && pubkeys.includes($pubkey)}
       {@const info = displayList(pubkeys.map(pubkey => displayProfileByPubkey(pubkey)))}
       {@const tooltip = `${info} zapped`}
-      <button
-        type="button"
+      <Button
         data-tip={tooltip}
         class={cx(
           reactionClass,
-          "flex-inline btn btn-outline btn-neutral btn-xs flex items-center gap-1 rounded-full text-xs font-normal bg-alt",
+          "button button-xs flex-inline flex items-center gap-1 rounded-full text-xs font-normal",
           {
-            tooltip: !noTooltip && !isMobile,
-            "border-neutral-content/20": !isOwn,
-            "btn-primary": isOwn,
+            tip: !noTooltip && !isMobile,
+            "button-primary": isOwn,
+            "button-neutral": !isOwn,
           },
         )}>
         <Reaction event={zaps[0].request} />
         <span>{amount}</span>
-      </button>
+      </Button>
     {/each}
     {#each groupedReactions.entries() as [key, events]}
       {@const pubkeys = events.map(e => e.pubkey)}
@@ -174,24 +177,19 @@
       {@const info = displayList(pubkeys.map(pubkey => displayProfileByPubkey(pubkey)))}
       {@const tooltip = `${info} reacted`}
       {@const onClick = () => onReactionClick(events)}
-      <button
-        type="button"
+      <Button
         data-tip={tooltip}
-        class={cx(
-          reactionClass,
-          "flex-inline btn btn-outline btn-neutral btn-xs gap-1 rounded-full font-normal bg-alt",
-          {
-            tooltip: !noTooltip && !isMobile,
-            "border-neutral-content/20": !isOwn,
-            "btn-primary": isOwn,
-          },
-        )}
-        onclick={stopPropagation(preventDefault(onClick))}>
+        class={cx(reactionClass, "button button-xs flex-inline gap-1 rounded-full font-normal", {
+          tip: !noTooltip && !isMobile,
+          "button-primary": isOwn,
+          "button-neutral": !isOwn,
+        })}
+        onclick={onClick}>
         <Reaction event={events[0]} />
         {#if events.length > 1}
           <span>{events.length}</span>
         {/if}
-      </button>
+      </Button>
     {/each}
     {@render children?.()}
   </div>

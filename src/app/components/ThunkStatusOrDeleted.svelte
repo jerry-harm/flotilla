@@ -18,7 +18,7 @@
 </script>
 
 {#if $deleted}
-  <div class="btn btn-error btn-xs rounded-full">Deleted</div>
+  <div class="button button-error button-xs rounded-full">Deleted</div>
 {:else if thunk.thunks.length > 0 && !thunkHasStatus(PublishStatus.Success, thunk)}
   <ThunkStatus {thunk} />
 {:else if children}

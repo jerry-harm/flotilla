@@ -119,7 +119,7 @@
     <strong>Calendar</strong>
   {/snippet}
   {#snippet action()}
-    <Button class="btn btn-primary btn-sm" onclick={makeEvent}>
+    <Button class="button button-primary button-sm" onclick={makeEvent}>
       <Icon icon={Add} />
       Create
     </Button>
@@ -131,9 +131,9 @@
     <div class="flex flex-col gap-2 calendar-event-{event.id}">
       {#if isFirstFutureEvent}
         <div class="flex items-center gap-2 p-2">
-          <div class="h-px grow bg-primary"></div>
+          <div class="h-px grow bg-primary text-primary-content"></div>
           <p class="text-xs uppercase text-primary">Today</p>
-          <div class="h-px grow bg-primary"></div>
+          <div class="h-px grow bg-primary text-primary-content"></div>
         </div>
       {/if}
       {#if dateDisplay}

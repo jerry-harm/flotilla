@@ -20,7 +20,6 @@
   import Button from "@lib/components/Button.svelte"
   import Divider from "@lib/components/Divider.svelte"
   import Icon from "@lib/components/Icon.svelte"
-  import PageContent from "@lib/components/PageContent.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import SpaceBar from "@app/components/SpaceBar.svelte"
   import RoomCompose from "@app/components/RoomCompose.svelte"
@@ -430,12 +429,12 @@
   {/snippet}
   {#snippet action()}
     <Button
-      class="btn btn-neutral btn-sm btn-square"
+      class="button button-neutral button-sm button-square"
       aria-label="Search"
       onclick={() => pushModal(RoomSearch, {url, h})}>
       <Icon size={4} icon={Magnifier} />
     </Button>
-    <Button class="btn btn-neutral btn-sm btn-square" onclick={showRoomDetail}>
+    <Button class="button button-neutral button-sm button-square" onclick={showRoomDetail}>
       <Icon size={4} icon={InfoCircle} />
     </Button>
   {/snippet}
@@ -456,34 +455,34 @@
 
   <div
     class={cx(
-      "flex min-h-0 min-w-0 flex-1 flex-col",
+      "room flex min-h-0 min-w-0 flex-1 flex-col",
       voiceConnectedHere && $videoCallLayout === VideoCallLayout.Video && "md:hidden",
     )}>
     {#if isVoiceRoom && $callState === CallState.Connected}
       <VideoCallContent layout={$videoCallLayout} mobile {url} {h} class="md:hidden" />
     {/if}
 
-    <PageContent
-      bind:element
+    <div
+      bind:this={element}
       onscroll={onScroll}
       class={cx(
-        "flex-col-reverse !mb-0",
+        "room__content scroll-container",
         showMobileVideoPanel ? "hidden md:flex md:flex-col-reverse" : "flex",
         pageContentHiddenDesktopVideoOnly && "md:hidden",
       )}>
       {#if $room.isPrivate && $membershipStatus !== MembershipStatus.Granted}
         <div class="py-20">
-          <div class="card2 col-8 m-auto max-w-md items-center text-center">
+          <div class="card flex flex-col gap-8 m-auto max-w-md items-center text-center">
             <p class="opacity-75">You aren't currently a member of this room.</p>
             {#if $membershipStatus === MembershipStatus.Pending}
-              <Button class="btn btn-neutral btn-sm" disabled={leaving} onclick={leave}>
+              <Button class="button button-neutral button-sm" disabled={leaving} onclick={leave}>
                 <Icon icon={ClockCircle} />
                 Access Pending
               </Button>
             {:else}
-              <Button class="btn btn-neutral btn-sm" disabled={joining} onclick={join}>
+              <Button class="button button-neutral button-sm" disabled={joining} onclick={join}>
                 {#if joining}
-                  <span class="loading loading-spinner loading-sm"></span>
+                  <Spinner size="sm" />
                 {:else}
                   <Icon icon={Login2} />
                 {/if}
@@ -504,9 +503,13 @@
               {id}
               class="flex items-center py-2 text-xs transition-colors"
               class:opacity-0={showFixedNewMessages}>
-              <div class="h-px flex-grow bg-primary"></div>
-              <p class="rounded-full bg-primary px-2 py-1 text-primary-content">New Messages</p>
-              <div class="h-px flex-grow bg-primary"></div>
+              <div class="h-px flex-grow bg-primary text-primary-content"></div>
+              <p
+                class="rounded-full bg-primary text-primary-content px-2 py-1"
+                style="color: var(--primary-content)">
+                New Messages
+              </p>
+              <div class="h-px flex-grow bg-primary text-primary-content"></div>
             </div>
           {:else if type === "date"}
             <Divider>{value}</Divider>
@@ -534,29 +537,29 @@
         </p>
       {/if}
       <div class="h-screen"></div>
-    </PageContent>
+    </div>
 
     <div
       class={cx(
-        "chat__compose-zone chat__compose flex flex-col gap-1 bg-base-200 md:flex-row md:gap-0",
+        "room__compose flex flex-col gap-1 md:flex-row md:gap-0",
         pageContentHiddenDesktopVideoOnly && "md:hidden",
         showMobileVideoPanel && "max-md:hidden",
       )}>
-      <div class="chat__compose-inner min-w-0 flex-1">
+      <div class="room__compose-inner min-w-0 flex-1">
         {#if $room.isPrivate && $membershipStatus !== MembershipStatus.Granted}
           <!-- pass -->
         {:else if $room.isRestricted && $membershipStatus !== MembershipStatus.Granted}
-          <div class="bg-alt card m-4 flex flex-row items-center justify-between px-4 py-3">
+          <div class="card m-4 flex flex-row items-center justify-between px-4 py-3">
             <p class="opacity-75">Only members are allowed to post to this room.</p>
             {#if $membershipStatus === MembershipStatus.Pending}
-              <Button class="btn btn-neutral btn-sm" disabled={leaving} onclick={leave}>
+              <Button class="button button-neutral button-sm" disabled={leaving} onclick={leave}>
                 <Icon icon={ClockCircle} />
                 Access Pending
               </Button>
             {:else}
-              <Button class="btn btn-neutral btn-sm" disabled={joining} onclick={join}>
+              <Button class="button button-neutral button-sm" disabled={joining} onclick={join}>
                 {#if joining}
-                  <span class="loading loading-spinner loading-sm"></span>
+                  <Spinner size="sm" />
                 {:else}
                   <Icon icon={Login2} />
                 {/if}
@@ -603,7 +606,7 @@
 
 {#if showScrollButton}
   <div in:fade class="chat__scroll-down">
-    <Button class="btn btn-circle btn-neutral" onclick={scrollToBottom}>
+    <Button class="button button-neutral button-circle" onclick={scrollToBottom}>
       <Icon icon={AltArrowDown} />
     </Button>
   </div>
@@ -612,7 +615,7 @@
 {#if showFixedNewMessages}
   <div class="relative z-popover flex justify-center">
     <div transition:fly={{duration: 200}} class="fixed top-12 pt-sai">
-      <Button class="btn btn-primary btn-xs rounded-full" onclick={scrollToNewMessages}>
+      <Button class="button button-primary button-xs button-pill" onclick={scrollToNewMessages}>
         New Messages
       </Button>
     </div>

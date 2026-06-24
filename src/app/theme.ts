@@ -29,3 +29,10 @@ export const theme = synced({
   defaultValue: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light",
   storage: kv,
 })
+
+// Hook for development
+Object.assign(window, {
+  setFlTheme: (t: string) => {
+    document.body.setAttribute("data-fl-theme", t)
+  },
+})

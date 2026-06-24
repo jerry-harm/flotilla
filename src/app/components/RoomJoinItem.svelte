@@ -2,6 +2,7 @@
   import {getTagValue, ManagementMethod} from "@welshman/util"
   import type {TrustedEvent, PublishedRoomMeta} from "@welshman/util"
   import {repository, manageRelay} from "@welshman/app"
+  import Card from "@lib/components/Card.svelte"
   import Button from "@lib/components/Button.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
@@ -65,10 +66,10 @@
   let loading = $state(false)
 </script>
 
-<div class="column gap-4 card2 card2-sm bg-alt">
+<Card sm class="flex flex-col gap-4">
   <div class="flex justify-between gap-2">
     <div>
-      <Button class="inline text-primary" onclick={showProfile}>
+      <Button class="button button-link inline text-primary" onclick={showProfile}>
         <ProfileName pubkey={event.pubkey} {url} />
       </Button>
       <span>
@@ -76,8 +77,10 @@
       </span>
     </div>
     <div class="flex gap-2">
-      <Button class="btn btn-neutral btn-sm" onclick={dismiss} disabled={loading}>Dismiss</Button>
-      <Button class="btn btn-primary btn-sm" onclick={accept} disabled={loading}>Accept</Button>
+      <Button class="button button-neutral button-sm" onclick={dismiss} disabled={loading}
+        >Dismiss</Button>
+      <Button class="button button-primary button-sm" onclick={accept} disabled={loading}
+        >Accept</Button>
     </div>
   </div>
-</div>
+</Card>

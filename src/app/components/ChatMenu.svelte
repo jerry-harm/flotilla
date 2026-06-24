@@ -23,17 +23,17 @@
 <Modal>
   <ModalBody>
     <div class="flex flex-col gap-2">
-      <Button class="btn btn-neutral" onclick={markAsRead}>
+      <Button class="button button-neutral" onclick={markAsRead}>
         <Icon size={5} icon={Check} />
         Mark all read
       </Button>
       {#if $notificationSettings.messages}
-        <Button class="btn btn-neutral" onclick={disableAlerts}>
+        <Button class="button button-neutral" onclick={disableAlerts}>
           <Icon size={4} icon={BellOff} />
           Disable alerts
         </Button>
       {:else}
-        <Button class="btn btn-neutral" onclick={enableAlerts}>
+        <Button class="button button-neutral" onclick={enableAlerts}>
           <Icon size={4} icon={Bell} />
           Enable alerts
         </Button>

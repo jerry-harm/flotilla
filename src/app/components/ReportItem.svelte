@@ -3,6 +3,7 @@
   import {getTag, getIdFilters} from "@welshman/util"
   import {load, LOCAL_RELAY_URL} from "@welshman/net"
   import type {TrustedEvent} from "@welshman/util"
+  import Card from "@lib/components/Card.svelte"
   import Button from "@lib/components/Button.svelte"
   import Profile from "@app/components/Profile.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
@@ -34,7 +35,7 @@
   }
 </script>
 
-<div class="column gap-4 card2 card2-sm bg-alt">
+<Card sm class="flex flex-col gap-4">
   <div class="flex justify-between">
     <div>
       <ProfileName pubkey={event.pubkey} {url} />
@@ -48,11 +49,11 @@
     <ReportMenu {url} {event} {onResolved} />
   </div>
   {#if event.content}
-    <div class="border-l-2 border-primary pl-3">
+    <div class="border-l-2 pl-3" style="border-color: var(--primary)">
       <NoteContent {event} />
     </div>
   {/if}
-  <div class="card2 card2-sm bg-alt">
+  <div class="card card-sm">
     {#if etag}
       {#await load({relays: [url, LOCAL_RELAY_URL], filters: getIdFilters([etag[1]])})}
         <p>Loading</p>
@@ -61,7 +62,7 @@
           <p>Unable to find reported note.</p>
         {:else}
           {@const event = reportedEvents[0]}
-          <Button class="col-2 w-full" onclick={(e: Event) => onClick(e, event)}>
+          <Button class="flex flex-col gap-2 w-full" onclick={(e: Event) => onClick(e, event)}>
             <div class="flex items-center justify-between gap-2">
               <span class="profile-name">
                 @<ProfileName pubkey={event.pubkey} {url} />
@@ -78,4 +79,4 @@
       <Profile pubkey={ptag[1]} />
     {/if}
   </div>
-</div>
+</Card>

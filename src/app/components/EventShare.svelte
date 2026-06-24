@@ -1,4 +1,5 @@
 <script lang="ts">
+  import cx from "classnames"
   import {goto} from "$app/navigation"
   import type {TrustedEvent} from "@welshman/util"
   import {preventDefault} from "@lib/html"
@@ -41,23 +42,21 @@
     </ModalHeader>
     <div class="grid grid-cols-3 gap-2">
       {#each $roomsByUrl.get(url) || [] as room (room.h)}
-        <button
+        <Button
           type="button"
-          class="btn"
-          class:btn-neutral={selection !== room.h}
-          class:btn-primary={selection === room.h}
+          class={cx(`button button-${selection === room.h ? "primary" : "neutral"}`)}
           onclick={() => toggleRoom(room.h)}>
           #<RoomName {...room} />
-        </button>
+        </Button>
       {/each}
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={!selection}>
+    <Button type="submit" class="button button-primary" disabled={!selection}>
       Share {noun}
       <Icon icon={AltArrowRight} />
     </Button>

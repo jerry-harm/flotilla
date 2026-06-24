@@ -17,7 +17,7 @@
   const recentPath = makeSpacePath(url, "recent")
 </script>
 
-<div class="card2 bg-alt flex flex-col gap-3">
+<div class="card flex flex-col gap-3">
   <h3 class="flex items-center gap-2 text-lg font-bold">
     <Icon icon={History} />
     Recent Activity
@@ -31,7 +31,7 @@
       {/each}
     </div>
   {/if}
-  <Link href={recentPath} class="btn btn-neutral btn-sm">
+  <Link href={recentPath} class="button button-neutral button-sm">
     View all recent activity
     <Icon icon={AltArrowRight} size={4} />
   </Link>

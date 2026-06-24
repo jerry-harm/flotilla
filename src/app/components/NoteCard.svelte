@@ -25,6 +25,7 @@
     hideProfile?: boolean
     url?: string
     class?: string
+    style?: string
   } = $props()
 
   const ignoreMute = () => {
@@ -34,10 +35,10 @@
   let muted = $state($isEventMuted(event))
 </script>
 
-<div class="flex flex-col gap-2 {restProps.class}">
+<div class="flex flex-col gap-2 {restProps.class}" style={restProps.style}>
   {#if muted}
     <div class="flex items-center justify-between">
-      <div class="row-2 relative">
+      <div class="flex gap-2 relative">
         <Icon icon={Danger} class="mt-1" />
         <p>You have muted this person.</p>
       </div>

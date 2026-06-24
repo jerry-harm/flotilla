@@ -98,11 +98,11 @@
 
 <div class="relative">
   {#if warning}
-    <div class="card2 card2-sm shadow-none row-2">
+    <div class="card card-sm shadow-none flex gap-2">
       <Icon icon={Danger} />
       <p>
         This note has been flagged by the author as "{warning}".<br />
-        <Button class="link" onclick={ignoreWarning}>Show anyway</Button>
+        <Button onclick={ignoreWarning} class="button button-link">Show anyway</Button>
       </p>
     </div>
   {:else}

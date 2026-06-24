@@ -23,7 +23,7 @@
   </div>
   <div class="flex min-w-0 flex-col">
     <div class="flex items-center gap-2">
-      <div class="text-bold overflow-hidden text-ellipsis text-base">
+      <div class="text-bold overflow-hidden text-ellipsis">
         {$profileDisplay}
       </div>
       <WotScore {pubkey} />

@@ -6,6 +6,7 @@
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import FieldInline from "@lib/components/FieldInline.svelte"
   import Scanner from "@lib/components/Scanner.svelte"
   import Modal from "@lib/components/Modal.svelte"
@@ -64,14 +65,14 @@
       <ModalSubtitle>Use your Nostr wallet to send Bitcoin payments over lightning.</ModalSubtitle>
     </ModalHeader>
     {#if invoice}
-      <div class="card2 bg-alt flex flex-col gap-2">
+      <div class="card flex flex-col gap-2">
         <FieldInline>
           {#snippet label()}
             Amount (satoshis)
           {/snippet}
           {#snippet input()}
             <div class="flex grow justify-end">
-              <label class="input input-bordered flex items-center gap-2">
+              <label class="input input-group flex items-center gap-2">
                 <Icon icon={Bolt} />
                 <input
                   bind:value={sats}
@@ -95,13 +96,16 @@
     {/if}
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button class="btn btn-primary" onclick={confirm} disabled={!invoice || sats === 0 || loading}>
+    <Button
+      class="button button-primary"
+      onclick={confirm}
+      disabled={!invoice || sats === 0 || loading}>
       {#if loading}
-        <span class="loading loading-spinner loading-sm"></span>
+        <Spinner size="sm" />
       {:else}
         <Icon icon={Bolt} />
       {/if}

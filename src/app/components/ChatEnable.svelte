@@ -60,11 +60,11 @@
     <p>Direct messaging isn't currently enabled. Would you like to turn it on?</p>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-primary" disabled={loading}>
+    <Button type="submit" class="button button-primary" disabled={loading}>
       <Spinner {loading}>Enable direct messaging</Spinner>
       <Icon icon={AltArrowRight} />
     </Button>

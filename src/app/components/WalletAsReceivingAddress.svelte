@@ -63,8 +63,8 @@
     {/if}
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-neutral" onclick={cancel} disabled={loading}>No, skip this</Button>
-    <Button class="btn btn-primary" onclick={confirm} disabled={loading}>
+    <Button class="button button-neutral" onclick={cancel} disabled={loading}>No, skip this</Button>
+    <Button class="button button-primary" onclick={confirm} disabled={loading}>
       <Spinner {loading}>Yes, set as receiving address</Spinner>
     </Button>
   </ModalFooter>

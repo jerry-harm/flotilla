@@ -1,6 +1,6 @@
 <script lang="ts">
-  import {onDestroy} from "svelte"
   import cx from "classnames"
+  import {onDestroy} from "svelte"
   import {first} from "@welshman/lib"
   import type {NativeEmoji} from "emoji-picker-element/shared"
   import {signer, deriveZapperForPubkey} from "@welshman/app"
@@ -131,7 +131,7 @@
           Scan with your wallet, or copy the invoice manually.
         </p>
       </div>
-      <label class="input input-bordered flex w-full items-center justify-between gap-2">
+      <label class="input flex w-full items-center justify-between gap-2">
         <input readonly class="ellipsize grow" value={invoice} />
         <Button class="flex items-center" onclick={copyInvoice}>
           <Icon icon={Copy} />
@@ -144,7 +144,7 @@
         {/snippet}
         {#snippet input()}
           <div class="flex grow items-center justify-end gap-4">
-            <EmojiButton {onEmoji} class="btn btn-neutral">
+            <EmojiButton {onEmoji} class="button button-neutral">
               {content}
             </EmojiButton>
           </div>
@@ -156,7 +156,7 @@
         {/snippet}
         {#snippet input()}
           <div class="flex grow justify-end">
-            <label class="input input-bordered flex items-center gap-2">
+            <label class="input flex items-center gap-2">
               <Icon icon={Bolt} />
               <input bind:value={amount} type="number" class="w-24" />
             </label>
@@ -166,27 +166,29 @@
       <div class="flex flex-wrap justify-end gap-2">
         {#each $zapAmounts as preset}
           <Button
-            class={cx("btn btn-sm rounded-full", preset === amount ? "btn-primary" : "btn-neutral")}
+            class={cx(
+              `button button-${preset === amount ? "primary" : "neutral"} button-sm button-pill`,
+            )}
             onclick={() => selectAmount(preset)}>
             {preset}
           </Button>
         {/each}
       </div>
-      <p class="card2 card-sm bg-alt text-center flex justify-between items-center">
+      <p class="card card-sm text-center flex justify-between items-center">
         Want to zap directly?
-        <Button class="btn btn-neutral btn-sm" onclick={connectWallet}>
+        <Button class="button button-neutral button-sm" onclick={connectWallet}>
           Connect a lightning wallet
         </Button>
       </p>
     {/if}
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
     {#if !invoice}
-      <Button class="btn btn-primary" onclick={createInvoice} disabled={loading}>
+      <Button class="button button-primary" onclick={createInvoice} disabled={loading}>
         <Spinner {loading}>
           <div class="flex items-center gap-2">
             {#if !loading}

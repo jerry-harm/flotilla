@@ -32,43 +32,40 @@
   )
 </script>
 
-<div
-  class="ml-sai mt-sai mb-sai relative z-popover isolate hidden w-14 shrink-0 bg-base-200 pt-2 md:block border-r border-solid border-base-content/15 dark:border-base-content/10">
-  <div class="flex h-full flex-col" class:justify-between={PLATFORM_RELAYS.length === 0}>
-    <PrimaryNavSpaces />
-    {#if PLATFORM_RELAYS.length > 0}
-      <Divider />
-    {/if}
-    <div class="flex flex-col">
-      <PrimaryNavItem title="Settings" href="/settings/profile" prefix="/settings">
-        {#if $userProfile?.picture}
-          <ImageIcon alt="Settings" src={$userProfile?.picture} class="rounded-full" size={10} />
-        {:else}
-          <ImageIcon alt="Settings" src={UserRounded} class="rounded-full" size={8} />
-        {/if}
-      </PrimaryNavItem>
-      <PrimaryNavItem
-        title="Messages"
-        onclick={chatHandler}
-        notification={$notifications.has("/chat")}>
-        <ImageIcon alt="Messages" src={Letter} size={8} />
-      </PrimaryNavItem>
-      <PrimaryNavItem title="Search" href="/people">
-        <ImageIcon alt="Search" src={Magnifier} size={8} />
-      </PrimaryNavItem>
-    </div>
+<div class="primary-nav" class:justify-between={PLATFORM_RELAYS.length === 0}>
+  <PrimaryNavSpaces />
+  {#if PLATFORM_RELAYS.length > 0}
+    <Divider />
+  {/if}
+  <div class="flex flex-col">
+    <PrimaryNavItem title="Settings" href="/settings/profile" prefix="/settings">
+      {#if $userProfile?.picture}
+        <ImageIcon alt="Settings" src={$userProfile?.picture} class="rounded-full" size={10} />
+      {:else}
+        <ImageIcon alt="Settings" src={UserRounded} class="rounded-full" size={8} />
+      {/if}
+    </PrimaryNavItem>
+    <PrimaryNavItem
+      title="Messages"
+      onclick={chatHandler}
+      notification={$notifications.has("/chat")}>
+      <ImageIcon alt="Messages" src={Letter} size={8} />
+    </PrimaryNavItem>
+    <PrimaryNavItem title="Search" href="/people">
+      <ImageIcon alt="Search" src={Magnifier} size={8} />
+    </PrimaryNavItem>
   </div>
 </div>
 
 {@render children?.()}
 
 <!-- a little extra something for ios -->
-<div class="hide-on-keyboard fixed bottom-0 left-0 right-0 z-nav h-(--saib) bg-base-100 md:hidden">
+<div class="hide-on-keyboard fixed bottom-0 left-0 right-0 z-nav h-(--saib) bg-surface md:hidden">
 </div>
 <div
-  class="hide-on-keyboard border-top bottom-sai fixed left-0 right-0 z-nav h-14 border border-base-200 bg-base-100 md:hidden">
-  <div class="content-padding-x content-sizing flex justify-between px-2">
-    <div class="flex gap-2 sm:gap-6">
+  class="hide-on-keyboard border-top bottom-sai fixed left-0 right-0 z-nav h-14 border border-line bg-surface md:hidden">
+  <div class="flex h-full justify-between px-2">
+    <div class="flex items-center gap-6">
       <PrimaryNavItem title="Search" href="/people">
         <ImageIcon alt="Search" src={Magnifier} size={8} />
       </PrimaryNavItem>

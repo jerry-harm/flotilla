@@ -83,7 +83,6 @@
     "@welshman/util": "^0.8.16",
     "cheerio": "^1.2.0",
     "compressorjs-next": "^1.1.2",
-    "daisyui": "^5.5.19",
     "date-picker-svelte": "^2.17.0",
     "dotenv": "^16.6.1",
     "emoji-picker-element": "^1.28.1",

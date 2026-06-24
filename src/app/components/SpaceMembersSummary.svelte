@@ -48,7 +48,7 @@
   )
 </script>
 
-<div class="card2 bg-alt flex flex-col gap-3">
+<div class="card flex flex-col gap-3">
   <h3 class="flex items-center gap-2 text-lg font-bold">
     <Icon icon={UsersGroup} />
     Members
@@ -69,7 +69,7 @@
       {/each}
     </div>
   {/if}
-  <Link href={directoryPath} class="btn btn-neutral btn-sm">
+  <Link href={directoryPath} class="button button-neutral button-sm">
     View all members
     <Icon icon={AltArrowRight} size={4} />
   </Link>

@@ -6,16 +6,18 @@
     alt: string
     size?: number
     class?: string
+    style?: string
   }
 
-  const {src, alt, size = 5, ...props}: Props = $props()
+  const {src, alt, size = 5, style = undefined, ...props}: Props = $props()
 </script>
 
 {#if src.includes("image/svg") || src.endsWith(".svg")}
-  <Icon icon={src} {size} class={props.class} />
+  <Icon icon={src} {size} {style} class={props.class} />
 {:else}
   <img
     {src}
     {alt}
-    class="h-{size} w-{size} min-w-{size} min-h-{size} aspect-square object-cover {props.class}" />
+    {style}
+    class="h-{size} w-{size} min-w-{size} min-h-{size} aspect-square object-cover rounded-full {props.class}" />
 {/if}

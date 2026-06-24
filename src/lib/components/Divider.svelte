@@ -8,10 +8,10 @@
   const {children, ...props}: Props = $props()
 </script>
 
-<div class="flex items-center gap-2 p-2 text-xs uppercase opacity-50">
-  <div class="h-px grow bg-base-content opacity-25"></div>
+<div class="flex items-center gap-2 p-2 text-xs uppercase text-subtle">
+  <div class="h-px grow" style="background-color: var(--line)"></div>
   {#if children}
     <p>{@render children?.()}</p>
-    <div class="h-px grow bg-base-content opacity-25"></div>
+    <div class="h-px grow" style="background-color: var(--line)"></div>
   {/if}
 </div>

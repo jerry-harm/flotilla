@@ -90,23 +90,23 @@
     <strong>Members</strong>
   {/snippet}
   {#snippet action()}
-    <button class="btn btn-primary btn-sm" onclick={inviteMembers}>
+    <Button class="button button-primary button-sm" onclick={inviteMembers}>
       <Icon icon={AddCircle} />
       Invite people
-    </button>
+    </Button>
     {#if $userIsAdmin}
       <div class="relative">
-        <button
-          class="btn btn-neutral btn-sm btn-square"
+        <Button
+          class="button button-neutral button-sm button-square"
           aria-label="More options"
           onclick={() => (menuOpen = !menuOpen)}>
           <Icon size={4} icon={MenuDots} />
-        </button>
+        </Button>
         {#if menuOpen}
           <Popover hideOnClick onClose={() => (menuOpen = false)}>
             <ul
               transition:fly
-              class="menu absolute right-0 z-popover mt-2 w-48 gap-1 rounded-box bg-base-100 p-2 shadow-md">
+              class="menu bg-surface absolute right-0 z-popover mt-2 w-48 gap-1 rounded-2xl p-2">
               <li>
                 <Button onclick={manageRoles}>
                   <Icon icon={UsersGroup} />
@@ -128,8 +128,8 @@
 </SpaceBar>
 
 <PageContent class="flex flex-col gap-4 p-4">
-  <div class="card2 bg-alt flex flex-col gap-2">
-    <label class="input input-sm input-bordered flex w-full items-center gap-2">
+  <div class="card flex flex-col gap-2">
+    <label class="input input-sm input-group flex w-full items-center gap-2">
       <Icon size={4} icon={Magnifier} />
       <input
         bind:value={term}

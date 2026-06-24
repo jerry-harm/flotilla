@@ -30,5 +30,5 @@
       information flowing through the network — instead, your client software can prove that a given
       piece of data is authentic.
     </p>
-    <Button class="btn btn-primary" onclick={back}>Got it</Button>
+    <Button class="button button-primary" onclick={back}>Got it</Button>
   </ModalBody></Modal>

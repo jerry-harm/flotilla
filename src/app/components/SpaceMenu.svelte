@@ -129,16 +129,16 @@
 </script>
 
 <div bind:this={element} class="flex min-h-0 flex-1 flex-col">
-  <SecondaryNavSection class="min-h-0 flex-1 flex flex-col overflow-hidden pb-0">
+  <SecondaryNavSection class="min-h-0 flex-1 flex flex-col pb-0">
     <div class="shrink-0">
       <Button
-        class="relative flex w-full flex-col rounded-xl p-3 transition-all hover:bg-base-100"
+        class="relative flex w-full flex-col rounded-xl p-3 transition-all hover:bg-surface"
         onclick={openMenu}>
         <div class="flex items-center justify-between">
           <strong class="flex items-center gap-1 relative">
             <RelayName {url} class="ellipsize" />
             <div
-              class="absolute -right-3 top-0 h-2 w-2 rounded-full bg-primary transition-all opacity-0"
+              class="absolute -right-3 top-0 h-2 w-2 rounded-full bg-primary text-primary-content transition-all opacity-0"
               class:opacity-100={$userIsAdmin && $actionItems.length > 0}>
             </div>
             {#if $notificationSettings.push && !$shouldNotify}
@@ -153,7 +153,7 @@
         <Popover hideOnClick onClose={toggleMenu}>
           <ul
             transition:fly
-            class="menu absolute z-popover mt-2 w-full gap-1 rounded-box bg-base-100 p-2 shadow-md">
+            class="menu absolute z-popover mt-2 w-full gap-1 rounded-2xl bg-surface p-2">
             <li>
               <Button onclick={createInvite}>
                 <Icon icon={LinkRound} />
@@ -166,7 +166,7 @@
                   <Icon icon={Danger} />
                   Action Items ({$actionItems.length})
                   {#if $actionItems.length > 0}
-                    <div class="h-2 w-2 rounded-full bg-primary"></div>
+                    <div class="h-2 w-2 rounded-full bg-primary text-primary-content"></div>
                   {/if}
                 </Button>
               </li>
@@ -199,7 +199,10 @@
                   Leave Space
                 </Button>
               {:else}
-                <Button onclick={joinSpace} class="bg-primary text-primary-content">
+                <Button
+                  onclick={joinSpace}
+                  class="bg-primary text-primary-content"
+                  style="color: var(--primary-content)">
                   <Icon icon={Login} />
                   Join Space
                 </Button>
@@ -209,7 +212,7 @@
         </Popover>
       {/if}
     </div>
-    <div class="flex min-h-0 flex-1 flex-col gap-1 overflow-auto overflow-x-hidden">
+    <div class="flex min-h-0 flex-1 flex-col gap-1 py-1 overflow-auto">
       <SecondaryNavItem href={makeSpacePath(url, "about")}>
         <Icon icon={Home} /> Space Details
       </SecondaryNavItem>
@@ -272,7 +275,7 @@
           </SecondaryNavHeader>
         {/if}
         {#if $otherRooms.length > 20}
-          <label class="input input-sm input-bordered flex items-center gap-2">
+          <label class="input input-sm flex items-center gap-2">
             <Icon icon={Magnifier} />
             <input bind:value={term} onblur={clearTerm} class="grow" />
           </label>
@@ -300,7 +303,7 @@
   <div
     class="flex shrink-0 flex-col gap-2 p-2 pt-0 -mt-4 pb-[calc(var(--saib)+0.25rem)] md:pb-2 z-nav">
     <VoiceWidget />
-    <Link href={makeSpacePath("about")} class="btn btn-neutral btn-sm h-10">
+    <Link href={makeSpacePath(url, "about")} class="button button-neutral button-sm h-10">
       <SocketStatusIndicator {url} />
     </Link>
   </div>

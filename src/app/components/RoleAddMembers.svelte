@@ -71,11 +71,14 @@
     </Field>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button class="btn btn-primary" onclick={submit} disabled={loading || pubkeys.length === 0}>
+    <Button
+      class="button button-primary"
+      onclick={submit}
+      disabled={loading || pubkeys.length === 0}>
       <Spinner {loading}>Save changes</Spinner>
     </Button>
   </ModalFooter>

@@ -70,7 +70,7 @@
     <strong>Classifieds</strong>
   {/snippet}
   {#snippet action()}
-    <Button class="btn btn-primary btn-sm" onclick={createClassified}>
+    <Button class="button button-primary button-sm" onclick={createClassified}>
       <Icon icon={Add} />
       Create
     </Button>

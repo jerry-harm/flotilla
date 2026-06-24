@@ -44,6 +44,6 @@
     {/each}
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-primary" onclick={back}>Got it</Button>
+    <Button class="button button-primary" onclick={back}>Got it</Button>
   </ModalFooter>
 </Modal>

@@ -34,11 +34,11 @@
 
 <div class="flex grow flex-wrap justify-end gap-2">
   {#if h && showRoom}
-    <Link href={makeSpacePath(url, h)} class="btn btn-neutral btn-xs rounded-full">
+    <Link href={makeSpacePath(url, h)} class="button button-neutral button-xs rounded-full">
       Posted in #<RoomName {h} {url} />
     </Link>
   {/if}
-  <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tooltip-left" />
+  <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
   <ThunkStatusOrDeleted {event} />
   {#if showActivity}
     <EventActivity {url} {path} {event} />

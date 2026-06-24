@@ -16,7 +16,7 @@
   }
 </script>
 
-<div class="card2 bg-alt flex flex-col gap-4 shadow-md">
+<div class="card flex flex-col gap-4 shadow-md">
   <div class="flex justify-between items-center">
     <strong class="flex items-center gap-3 text-lg">
       <Icon icon={Stethoscope} />
@@ -35,7 +35,7 @@
     <RelaySettingsHealthCheck {healthCheck} />
   {/each}
   {#if $pendingHealthChecks.length > 0}
-    <Button class="btn btn-primary" onclick={applyAll}>
+    <Button class="button button-primary" onclick={applyAll}>
       <Icon icon={Stars} />
       Apply All Recommendations
     </Button>

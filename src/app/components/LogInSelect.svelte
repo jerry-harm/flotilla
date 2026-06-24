@@ -75,14 +75,14 @@
         <Button
           onclick={() => selectAccount(option)}
           disabled={loading}
-          class="card2 bg-alt flex w-full items-center p-3 text-left">
+          class="card flex w-full items-center p-3 text-left">
           <Profile inert pubkey={option.pubkey} />
         </Button>
       {/each}
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back} disabled={loading}>
+    <Button class="button button-link" onclick={back} disabled={loading}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>

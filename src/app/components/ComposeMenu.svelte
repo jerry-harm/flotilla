@@ -39,7 +39,7 @@
   })
 </script>
 
-<ul class="menu whitespace-nowrap rounded-box bg-base-100 p-2 shadow-md" bind:this={ul}>
+<ul class="menu whitespace-nowrap rounded-2xl bg-surface p-2" bind:this={ul}>
   <li>
     <Button onclick={createGoal}>
       <Icon size={4} icon={StarFallMinimalistic} />

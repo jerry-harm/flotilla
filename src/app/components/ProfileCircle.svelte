@@ -8,17 +8,19 @@
   type Props = {
     pubkey?: string
     class?: string
+    style?: string
     size?: number
     url?: string
   }
 
-  const {pubkey, url, size = 7, ...props}: Props = $props()
+  const {pubkey, url, size = 7, style = undefined, ...props}: Props = $props()
 
   const profile = deriveProfile(pubkey, removeUndefined([url]))
 </script>
 
 <ImageIcon
   {size}
+  {style}
   alt=""
   class={cx(props.class, "rounded-full")}
   src={$profile?.picture || UserRounded} />

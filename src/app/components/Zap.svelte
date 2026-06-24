@@ -100,7 +100,7 @@
       {/snippet}
       {#snippet input()}
         <div class="flex grow items-center justify-end gap-4">
-          <EmojiButton {onEmoji} class="btn btn-neutral">
+          <EmojiButton {onEmoji}>
             {content}
           </EmojiButton>
         </div>
@@ -112,7 +112,7 @@
       {/snippet}
       {#snippet input()}
         <div class="flex grow justify-end">
-          <label class="input input-bordered flex items-center gap-2">
+          <label class="input input-group flex items-center gap-2">
             <Icon icon={Bolt} />
             <input bind:value={amount} type="number" class="w-24" />
           </label>
@@ -122,7 +122,9 @@
     <div class="flex flex-wrap justify-end gap-2">
       {#each $zapAmounts as preset}
         <Button
-          class={cx("btn btn-sm rounded-full", preset === amount ? "btn-primary" : "btn-neutral")}
+          class={cx(
+            `button button-${preset === amount ? "primary" : "neutral"} button-sm button-pill`,
+          )}
           onclick={() => selectAmount(preset)}>
           {preset}
         </Button>
@@ -130,11 +132,11 @@
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button class="btn btn-primary" onclick={sendZap} disabled={loading}>
+    <Button class="button button-primary" onclick={sendZap} disabled={loading}>
       <Spinner {loading}>
         <div class="flex items-center gap-2">
           {#if !loading}

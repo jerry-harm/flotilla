@@ -1,4 +1,5 @@
 <script lang="ts">
+  import cx from "classnames"
   import {type Instance} from "tippy.js"
   import {hash, formatTimestampAsTime} from "@welshman/lib"
   import type {TrustedEvent, EventContent} from "@welshman/util"
@@ -71,10 +72,8 @@
 {/if}
 <div
   data-event={event.id}
-  class="group chat flex items-center justify-end gap-1 px-2"
-  class:chat-start={!isOwn}
-  class:flex-row-reverse={!isOwn}
-  class:chat-end={isOwn}>
+  class="group flex items-center justify-end gap-1 px-2"
+  class:flex-row-reverse={!isOwn}>
   {#if !isMobile}
     <Tippy
       bind:popover
@@ -100,16 +99,15 @@
     </Tippy>
   {/if}
   <div class="flex min-w-0 flex-col" class:items-end={isOwn}>
-    <TapTarget
-      class="bg-alt chat-bubble mx-1 mb-2 flex cursor-auto flex-col gap-1 text-left lg:max-w-2xl min-w-[100px]"
-      onTap={showMobileMenu}>
+    <TapTarget class={cx("chat-bubble", {"chat-bubble--user": isOwn})} onTap={showMobileMenu}>
       {#if showPubkey}
         <div class="flex items-center gap-2">
           {#if !isOwn}
             <Button onclick={openProfile} class="flex items-center gap-1">
               <ProfileCircle
                 pubkey={event.pubkey}
-                class="border border-solid border-base-content"
+                class="border border-solid"
+                style="border-color: var(--line)"
                 size={4} />
               <div class="flex items-center gap-2">
                 <Button onclick={openProfile} class="text-sm font-bold" style="color: {colorValue}">
@@ -126,7 +124,7 @@
         <Content showEntire {event} />
       </div>
     </TapTarget>
-    <div class="row-2 z-feature -mt-4 ml-4">
+    <div class="flex gap-2 z-feature -mt-4 ml-4">
       <ReactionSummary {event} {deleteReaction} {createReaction} noTooltip />
     </div>
   </div>

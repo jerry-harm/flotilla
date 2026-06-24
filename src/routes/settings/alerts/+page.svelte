@@ -9,6 +9,7 @@
   import Spinner from "@lib/components/Spinner.svelte"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
+  import PageContent from "@lib/components/PageContent.svelte"
   import {pushToast} from "@app/toast"
   import {clearBadges} from "@app/notifications"
   import {Push} from "@app/push"
@@ -55,80 +56,82 @@
   let settings = $state({...notificationSettings.get()})
 </script>
 
-<form class="content column gap-4" {onsubmit}>
-  <div class="card2 bg-alt col-4 shadow-md">
-    <strong class="flex items-center gap-3 text-lg">
-      <Icon icon={Bell} />
-      Alert Settings
-    </strong>
-    {#await Badge.isSupported()}
-      <!-- pass -->
-    {:then { isSupported }}
-      {#if isSupported}
+<form {onsubmit}>
+  <PageContent>
+    <div class="card flex flex-col gap-4 shadow-md">
+      <strong class="flex items-center gap-3 text-lg">
+        <Icon icon={Bell} />
+        Alert Settings
+      </strong>
+      {#await Badge.isSupported()}
+        <!-- pass -->
+      {:then { isSupported }}
+        {#if isSupported}
+          <FieldInline>
+            {#snippet label()}
+              <p>Show badge for unread alerts</p>
+            {/snippet}
+            {#snippet input()}
+              <input type="checkbox" class="toggle" bind:checked={settings.badge} />
+            {/snippet}
+          </FieldInline>
+        {/if}
+      {/await}
+      {#if !Capacitor.isNativePlatform()}
         <FieldInline>
           {#snippet label()}
-            <p>Show badge for unread alerts</p>
+            <p>Play sound for new activity</p>
           {/snippet}
           {#snippet input()}
-            <input type="checkbox" class="toggle toggle-primary" bind:checked={settings.badge} />
+            <input type="checkbox" class="toggle" bind:checked={settings.sound} />
           {/snippet}
         </FieldInline>
       {/if}
-    {/await}
-    {#if !Capacitor.isNativePlatform()}
       <FieldInline>
         {#snippet label()}
-          <p>Play sound for new activity</p>
+          <p>Enable push notifications</p>
         {/snippet}
         {#snippet input()}
-          <input type="checkbox" class="toggle toggle-primary" bind:checked={settings.sound} />
+          <input type="checkbox" class="toggle" bind:checked={settings.push} />
         {/snippet}
       </FieldInline>
-    {/if}
-    <FieldInline>
-      {#snippet label()}
-        <p>Enable push notifications</p>
-      {/snippet}
-      {#snippet input()}
-        <input type="checkbox" class="toggle toggle-primary" bind:checked={settings.push} />
-      {/snippet}
-    </FieldInline>
-  </div>
-  <div
-    class={cx("card2 bg-alt col-4 shadow-md", {
-      "pointer-events-none opacity-50": !settings.badge && !settings.sound && !settings.push,
-    })}>
-    <strong class="text-lg">Alert Types</strong>
-    <FieldInline>
-      {#snippet label()}
-        <p>Notify me about new activity</p>
-      {/snippet}
-      {#snippet input()}
-        <input type="checkbox" class="toggle toggle-primary" bind:checked={settings.spaces} />
-      {/snippet}
-    </FieldInline>
-    <FieldInline>
-      {#snippet label()}
-        <p>Always notify me when mentioned</p>
-      {/snippet}
-      {#snippet input()}
-        <input type="checkbox" class="toggle toggle-primary" checked={settings.mentions} />
-      {/snippet}
-    </FieldInline>
-    <FieldInline>
-      {#snippet label()}
-        <p>Notify me about new messages</p>
-      {/snippet}
-      {#snippet input()}
-        <input type="checkbox" class="toggle toggle-primary" bind:checked={settings.messages} />
-      {/snippet}
-    </FieldInline>
-  </div>
-  <div
-    class="card2 bg-alt sticky -bottom-3 shadow-md flex flex-row items-center justify-between gap-4">
-    <Button class="btn btn-neutral" onclick={reset} disabled={loading}>Discard Changes</Button>
-    <Button type="submit" class="btn btn-primary" disabled={loading}>
-      <Spinner {loading}>Save Changes</Spinner>
-    </Button>
-  </div>
+    </div>
+    <div
+      class={cx("card bg-surface flex flex-col gap-4 shadow-md", {
+        "pointer-events-none opacity-50": !settings.badge && !settings.sound && !settings.push,
+      })}>
+      <strong class="text-lg">Alert Types</strong>
+      <FieldInline>
+        {#snippet label()}
+          <p>Notify me about new activity</p>
+        {/snippet}
+        {#snippet input()}
+          <input type="checkbox" class="toggle" bind:checked={settings.spaces} />
+        {/snippet}
+      </FieldInline>
+      <FieldInline>
+        {#snippet label()}
+          <p>Always notify me when mentioned</p>
+        {/snippet}
+        {#snippet input()}
+          <input type="checkbox" class="toggle" checked={settings.mentions} />
+        {/snippet}
+      </FieldInline>
+      <FieldInline>
+        {#snippet label()}
+          <p>Notify me about new messages</p>
+        {/snippet}
+        {#snippet input()}
+          <input type="checkbox" class="toggle" bind:checked={settings.messages} />
+        {/snippet}
+      </FieldInline>
+    </div>
+    <div class="card sticky -bottom-3 shadow-md flex flex-row items-center justify-between gap-4">
+      <Button class="button button-neutral" onclick={reset} disabled={loading}
+        >Discard Changes</Button>
+      <Button type="submit" class="button button-primary" disabled={loading}>
+        <Spinner {loading}>Save Changes</Spinner>
+      </Button>
+    </div>
+  </PageContent>
 </form>

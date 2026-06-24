@@ -22,13 +22,13 @@
   })
 </script>
 
-<div class="flex-inline btn btn-neutral btn-xs gap-1 rounded-full">
+<div class="flex-inline button button-neutral button-xs gap-1 rounded-full">
   <Icon icon={Reply} />
   <span>{$replies.length} {$replies.length === 1 ? "reply" : "replies"}</span>
 </div>
-<div class="btn btn-neutral btn-xs relative rounded-full">
+<div class="button button-neutral button-xs relative rounded-full">
   {#if gt(lastActive, $checked)}
-    <div class="h-2 w-2 rounded-full bg-primary"></div>
+    <div class="h-2 w-2 rounded-full bg-primary text-primary-content"></div>
   {/if}
   Active {formatTimestampRelative(lastActive)}
 </div>

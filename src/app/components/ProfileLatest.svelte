@@ -2,6 +2,7 @@
   import type {Snippet} from "svelte"
   import {load} from "@welshman/net"
   import {NOTE} from "@welshman/util"
+  import Spinner from "@lib/components/Spinner.svelte"
   import NoteItem from "@app/components/NoteItem.svelte"
 
   interface Props {
@@ -19,11 +20,11 @@
   })
 </script>
 
-<div class="col-4">
+<div class="flex flex-col gap-4">
   <div class="flex flex-col gap-2">
     {#await events}
-      <p class="center flex min-h-6">
-        <span class="loading loading-spinner"></span>
+      <p class="flex justify-center items-center min-h-6">
+        <Spinner />
       </p>
     {:then events}
       {#each events as event (event.id)}

@@ -20,6 +20,7 @@
   import {fly} from "@lib/transition"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import Popover from "@lib/components/Popover.svelte"
   import Confirm from "@lib/components/Confirm.svelte"
   import Tooltip from "@lib/components/Tooltip.svelte"
@@ -139,14 +140,14 @@
         </div>
       </div>
       <div class="relative">
-        <Button class="btn btn-circle btn-ghost btn-sm" onclick={toggleMenu}>
+        <Button class="button button-ghost button-sm button-circle" onclick={toggleMenu}>
           <Icon icon={MenuDots} />
         </Button>
         {#if showMenu}
           <Popover hideOnClick onClose={closeMenu}>
             <ul
               transition:fly
-              class="bg-alt menu absolute right-0 z-popover w-48 gap-1 rounded-box p-2 shadow-md">
+              class="bg-surface menu absolute right-0 z-popover w-48 gap-1 rounded-2xl p-2 shadow-md">
               {#if $userIsAdmin}
                 <li>
                   <Button onclick={startEdit}>
@@ -164,7 +165,7 @@
                 <li>
                   <Button disabled={loading} onclick={join}>
                     {#if loading}
-                      <span class="loading loading-spinner loading-sm"></span>
+                      <Spinner size="sm" />
                     {:else}
                       <Icon icon={Login3} />
                     {/if}
@@ -182,7 +183,7 @@
                 <li>
                   <Button disabled={loading} onclick={leave}>
                     {#if loading}
-                      <span class="loading loading-spinner loading-sm"></span>
+                      <Spinner size="sm" />
                     {:else}
                       <Icon icon={Login3} />
                     {/if}
@@ -198,40 +199,40 @@
     {#if $room?.about}
       <p>{$room.about}</p>
     {/if}
-    <div class="flex flex-col gap-2 card2 card2-sm bg-alt">
+    <div class="flex flex-col gap-2 card card-sm">
       <strong class="text-lg">Room Permissions</strong>
       <div class="flex gap-2 flex-wrap">
         {#if $room?.isRestricted}
           <Tooltip content="Only members can send messages.">
-            <Button class="btn btn-neutral btn-xs rounded-full flex gap-2 items-center">
+            <Button class="button button-neutral button-xs button-pill flex gap-2 items-center">
               <Icon size={4} icon={Microphone} /> Restricted
             </Button>
           </Tooltip>
         {/if}
         {#if $room?.isPrivate}
           <Tooltip content="Only members can view messages.">
-            <Button class="btn btn-neutral btn-xs rounded-full flex gap-2 items-center">
+            <Button class="button button-neutral button-xs button-pill flex gap-2 items-center">
               <Icon size={4} icon={Lock} /> Private
             </Button>
           </Tooltip>
         {/if}
         {#if $room?.isHidden}
           <Tooltip content="This room is not visible to non-members.">
-            <Button class="btn btn-neutral btn-xs rounded-full flex gap-2 items-center">
+            <Button class="button button-neutral button-xs button-pill flex gap-2 items-center">
               <Icon size={4} icon={EyeClosed} /> Hidden
             </Button>
           </Tooltip>
         {/if}
         {#if $room?.isClosed}
           <Tooltip content="Requests to join this room will be ignored.">
-            <Button class="btn btn-neutral btn-xs rounded-full flex gap-2 items-center">
+            <Button class="button button-neutral button-xs button-pill flex gap-2 items-center">
               <Icon size={4} icon={MinusCircle} /> Closed
             </Button>
           </Tooltip>
         {/if}
         {#if !$room?.isRestricted && !$room?.isPrivate && !$room?.isHidden && !$room?.isClosed}
           <Tooltip content="This room has no additional access controls.">
-            <Button class="btn btn-neutral btn-xs rounded-full flex gap-2 items-center">
+            <Button class="button button-neutral button-xs button-pill flex gap-2 items-center">
               <Icon size={4} icon={Eye} /> Public
             </Button>
           </Tooltip>
@@ -239,19 +240,19 @@
       </div>
     </div>
     {#if $members !== undefined && $members.length > 0}
-      <div class="card2 card2-sm bg-alt flex items-center justify-between gap-4">
+      <div class="card card-sm flex items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <span>Members:</span>
           <ProfileCircles pubkeys={$members} />
         </div>
-        <Button class="btn btn-neutral btn-sm" onclick={showMembers}>View All</Button>
+        <Button class="button button-neutral button-sm" onclick={showMembers}>View All</Button>
       </div>
     {:else if $members === undefined}
-      <div class="card2 card2-sm bg-base-200 flex items-center gap-4">
+      <div class="card card-sm bg-surface flex items-center gap-4">
         <span class="text-error">Member list not available from this relay</span>
       </div>
     {/if}
-    <div class="card2 card2-sm bg-alt col-4">
+    <div class="card card-sm flex flex-col gap-4">
       <strong class="text-lg">Room Settings</strong>
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -260,7 +261,7 @@
         </div>
         <input
           type="checkbox"
-          class="toggle toggle-primary"
+          class="toggle"
           checked={$shouldNotify}
           onchange={toggleShouldNotify} />
       </div>
@@ -269,16 +270,12 @@
           <Icon icon={Bookmark} />
           <span>Favorite</span>
         </div>
-        <input
-          type="checkbox"
-          class="toggle toggle-primary"
-          checked={isFavorite}
-          onchange={toggleFavorite} />
+        <input type="checkbox" class="toggle" checked={isFavorite} onchange={toggleFavorite} />
       </div>
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>

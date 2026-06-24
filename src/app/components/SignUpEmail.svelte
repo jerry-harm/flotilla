@@ -121,7 +121,7 @@
         <p>Email*</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input flex w-full items-center gap-2">
           <Icon icon={Letter} />
           <input type="email" bind:value={email} />
         </label>
@@ -132,7 +132,7 @@
         <p>Password*</p>
       {/snippet}
       {#snippet input()}
-        <label class="input input-bordered flex w-full items-center gap-2">
+        <label class="input flex w-full items-center gap-2">
           <Icon icon={Key} />
           <input type="password" bind:value={password} />
         </label>
@@ -146,11 +146,11 @@
     <ProgressBar current={step} total={totalSteps} />
   {/if}
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button class="btn btn-primary" type="submit" disabled={loading || !email || !password}>
+    <Button class="button button-primary" type="submit" disabled={loading || !email || !password}>
       <Spinner {loading}>Continue</Spinner>
       <Icon icon={AltArrowRight} />
     </Button>

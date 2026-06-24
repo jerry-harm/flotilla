@@ -10,6 +10,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Badge from "@lib/components/Badge.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
@@ -120,7 +121,7 @@
   })
 </script>
 
-<Modal class="col-2">
+<Modal class="flex flex-col gap-2">
   <ModalHeader>
     <ModalTitle>Search Content</ModalTitle>
     <ModalSubtitle>
@@ -128,7 +129,7 @@
     </ModalSubtitle>
   </ModalHeader>
   <ModalBody>
-    <label class="input input-sm input-bordered flex w-full items-center gap-2">
+    <label class="input input-sm input-group flex w-full items-center gap-2">
       <Icon size={4} icon={Magnifier} />
       <input
         bind:this={input}
@@ -156,19 +157,19 @@
         {#each events as event (event.id)}
           {@const h = getTagValue("h", event.tags)}
           <Button
-            class="card2 card2-sm card2-interactive col-2"
+            class="card card-sm card-interactive flex flex-col gap-2"
             onclick={() => onResultClick(event)}>
             <NoteCard minimal {event}>
               <NoteContentMinimal {event} />
             </NoteCard>
-            <div class="row-2">
-              <div class="badge badge-sm badge-neutral">
+            <div class="flex gap-2">
+              <Badge variant="neutral">
                 {getAgeLabel(event.created_at)}
-              </div>
+              </Badge>
               {#if h}
-                <div class="badge badge-sm badge-neutral">
+                <Badge variant="neutral">
                   <RoomName {url} {h} />
-                </div>
+                </Badge>
               {/if}
             </div>
           </Button>

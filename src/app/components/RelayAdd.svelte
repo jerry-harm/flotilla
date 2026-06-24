@@ -12,6 +12,7 @@
   import AddCircle from "@assets/icons/add-circle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
@@ -83,19 +84,19 @@
 
 <Modal>
   <ModalBody>
-    <label class="input input-bordered flex w-full items-center gap-2">
+    <label class="input input-group flex w-full items-center gap-2">
       <Icon icon={Magnifier} />
       <input bind:value={term} class="grow" type="text" placeholder="Search for relays..." />
     </label>
-    <div class="column -m-6 mt-0 h-[50vh] gap-2 overflow-auto p-6 pt-2" bind:this={element}>
+    <div class="flex flex-col -m-6 mt-0 h-[50vh] gap-2 overflow-auto p-6 pt-2" bind:this={element}>
       {#if customUrl && isShareableRelayUrl(customUrl) && !$relays.includes(customUrl)}
         <RelayItem url={term}>
           <Button
-            class="btn btn-outline btn-sm flex items-center"
+            class="button button-outline button-sm flex items-center"
             disabled={loading.has(customUrl)}
             onclick={() => add(customUrl)}>
             {#if loading.has(customUrl)}
-              <span class="loading loading-spinner loading-sm"></span>
+              <Spinner size="sm" />
             {:else}
               <Icon icon={AddCircle} />
             {/if}
@@ -106,11 +107,11 @@
       {#each searchResults as url (url)}
         <RelayItem {url}>
           <Button
-            class="btn btn-outline btn-sm flex items-center"
+            class="button button-outline button-sm flex items-center"
             disabled={loading.has(url)}
             onclick={() => add(url)}>
             {#if loading.has(url)}
-              <span class="loading loading-spinner loading-sm"></span>
+              <Spinner size="sm" />
             {:else}
               <Icon icon={AddCircle} />
             {/if}
@@ -121,6 +122,6 @@
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-primary grow" onclick={back}>Done</Button>
+    <Button class="button button-primary grow" onclick={back}>Done</Button>
   </ModalFooter>
 </Modal>

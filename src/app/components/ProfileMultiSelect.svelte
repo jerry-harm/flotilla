@@ -11,6 +11,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Badge from "@lib/components/Badge.svelte"
   import ProfileSuggestion from "@app/editor/ProfileSuggestion.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
@@ -78,21 +79,21 @@
   })
 </script>
 
-<div class="flex flex-col gap-2">
+<div class="flex flex-col gap-1">
   <div>
     {#each value as pubkey (pubkey)}
       {@const onClick = () => pushModal(ProfileDetail, {pubkey})}
-      <div class="flex-inline badge badge-neutral mr-1 gap-1">
+      <Badge variant="neutral" class="flex-inline mr-1 mb-1 gap-1">
         <Button class="flex items-center" onclick={() => removePubkey(pubkey)}>
           <Icon icon={CloseCircle} size={4} class="-ml-1 mt-px" />
         </Button>
         <Button onclick={onClick}>
           <ProfileName {pubkey} />
         </Button>
-      </div>
+      </Badge>
     {/each}
   </div>
-  <label class="input input-bordered flex w-full items-center gap-2" bind:this={label}>
+  <label class="input flex w-full items-center gap-2" bind:this={label}>
     <Icon icon={Magnifier} />
     <!-- svelte-ignore a11y_autofocus -->
     <input
@@ -113,7 +114,7 @@
       search,
       select: selectPubkey,
       component: ProfileSuggestion,
-      class: "rounded-box",
+      class: "rounded-2xl",
       style: `left: 4px; width: ${label?.clientWidth + 12}px`,
     }}
     params={{

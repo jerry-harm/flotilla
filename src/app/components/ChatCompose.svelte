@@ -8,6 +8,7 @@
   import Plane from "@assets/icons/plane-2.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import EditorContent from "@app/editor/EditorContent.svelte"
   import {makeEditor} from "@app/editor"
   import {type DraftKey} from "@app/drafts"
@@ -113,11 +114,11 @@
 <form class="relative z-feature flex gap-2 p-2" onsubmit={preventDefault(submit)}>
   <Button
     data-tip="Add an image"
-    class="center tooltip tooltip-right h-10 w-10 min-w-10 rounded-box bg-base-300 transition-colors hover:bg-base-200"
+    class="button button-neutral button-square tip tip-right h-10 w-10 min-w-10 rounded-2xl transition-colors"
     disabled={$uploading || disabled}
     onclick={uploadFiles}>
     {#if $uploading}
-      <span class="loading loading-spinner loading-xs"></span>
+      <Spinner size="xs" />
     {:else}
       <Icon icon={GallerySend} />
     {/if}
@@ -127,7 +128,7 @@
   </div>
   <Button
     data-tip="{window.navigator.platform.includes('Mac') ? 'cmd' : 'ctrl'}+enter to send"
-    class="center tooltip tooltip-left absolute right-4 h-10 w-10 min-w-10 rounded-full"
+    class="button button-primary button-circle tip tip-left h-10 w-10 min-w-10"
     disabled={$uploading || disabled}
     onclick={submit}>
     <Icon icon={Plane} />

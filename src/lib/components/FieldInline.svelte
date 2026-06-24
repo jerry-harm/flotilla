@@ -23,7 +23,7 @@
     </div>
   </div>
   {#if props.info}
-    <p class="text-sm opacity-50">
+    <p class="text-sm text-muted">
       {@render props.info()}
     </p>
   {/if}

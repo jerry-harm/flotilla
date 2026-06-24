@@ -1,4 +1,5 @@
 <script lang="ts">
+  import cx from "classnames"
   import {nsecEncode} from "nostr-tools/nip19"
   import {encrypt} from "nostr-tools/nip49"
   import {hexToBytes} from "@welshman/lib"
@@ -129,7 +130,7 @@
           Password*
         {/snippet}
         {#snippet input()}
-          <label class="input input-bordered flex w-full items-center gap-2">
+          <label class="input flex w-full items-center gap-2">
             <Icon icon={Key} />
             <input bind:value={password} onchange={onPasswordChange} class="grow" type="password" />
           </label>
@@ -140,11 +141,13 @@
       </Field>
     {/if}
     <div class="flex flex-col">
-      <Button class="btn {didDownload ? 'btn-neutral' : 'btn-primary'}" onclick={downloadKey}>
+      <Button
+        class={cx(`button button-${didDownload ? "neutral" : "primary"}`)}
+        onclick={downloadKey}>
         Download my key
         <Icon icon={ArrowDown} />
       </Button>
-      <Button class="btn btn-link no-underline" onclick={toggleUsePassword}>
+      <Button class="button button-link no-underline" onclick={toggleUsePassword}>
         {#if usePassword}
           Nevermind, I want to download the plain version
         {:else}
@@ -157,11 +160,11 @@
     <ProgressBar current={step} total={totalSteps} />
   {/if}
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button disabled={!didDownload} class="btn btn-primary" type="submit">
+    <Button class="button button-primary" disabled={!didDownload} type="submit">
       {submitText}
       <Icon icon={AltArrowRight} />
     </Button>

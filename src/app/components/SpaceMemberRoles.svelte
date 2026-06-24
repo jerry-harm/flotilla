@@ -86,15 +86,15 @@
       </ModalSubtitle>
     </ModalHeader>
     {#if $roles.length === 0}
-      <div class="card2 bg-base-200 p-4 text-sm opacity-70">This space has no roles yet.</div>
+      <div class="card bg-surface p-4 text-sm opacity-70">This space has no roles yet.</div>
     {:else}
       <div class="flex flex-col gap-2">
         {#each $roles as role (role.id)}
-          <label class="card2 card2-sm flex justify-between cursor-pointer gap-3">
+          <label class="card card-sm flex justify-between cursor-pointer gap-3">
             <RoleItem {role} />
             <input
               type="checkbox"
-              class="checkbox checkbox-sm"
+              class="checkbox"
               checked={selected.has(role.id)}
               onchange={() => toggle(role.id)} />
           </label>
@@ -103,11 +103,11 @@
     {/if}
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button class="btn btn-primary" onclick={submit} disabled={loading}>
+    <Button class="button button-primary" onclick={submit} disabled={loading}>
       <Spinner {loading}>Save changes</Spinner>
     </Button>
   </ModalFooter>

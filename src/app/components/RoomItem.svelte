@@ -89,7 +89,7 @@
   data-event={event.id}
   {onTap}
   class={cx(
-    "group relative flex w-full cursor-default flex-col px-2 py-0.5 text-left hover:bg-base-100/50",
+    "room__item group relative flex w-full cursor-default flex-col px-2 py-0.5 text-left transition-colors",
     {"mt-1.5": showPubkey},
   )}>
   <div class="flex w-full gap-3 overflow-auto">
@@ -97,7 +97,8 @@
       <Button onclick={openProfile} class="flex items-start pt-1.5 justify-center w-8 shrink-0">
         <ProfileCircle
           pubkey={event.pubkey}
-          class="border border-solid border-base-content"
+          class="border border-solid"
+          style="border-color: var(--line)"
           size={8} />
       </Button>
     {:else}
@@ -127,25 +128,25 @@
       </div>
     </div>
   </div>
-  <div class="row-2 ml-10 mt-1 pl-1">
+  <div class="flex gap-2 ml-10 mt-1 pl-1">
     <ReactionSummary
       {url}
       {event}
       {deleteReaction}
       {createReaction}
-      reactionClass="tooltip-right"
+      reactionClass="tip-right"
       innerEvent={$innerEvent} />
     {#if path && $innerComments.length > 0}
       {@const pubkeys = $innerComments.map(e => e.pubkey)}
       {@const isOwn = $pubkey && pubkeys.includes($pubkey)}
       {@const info = displayList(pubkeys.map(pubkey => displayProfileByPubkey(pubkey)))}
       {@const tooltip = `${info} commented`}
-      <div data-tip={tooltip} class="tooltip tooltip-right flex">
+      <div data-tip={tooltip} class="tip tip-right flex">
         <Link
           href={path}
-          class={cx("btn btn-xs gap-1 rounded-full", {
-            "btn-neutral": !isOwn,
-            "btn-primary": isOwn,
+          class={cx("button button-xs gap-1 rounded-full", {
+            "button-neutral": !isOwn,
+            "button-primary": isOwn,
           })}>
           <Icon icon={ReplyAlt} />
           <span>{$innerComments.length} comment{$innerComments.length === 1 ? "" : "s"}</span>
@@ -155,19 +156,19 @@
   </div>
   {#if !isMobile}
     <button
-      class="join absolute right-2 top-0.5 border border-solid border-neutral text-xs opacity-0 transition-all pr-2"
+      class="join absolute right-2 top-0.5 opacity-0 transition-all"
       class:group-hover:opacity-100={!isMobile}>
       {#if ENABLE_ZAPS}
         <RoomItemZapButton {url} {event} />
       {/if}
       <RoomItemEmojiButton {url} {event} />
       {#if replyTo}
-        <Button class="btn join-item btn-xs" onclick={reply}>
+        <Button class="button button-xs button-neutral join-item" onclick={reply}>
           <Icon icon={Reply} size={4} />
         </Button>
       {/if}
       {#if edit}
-        <Button class="btn join-item btn-xs" onclick={edit}>
+        <Button class="button button-xs button-neutral join-item" onclick={edit}>
           <Icon icon={Pen} size={4} />
         </Button>
       {/if}

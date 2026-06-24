@@ -58,7 +58,7 @@
   })
 </script>
 
-<div class="col-4" bind:this={element}>
+<div class="flex flex-col gap-4" bind:this={element}>
   <div class="flex flex-col gap-2">
     {#each events as event (event.id)}
       <div in:fly>
@@ -66,7 +66,7 @@
       </div>
     {/each}
     {#if !hideLoading}
-      <p class="center my-12 flex">
+      <p class="justify-center items-center my-12 flex">
         <Spinner loading />
       </p>
     {/if}

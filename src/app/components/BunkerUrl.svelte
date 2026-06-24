@@ -34,7 +34,7 @@
     <p>Bunker Link*</p>
   {/snippet}
   {#snippet input()}
-    <label class="input input-bordered flex w-full items-center gap-2">
+    <label class="input input-group flex w-full items-center gap-2">
       <Icon icon={CpuBolt} />
       <input disabled={$loading} bind:value={$bunker} class="grow" placeholder="bunker://" />
       <Button onclick={toggleScanner}>
@@ -45,7 +45,8 @@
   {#snippet info()}
     <p>
       A login link provided by a nostr signing app.
-      <Button class="link" onclick={() => pushModal(InfoBunker)}>What is a bunker link?</Button>
+      <Button class="button button-link" onclick={() => pushModal(InfoBunker)}
+        >What is a bunker link?</Button>
     </p>
   {/snippet}
 </Field>

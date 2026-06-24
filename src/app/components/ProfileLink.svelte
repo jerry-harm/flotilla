@@ -20,6 +20,6 @@
 
 <Button
   onclick={preventDefault(openProfile)}
-  class={cx(props.class, {"link-content bg-alt": !unstyled})}>
+  class={cx(props.class, {"link-content bg-surface": !unstyled})}>
   @<ProfileName {pubkey} {url} />
 </Button>

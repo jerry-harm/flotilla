@@ -44,16 +44,16 @@
       </p>
       <p>If you'd like to switch to self-custody, please click below to get started.</p>
     {:else}
-      <Button class="btn btn-primary" onclick={back}>Got it</Button>
+      <Button class="button button-primary" onclick={back}>Got it</Button>
     {/if}
   </ModalBody>
   {#if $session?.email}
     <ModalFooter>
-      <Button class="btn btn-link" onclick={back}>
+      <Button class="button button-link" onclick={back}>
         <Icon icon={AltArrowLeft} />
         Go back
       </Button>
-      <Button class="btn btn-primary" onclick={startRecoveryRequest}>
+      <Button class="button button-primary" onclick={startRecoveryRequest}>
         <Icon icon={CheckCircle} />
         I want to hold my own keys
       </Button>

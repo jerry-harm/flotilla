@@ -4,6 +4,7 @@
   import {Capacitor} from "@capacitor/core"
   import {preventDefault, stopPropagation} from "@lib/html"
   import Link from "@lib/components/Link.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import ContentLinkDetail from "@app/components/ContentLinkDetail.svelte"
   import ContentLinkUrl from "@app/components/ContentLinkUrl.svelte"
   import ContentLinkBlockImage from "@app/components/ContentLinkBlockImage.svelte"
@@ -57,34 +58,35 @@
   </div>
 {:else}
   <Link {external} {href} class="my-2 block">
-    <div class="overflow-hidden rounded-box">
+    <div class="overflow-hidden rounded-2xl">
       {#if url.match(/\.(mov|webm|mp4)$/) || VIDEO_CONTENT_TYPES.includes(fileType)}
         <video
           controls
           src={url}
           poster={getVideoPoster(url)}
           preload="metadata"
-          class="max-h-96 rounded-box object-contain object-center">
+          class="max-h-96 rounded-2xl object-contain object-center">
           <track kind="captions" />
         </video>
       {:else if url.match(/\.(jpe?g|png|gif|webp)$/) || IMAGE_CONTENT_TYPES.includes(fileType)}
         <button type="button" onclick={stopPropagation(preventDefault(expand))}>
-          <ContentLinkBlockImage {value} {event} class="m-auto max-h-96 rounded-box" />
+          <ContentLinkBlockImage {value} {event} class="m-auto max-h-96 rounded-2xl" />
         </button>
       {:else}
         {#await loadPreview()}
-          <div class="center my-12 w-full">
-            <span class="loading loading-spinner"></span>
+          <div class="flex justify-center items-center my-12 w-full">
+            <Spinner />
           </div>
         {:then preview}
           <div
-            class="border border-solid border-base-content/20 flex max-w-xl flex-col leading-normal rounded-box">
+            class="border border-solid flex max-w-xl flex-col leading-normal rounded-2xl"
+            style="border-color: var(--line)">
             {#if preview.image && !hideImage}
               <img
                 alt=""
                 onerror={onError}
                 src={preview.image}
-                class="bg-alt max-h-72 rounded-t-box object-contain object-center" />
+                class="bg-surface max-h-72 rounded-t-2xl object-contain object-center" />
             {/if}
             <div class="flex flex-col gap-2 p-4">
               <strong class="overflow-hidden text-ellipsis whitespace-nowrap"
@@ -93,7 +95,9 @@
             </div>
           </div>
         {:catch}
-          <p class="border border-solid border-base-content/20 p-12 text-center leading-normal">
+          <p
+            class="border border-solid p-12 text-center leading-normal"
+            style="border-color: var(--line)">
             Unable to load a preview for {url}
           </p>
         {/await}

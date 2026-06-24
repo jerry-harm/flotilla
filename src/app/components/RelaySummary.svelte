@@ -17,19 +17,19 @@
   const favorited = deriveGroupListPubkeys(url)
 </script>
 
-<div class="col-4 text-left">
-  <div class="col-2">
+<div class="flex flex-col gap-4 text-left">
+  <div class="flex flex-col gap-2">
     <div class="relative flex gap-2 sm:gap-4">
       <div class="relative">
-        <div class="avatar relative">
+        <div class="relative">
           <div
-            class="center flex! h-12 w-12 min-w-12 rounded-full border-2 border-solid border-base-300 bg-base-300">
+            class="flex justify-center items-center h-12 w-12 min-w-12 rounded-full border-2 border-solid bg-surface-more border-line">
             <RelayIcon {url} size={10} />
           </div>
         </div>
         {#if $rooms.includes(url)}
           <div
-            class="tooltip absolute -right-1 -top-1 h-5 w-5 rounded-full bg-primary"
+            class="tip absolute -right-1 -top-1 h-5 w-5 rounded-full bg-primary text-primary-content"
             data-tip="You are already a member of this space.">
             <Icon icon={CheckCircle} class="scale-110" />
           </div>
@@ -43,7 +43,7 @@
     <RelayDescription {url} class="text-sm sm:text-md" />
   </div>
   {#if !hideFavorites && $favorited.size > 0}
-    <div class="row-2 card2 card2-sm bg-alt">
+    <div class="flex gap-2 card card-sm">
       Favorited By:
       <ProfileCircles pubkeys={Array.from($favorited)} />
     </div>

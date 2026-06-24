@@ -1,31 +1,34 @@
 <script lang="ts">
+  import type {Snippet} from "svelte"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
-  interface Props {
-    icon?: import("svelte").Snippet
-    title?: import("svelte").Snippet
-    info?: import("svelte").Snippet
+
+  type Props = {
+    icon?: Snippet
+    title?: Snippet
+    info?: Snippet
+    primary?: boolean
     [key: string]: any
   }
 
-  const {...props}: Props = $props()
+  const {icon, title, info, primary, ...props}: Props = $props()
 </script>
 
-<div class="btn flex h-[unset] w-full flex-nowrap py-4 text-left {props.class}">
-  <div class="flex grow flex-row items-start gap-4">
-    <div class="flex h-14 w-12 shrink-0 items-center justify-center">
-      {@render props.icon?.()}
+<div class="card-button {primary ? 'card-button-primary' : 'card-button-neutral'}">
+  <div class="card-button__left">
+    <div class="card-button__icon">
+      {@render icon?.()}
     </div>
-    <div class="flex flex-col gap-1">
-      <p class="text-bold text-lg">
-        {@render props.title?.()}
+    <div class="card-button__content">
+      <p class="card-button__title">
+        {@render title?.()}
       </p>
-      <p class="text-sm">
-        {@render props.info?.()}
+      <p class="card-button__info">
+        {@render info?.()}
       </p>
     </div>
   </div>
-  <div class="hidden h-14 w-14 items-center justify-end sm:flex">
+  <div class="card-button__right">
     <Icon size={7} icon={AltArrowRight} />
   </div>
 </div>

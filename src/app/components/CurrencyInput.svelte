@@ -66,11 +66,7 @@
 </script>
 
 <button
-  class={cx(
-    props.class,
-    {"bg-base-200": currency},
-    "input input-bordered flex items-center gap-2 cursor-pointer",
-  )}
+  class={cx(props.class, {"bg-surface": currency}, "input flex items-center gap-2 cursor-pointer")}
   bind:this={wrapper}
   onfocus={preventDefault(clearAndFocus)}
   onclick={preventDefault(clearAndFocus)}>

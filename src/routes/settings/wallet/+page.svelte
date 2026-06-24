@@ -12,6 +12,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
+  import PageContent from "@lib/components/PageContent.svelte"
   import WalletPay from "@app/components/WalletPay.svelte"
   import WalletReceive from "@app/components/WalletReceive.svelte"
   import WalletConnect from "@app/components/WalletConnect.svelte"
@@ -136,8 +137,8 @@
   let zapAmountsLoading = $state(false)
 </script>
 
-<div class="content column gap-4">
-  <div class="card2 bg-alt flex flex-col gap-6 shadow-md">
+<PageContent>
+  <div class="card flex flex-col gap-6">
     <div class="flex items-center justify-between">
       <strong class="flex items-center gap-3 text-lg">
         <Icon icon={Wallet2} />
@@ -146,7 +147,7 @@
       {#if $session?.wallet}
         <div class={statusClass}>
           {#if walletStatus === "checking"}
-            <span class="loading loading-spinner loading-xs"></span>
+            <Spinner size="xs" />
             Checking
           {:else if walletStatus === "connected"}
             <Icon icon={CheckCircle} size={4} />
@@ -157,13 +158,13 @@
           {/if}
         </div>
       {:else}
-        <Button class="btn btn-primary btn-sm" onclick={connect}>
+        <Button class="button button-primary button-sm" onclick={connect}>
           <Icon icon={AddCircle} />
           Connect Wallet
         </Button>
       {/if}
     </div>
-    <div class="col-4">
+    <div class="flex flex-col gap-4">
       {#if $session?.wallet}
         {#if $session.wallet.type === "webln"}
           {@const {node, version} = $session.wallet.info}
@@ -178,7 +179,7 @@
                 {#await getWebLn()
                   ?.enable()
                   .then(() => getWebLn().getBalance())}
-                  <span class="loading loading-spinner loading-sm"></span>
+                  <Spinner size="sm" />
                 {:then res}
                   {new Intl.NumberFormat(LOCALE).format(res?.balance || 0)}
                 {:catch}
@@ -187,7 +188,7 @@
                 sats
               {:else if walletStatus === "checking"}
                 Balance:
-                <span class="loading loading-spinner loading-sm"></span>
+                <Spinner size="sm" />
               {:else}
                 Balance unavailable
               {/if}
@@ -204,7 +205,7 @@
               {#if walletStatus === "connected"}
                 Balance:
                 {#await getNwcClient().getBalance()}
-                  <span class="loading loading-spinner loading-sm"></span>
+                  <Spinner size="sm" />
                 {:then res}
                   {new Intl.NumberFormat(LOCALE).format(fromMsats(res?.balance || 0))}
                 {:catch}
@@ -213,7 +214,7 @@
                 sats
               {:else if walletStatus === "checking"}
                 Balance:
-                <span class="loading loading-spinner loading-sm"></span>
+                <Spinner size="sm" />
               {:else}
                 Balance unavailable
               {/if}
@@ -221,20 +222,20 @@
           </div>
         {/if}
         <div class="flex flex-col gap-4 lg:flex-row lg:justify-between">
-          <Button class="btn btn-neutral btn-sm" onclick={disconnect}>
+          <Button class="button button-neutral button-sm" onclick={disconnect}>
             <Icon icon={CloseCircle} />
             Disconnect Wallet
           </Button>
           <div class="flex w-full gap-4 lg:w-auto">
             <Button
-              class="btn btn-primary btn-sm flex-1 justify-center lg:flex-none"
+              class="button button-primary button-sm flex-1 justify-center lg:flex-none"
               onclick={pay}
               disabled={!isWalletAvailable}>
               <Icon icon={UploadMinimalistic} />
               Send
             </Button>
             <Button
-              class="btn btn-secondary btn-sm flex-1 justify-center lg:flex-none"
+              class="button button-secondary button-sm flex-1 justify-center lg:flex-none"
               onclick={receive}
               disabled={!isWalletAvailable}>
               <Icon icon={DownloadMinimalistic} />
@@ -247,22 +248,23 @@
       {/if}
     </div>
   </div>
-  <div class="card2 bg-alt flex flex-col shadow-md gap-6">
+  <div class="card flex flex-col gap-6">
     <strong>Lightning Address</strong>
     <div class="flex justify-between items-center gap-2">
       <span class={profileLightningAddress ? "" : "text-warning"}>
         {profileLightningAddress ? profileLightningAddress : "Not set"}
       </span>
-      <Button class="btn btn-neutral btn-xs ml-3" onclick={updateReceivingAddress}>Update</Button>
+      <Button class="button button-neutral button-xs ml-3" onclick={updateReceivingAddress}
+        >Update</Button>
     </div>
     {#if profileLightningAddress && walletLud16 && profile?.lud16 !== walletLud16}
-      <div class="card2 bg-alt flex items-center gap-2 text-xs">
+      <div class="card flex items-center gap-2 text-xs">
         <Icon icon={InfoCircle} size={4} />
         Your profile has a different lightning address than your connected wallet.
       </div>
     {/if}
   </div>
-  <form class="card2 bg-alt flex flex-col gap-6 shadow-md" onsubmit={onZapAmountsSubmit}>
+  <form class="card flex flex-col gap-6" onsubmit={onZapAmountsSubmit}>
     <strong class="flex items-center gap-3 text-lg">
       <Icon icon={Bolt} />
       Zap Amounts
@@ -272,13 +274,13 @@
       {#each zapAmountDraft as amount, index}
         <div class="flex items-center gap-2">
           <Button
-            class="btn btn-ghost btn-sm"
+            class="button button-ghost button-sm"
             type="button"
             onclick={() => removeZapAmount(index)}
             disabled={zapAmountDraft.length === 1}>
             <Icon icon={TrashBin2} />
           </Button>
-          <label class="input input-bordered flex grow items-center gap-2">
+          <label class="input flex grow items-center gap-2">
             <Icon icon={Bolt} />
             <input
               type="number"
@@ -290,22 +292,22 @@
           </label>
         </div>
       {/each}
-      <Button class="btn btn-link w-fit px-0" type="button" onclick={addZapAmount}>
+      <Button class="button button-link w-fit px-0" type="button" onclick={addZapAmount}>
         <Icon icon={AddCircle} size={5} />
         Add amount
       </Button>
     </div>
     <div class="flex flex-row items-center justify-between gap-4">
       <Button
-        class="btn btn-neutral"
+        class="button button-neutral"
         type="button"
         onclick={resetZapAmounts}
         disabled={zapAmountsLoading}>
         Discard Changes
       </Button>
-      <Button type="submit" class="btn btn-primary" disabled={zapAmountsLoading}>
+      <Button type="submit" class="button button-primary" disabled={zapAmountsLoading}>
         <Spinner loading={zapAmountsLoading}>Save Changes</Spinner>
       </Button>
     </div>
   </form>
-</div>
+</PageContent>

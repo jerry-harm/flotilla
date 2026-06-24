@@ -50,11 +50,11 @@
         <Icon icon={MenuDots} />
       </Button>
     </SecondaryNavHeader>
-    <Button class="btn btn-primary w-full btn-sm" onclick={startChat}>
+    <Button class="button button-primary button-sm w-full" onclick={startChat}>
       <Icon icon={ChatSquarePlus} />
       Start New Chat
     </Button>
-    <label class="input input-sm input-bordered flex items-center gap-2">
+    <label class="input input-sm flex items-center gap-2">
       <Icon icon={Magnifier} />
       <input bind:value={term} class="grow" type="text" />
     </label>
@@ -64,7 +64,8 @@
       <ChatItem {id} {pubkeys} {messages} />
     {/each}
     {#await promise}
-      <div class="border-t border-solid border-base-100 px-6 py-4 text-xs">
+      <div class="divider"></div>
+      <div class="px-6 py-4 text-xs">
         <Spinner loading>Loading conversations...</Spinner>
       </div>
     {/await}

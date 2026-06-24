@@ -12,29 +12,28 @@
   const {url, h, threads}: Props = $props()
 </script>
 
-<section class="rounded-box border border-base-content/15 bg-base-100 shadow-sm">
-  <header
-    class="flex items-center justify-between gap-2 border-b border-base-content/15 bg-base-200/70 px-4 py-2.5">
-    <h2 class="text-sm font-bold sm:text-base">
+<section class="card card-flat overflow-hidden pb-4 p-0">
+  <header class="flex gap-2 justify-between bg-surface px-4 py-2.5">
+    <h2 class="text-sm font-bold">
       {#if h}
         #<RoomName {url} {h} />
       {:else}
         General
       {/if}
     </h2>
-    <span class="text-xs opacity-60">
+    <span class="text-xs text-muted">
       {threads.length}
       {threads.length === 1 ? "topic" : "topics"}
     </span>
   </header>
   <table class="w-full border-collapse">
     <thead
-      class="hidden text-xs font-bold uppercase tracking-wide opacity-60 sm:table-header-group">
-      <tr class="border-b border-base-content/10 bg-base-200/40">
-        <th class="px-4 py-2 text-left font-bold">Topic</th>
-        <th class="w-32 px-4 py-2 text-left font-bold">Author</th>
-        <th class="w-20 px-4 py-2 text-center font-bold">Replies</th>
-        <th class="w-32 px-4 py-2 text-right font-bold">Last post</th>
+      class="hidden text-xs font-bold uppercase tracking-wide text-muted sm:table-header-group">
+      <tr>
+        <th class="px-4 py-2 text-left">Topic</th>
+        <th class="w-32 px-4 py-2 text-left">Author</th>
+        <th class="w-20 px-4 py-2 text-center">Replies</th>
+        <th class="w-32 px-4 py-2 text-right">Last post</th>
       </tr>
     </thead>
     <tbody>

@@ -202,7 +202,7 @@
       </div>
       <div class="flex items-center gap-2">
         {#if PLATFORM_RELAYS.length === 0}
-          <Button class="btn btn-primary btn-sm" onclick={addSpace}>
+          <Button class="button button-primary button-sm" onclick={addSpace}>
             <Icon icon={AddCircle} />
             Add Space
           </Button>
@@ -210,10 +210,10 @@
       </div>
     </div>
   </PageBar>
-  <PageContent class="col-2 p-2 sm:col-4 sm:p-4">
+  <PageContent class="flex flex-col gap-2 p-2 sm:flex flex-col gap-4 sm:p-4">
     <ContentSearch>
       {#snippet input()}
-        <label class="row-2 input input-bordered w-full">
+        <label class="flex gap-2 input w-full">
           <Icon icon={Magnifier} />
           <!-- svelte-ignore a11y_autofocus -->
           <input
@@ -225,15 +225,15 @@
         </label>
       {/snippet}
       {#snippet content()}
-        <div class="col-2" bind:this={element}>
+        <div class="flex flex-col gap-2" bind:this={element}>
           {#each PLATFORM_RELAYS as url (url)}
-            <Button class="card2 card2-interactive" onclick={() => openSpace(url)}>
+            <Button class="card card-interactive" onclick={() => openSpace(url)}>
               <RelaySummary {url} />
             </Button>
           {:else}
             {#await loadUserGroupList()}
               <div class="flex items-center justify-center py-20">
-                <span class="loading loading-spinner mr-3"></span>
+                <Spinner size="sm" class="mr-3" />
                 Loading your spaces...
               </div>
             {:then}
@@ -241,7 +241,7 @@
                 <Divider>Search results</Divider>
                 {#key inviteData.url}
                   <Button
-                    class="card2 card2-interactive"
+                    class="card card-interactive"
                     onclick={() => openSpace(inviteData.url, inviteData.claim)}>
                     <RelaySummary url={inviteData.url} />
                   </Button>
@@ -261,17 +261,19 @@
                     ondrop={e => onDrop(e, url)}
                     ondragend={onDragEnd}>
                     <Button
-                      class="group card2 card2-interactive w-full relative min-w-0"
+                      class="group card card-interactive w-full relative min-w-0"
                       onclick={() => openSpace(url)}>
                       <div class="flex w-full items-start gap-2">
                         <div
-                          class="mt-4 flex cursor-grab p-1 text-base-content/30 transition-colors group-hover:text-base-content/60">
+                          class="mt-4 flex cursor-grab p-1 text-subtle transition-colors group-hover:text-muted">
                           <Icon icon={DragHandle} />
                         </div>
                         <RelaySummary hideFavorites {url} />
                       </div>
                       {#if $notifications.has(makeSpacePath(url))}
-                        <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-primary"></div>
+                        <div
+                          class="absolute right-3 top-3 h-2 w-2 rounded-full bg-primary text-primary-content">
+                        </div>
                       {/if}
                     </Button>
                   </div>
@@ -283,9 +285,7 @@
                 <Divider>{filteredUserUrls.length > 0 ? "More Spaces" : "Browse Spaces"}</Divider>
               {/if}
               {#each otherSpaces.slice(0, limit) as relay (relay.url)}
-                <Button
-                  class="card2 card2-interactive"
-                  onclick={() => openSpace(relay.url)}>
+                <Button class="card card-interactive" onclick={() => openSpace(relay.url)}>
                   <RelaySummary url={relay.url} />
                 </Button>
               {/each}

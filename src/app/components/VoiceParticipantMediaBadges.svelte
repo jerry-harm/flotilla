@@ -15,7 +15,7 @@
   const {muted, cameraOn, showCamera = true, size = 3, class: className = ""}: Props = $props()
 
   const badgeClass =
-    "inline-flex size-4 shrink-0 items-center justify-center rounded bg-base-100/80 p-0.5 text-error"
+    "inline-flex size-4 shrink-0 items-center justify-center rounded bg-surface p-0.5 text-error"
 </script>
 
 {#if muted || (showCamera && !cameraOn)}

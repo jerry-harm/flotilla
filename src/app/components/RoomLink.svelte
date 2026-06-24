@@ -16,6 +16,6 @@
   const path = makeSpacePath(url, h)
 </script>
 
-<Link href={path} class={cx(props.class, {"link-content bg-alt": !unstyled})}>
+<Link href={path} class={cx(props.class, {"link-content bg-surface": !unstyled})}>
   #<RoomName {h} {url} />
 </Link>

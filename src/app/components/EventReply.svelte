@@ -7,6 +7,7 @@
   import Paperclip from "@assets/icons/paperclip-2.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import EditorContent from "@app/editor/EditorContent.svelte"
   import ChatComposeParent from "@app/components/ChatComposeParent.svelte"
   import {publishComment} from "@app/comments"
@@ -101,7 +102,7 @@
   bind:this={form}
   onsubmit={preventDefault(submit)}
   class="left-content bottom-sai right-sai fixed z-feature mb-14 md:mb-0 w-full md:w-auto pr-2">
-  <div class="card2 mx-2 my-2 bg-alt shadow-md">
+  <div class="card mx-2 my-2 shadow-md">
     {#if parent}
       <ChatComposeParent event={parent} clear={() => onClearParent?.()} verb="Replying to" />
     {/if}
@@ -111,18 +112,18 @@
       </div>
       <Button
         data-tip="Add an image"
-        class="tooltip tooltip-left absolute bottom-1 right-2"
+        class="tip tip-left absolute bottom-1 right-2"
         onclick={selectFiles}>
         {#if $uploading}
-          <span class="loading loading-spinner loading-xs"></span>
+          <Spinner size="xs" />
         {:else}
           <Icon icon={Paperclip} size={3} />
         {/if}
       </Button>
     </div>
     <div class="flex justify-between pt-3">
-      <Button class="btn btn-link" onclick={onClose}>Cancel</Button>
-      <Button type="submit" class="btn btn-primary">Post Reply</Button>
+      <Button class="button button-link" onclick={onClose}>Cancel</Button>
+      <Button type="submit" class="button button-primary">Post Reply</Button>
     </div>
   </div>
 </form>

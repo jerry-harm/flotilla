@@ -117,8 +117,7 @@
         We are currently sending deletion requests to your relay selections and space hosts. Please
         wait while we complete this process. Once we're done, you'll be automatically logged out.
       </p>
-      <progress class="progress progress-primary w-full" value={progress! * 100} max="100"
-      ></progress>
+      <progress class="progress w-full" value={progress! * 100} max="100"></progress>
     {:else}
       <p>
         This will delete your nostr account everywhere, not just on {PLATFORM_NAME}.
@@ -127,7 +126,7 @@
         To confirm, please type "{CONFIRM_TEXT}" into the text box below. This action can't be
         undone.
       </p>
-      <label class="input input-bordered flex w-full items-center gap-2">
+      <label class="input input-group flex w-full items-center gap-2">
         <input bind:value={confirmText} class="grow" type="text" />
       </label>
       <p>
@@ -137,11 +136,11 @@
     {/if}
   </ModalBody>
   <ModalFooter>
-    <Button class="btn btn-link" onclick={back}>
+    <Button class="button button-link" onclick={back}>
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
-    <Button type="submit" class="btn btn-error" disabled={showProgress || !confirmOk}>
+    <Button type="submit" class="button button-error" disabled={showProgress || !confirmOk}>
       <Spinner loading={progress !== undefined}>Confirm</Spinner>
       <Icon icon={AltArrowRight} />
     </Button>

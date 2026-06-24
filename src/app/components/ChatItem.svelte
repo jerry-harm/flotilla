@@ -35,8 +35,9 @@
 
 <Button class="flex flex-col justify-start gap-1 w-full" onclick={openChat}>
   <div
-    class="cursor-pointer border-t border-solid border-base-100 px-3 py-2 transition-colors hover:bg-base-100 {props.class}"
-    class:bg-base-100={active}>
+    class="cursor-pointer border-t border-solid px-3 py-2 transition-colors hover:bg-surface {props.class}"
+    class:bg-surface={active}
+    style="border-color: var(--line)">
     <div class="flex flex-col justify-start gap-1">
       <div class="flex items-center justify-between gap-2">
         <div class="flex min-w-0 items-center gap-2">
@@ -56,7 +57,7 @@
           {/if}
         </div>
         {#if !active && $notifications.has(path)}
-          <div class="h-2 w-2 rounded-full bg-primary" transition:fade></div>
+          <div class="h-2 w-2 rounded-full bg-primary text-primary-content" transition:fade></div>
         {/if}
       </div>
       <p class="overflow-hidden text-ellipsis whitespace-nowrap text-sm">

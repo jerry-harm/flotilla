@@ -24,7 +24,7 @@
         >Spaces are places where communities come together to work, play, and hang out.</ModalSubtitle>
     </ModalHeader>
     <Button onclick={startJoin}>
-      <CardButton class="btn-primary">
+      <CardButton primary>
         {#snippet icon()}
           <div><Icon icon={Login} size={7} /></div>
         {/snippet}
@@ -37,7 +37,7 @@
       </CardButton>
     </Button>
     <Link href="/spaces/create">
-      <CardButton class="btn-neutral">
+      <CardButton>
         {#snippet icon()}
           <div><Icon icon={AddCircle} size={7} /></div>
         {/snippet}

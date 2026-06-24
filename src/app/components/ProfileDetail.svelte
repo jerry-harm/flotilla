@@ -103,14 +103,16 @@
         <Profile showPubkey avatarSize={14} {pubkey} {url} />
         {#if $profile || $userIsAdmin}
           <div class="relative">
-            <Button class="btn btn-circle btn-ghost btn-sm" onclick={() => toggleMenu(pubkey)}>
+            <Button
+              class="button button-ghost button-sm button-circle"
+              onclick={() => toggleMenu(pubkey)}>
               <Icon icon={MenuDots} />
             </Button>
             {#if showMenu}
               <Popover hideOnClick onClose={closeMenu}>
                 <ul
                   transition:fly
-                  class="bg-alt menu absolute right-0 z-popover w-48 gap-1 rounded-box p-2 shadow-md">
+                  class="bg-surface menu absolute right-0 z-popover w-48 gap-1 rounded-2xl p-2 shadow-md">
                   {#if $profile}
                     <li>
                       <Button onclick={showInfo}>
@@ -147,16 +149,16 @@
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button onclick={back} class="hidden md:btn md:btn-link">
+    <Button onclick={back} class="button button-link hidden md:flex">
       <Icon icon={AltArrowLeft} />
       Go back
     </Button>
     <div class="flex gap-2">
-      <Link external href={pubkeyLink(pubkey)} class="btn btn-neutral">
+      <Link external href={pubkeyLink(pubkey)} class="button button-neutral">
         <ImageIcon alt="" src="/coracle.png" />
         Open in Coracle
       </Link>
-      <Button onclick={openChat} class="btn btn-primary">
+      <Button onclick={openChat} class="button button-primary">
         <Icon icon={Letter} />
         Message
       </Button>

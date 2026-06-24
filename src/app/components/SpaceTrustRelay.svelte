@@ -65,8 +65,9 @@
     </ModalHeader>
     <div class="m-auto flex flex-col gap-4">
       <p>
-        This space has opted not to publish <Button class="link" onclick={showInfoSignatures}
-          >digital signatures</Button
+        This space has opted not to publish <Button
+          class="button button-link"
+          onclick={showInfoSignatures}>digital signatures</Button
         >, which means that they have the ability to forge messages from other users.
       </p>
       <p>
@@ -77,13 +78,13 @@
   </ModalBody>
   <ModalFooter>
     <div class="flex flex-col gap-2 sm:flex-row sm:justify-between">
-      <Button class="btn btn-neutral" onclick={untrustSpace} disabled={loading}>
+      <Button class="button button-neutral" onclick={untrustSpace} disabled={loading}>
         {#if !loading}
           <Icon icon={CloseCircle} />
         {/if}
         <Spinner {loading}>I don't trust this space</Spinner>
       </Button>
-      <Button type="submit" class="btn btn-primary" disabled={loading}>
+      <Button type="submit" class="button button-primary" disabled={loading}>
         {#if !loading}
           <Icon icon={CheckCircle} />
         {/if}

@@ -1,0 +1,38 @@
+@layer components {
+  .tip {
+    @apply relative;
+
+    &[data-tip]::before {
+      content: attr(data-tip);
+      @apply bg-black text-white/90 absolute overflow-hidden rounded-xl text-xs text-ellipsis whitespace-nowrap opacity-0 px-2 py-1 z-tooltip max-w-32 pointer-events-none;
+      transition: opacity 0.15s ease;
+    }
+
+    &[data-tip]:hover::before {
+      @apply opacity-100;
+    }
+  }
+
+  .tip-top[data-tip]::before {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-0.4rem);
+  }
+
+  .tip-left[data-tip]::before {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%) translateX(-0.4rem);
+  }
+
+  .tip-right[data-tip]::before {
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%) translateX(0.4rem);
+  }
+
+  /* mobile hides hover tooltips */
+  .mobile .tip[data-tip]::before {
+    display: none !important;
+  }
+}

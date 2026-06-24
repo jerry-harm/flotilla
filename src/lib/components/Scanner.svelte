@@ -49,7 +49,8 @@
   })
 </script>
 
-<div class="bg-alt relative flex min-h-48 w-full flex-col items-center justify-center rounded p-px">
+<div
+  class="bg-surface relative flex min-h-48 w-full flex-col items-center justify-center rounded p-px">
   {#if loading}
     <p class="py-20">
       <Spinner loading>Loading your camera...</Spinner>
@@ -58,7 +59,7 @@
   <video class="m-auto rounded" class:h-0={loading} bind:this={video}></video>
   {#if cameras.length > 1}
     <select
-      class="select select-bordered select-sm absolute bottom-1 right-1"
+      class="select input input-sm absolute bottom-1 right-1 w-auto"
       bind:value={camera}
       onchange={changeCamera}>
       {#each cameras as camera}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
+  import cx from "classnames"
   import {goto} from "$app/navigation"
   import {stopPropagation} from "@lib/html"
 
@@ -16,6 +17,7 @@
     replaceState?: boolean
     disabled?: boolean
     class?: string
+    style?: string
     "data-tip"?: string
   } = $props()
 
@@ -32,7 +34,7 @@
   {href}
   {...restProps}
   onclick={stopPropagation(go)}
-  class="cursor-pointer {restProps.class}"
+  class={cx("cursor-pointer", restProps.class)}
   rel={external ? "noopener noreferer" : ""}
   target={external ? "_blank" : ""}>
   {@render children?.()}

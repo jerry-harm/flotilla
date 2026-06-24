@@ -8,6 +8,6 @@
   const {onSelect}: Props = $props()
 </script>
 
-<div class="w-96 rounded-box bg-base-100 p-4 shadow-2xl">
+<div class="w-96 rounded-2xl bg-surface p-4 shadow-2xl">
   <IconPicker {onSelect} />
 </div>

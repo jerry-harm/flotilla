@@ -3,7 +3,7 @@
   button {
     padding: 12px 16px;
     display: flex;
-    border-radius: var(--rounded-btn, 0.5rem);
+    border-radius: var(--radius-2xl);
     cursor: pointer;
     animation: nav-button-pop 200ms ease-out;
     transition-property: all;
@@ -16,7 +16,7 @@
   button:active:hover,
   button:active:focus {
     animation: button-pop 0s ease-out;
-    transform: scale(var(--btn-focus-scale, 0.97));
+    transform: scale(0.97);
   }
 </style>
 
@@ -36,11 +36,14 @@
 
   const active = $derived($page.url.pathname === href)
   const wrapperClass = $derived(
-    cx(restProps.class, "relative flex shrink-0 items-center gap-3 text-left transition-all", {
-      "hover:bg-base-100 hover:text-base-content": true,
-      "text-base-content bg-base-100": active,
-      "tooltip tooltip-right": title,
-    }),
+    cx(
+      restProps.class,
+      "secondary-nav__nav-item relative flex shrink-0 items-center gap-3 text-left transition-all",
+      {
+        "secondary-nav__nav-item--active": active,
+        "tip tip-right": title,
+      },
+    ),
   )
 </script>
 
@@ -53,14 +56,18 @@
     class={wrapperClass}>
     {@render children?.()}
     {#if notification}
-      <div class="absolute right-[1.15rem] top-5 h-2 w-2 rounded-full bg-primary" transition:fade>
+      <div
+        class="absolute right-[1.15rem] top-5 h-2 w-2 rounded-full bg-primary text-primary-content"
+        transition:fade>
       </div>
     {/if}
   </a>
 {:else}
   <button {...restProps} data-tip={title} class={wrapperClass}>
     {#if notification}
-      <div class="absolute right-[1.15rem] top-5 h-2 w-2 rounded-full bg-primary" transition:fade>
+      <div
+        class="absolute right-[1.15rem] top-5 h-2 w-2 rounded-full bg-primary text-primary-content"
+        transition:fade>
       </div>
     {/if}
     {@render children?.()}
