@@ -5,7 +5,7 @@
   import {load} from "@welshman/net"
   import {groupBy, uniqBy, now, MINUTE, HOUR, DAY, WEEK} from "@welshman/lib"
   import type {TrustedEvent, Filter} from "@welshman/util"
-  import {MESSAGE, getTagValue, sortEventsDesc, displayRelayUrl} from "@welshman/util"
+  import {MESSAGE, sortEventsDesc, displayRelayUrl} from "@welshman/util"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
@@ -15,7 +15,6 @@
   import ModalBody from "@lib/components/ModalBody.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
-  import RoomName from "@app/components/RoomName.svelte"
   import NoteCard from "@app/components/NoteCard.svelte"
   import NoteContentMinimal from "@app/components/NoteContentMinimal.svelte"
   import {CONTENT_KINDS} from "@app/content"
@@ -25,9 +24,10 @@
 
   type Props = {
     url: string
+    h: string
   }
 
-  const {url}: Props = $props()
+  const {url, h}: Props = $props()
 
   let term = $state("")
   let results = $state<TrustedEvent[]>([])
@@ -44,6 +44,7 @@
 
     const filter: Filter = {
       kinds: [MESSAGE, ...CONTENT_KINDS],
+      "#h": [h],
       search: searchTerm.trim(),
     }
 
@@ -135,7 +136,7 @@
         bind:value={term}
         class="min-w-0 grow"
         type="text"
-        placeholder="Search this space..."
+        placeholder="Search this room..."
         oninput={onInput} />
     </label>
     {#if loading}
@@ -154,7 +155,6 @@
           {/if}
         </p>
         {#each events as event (event.id)}
-          {@const h = getTagValue("h", event.tags)}
           <Button
             class="card2 card2-sm card2-interactive col-2"
             onclick={() => onResultClick(event)}>
@@ -165,11 +165,6 @@
               <div class="badge badge-sm badge-neutral">
                 {getAgeLabel(event.created_at)}
               </div>
-              {#if h}
-                <div class="badge badge-sm badge-neutral">
-                  <RoomName {url} {h} />
-                </div>
-              {/if}
             </div>
           </Button>
         {/each}

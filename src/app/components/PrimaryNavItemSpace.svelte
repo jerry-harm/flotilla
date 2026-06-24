@@ -7,9 +7,10 @@
 
   type Props = {
     url: string
+    showTooltip?: boolean
   }
 
-  const {url}: Props = $props()
+  const {url, showTooltip = true}: Props = $props()
 
   const onClick = () => goToSpace(url)
 
@@ -21,7 +22,7 @@
 <PrimaryNavItem
   href={path}
   onclick={onClick}
-  title={$display}
+  title={showTooltip ? $display : ""}
   class="tooltip-right"
   notification={$notifications.has(path)}>
   <RelayIcon {url} size={10} class="rounded-full" />

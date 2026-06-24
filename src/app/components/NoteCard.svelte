@@ -16,15 +16,13 @@
     children,
     minimal = false,
     hideProfile = false,
-    noShadow = false,
     url,
     ...restProps
   }: {
     event: TrustedEvent
-    children: Snippet
+    children?: Snippet
     minimal?: boolean
     hideProfile?: boolean
-    noShadow?: boolean
     url?: string
     class?: string
   } = $props()
@@ -36,7 +34,7 @@
   let muted = $state($isEventMuted(event))
 </script>
 
-<div class="flex flex-col gap-2 {restProps.class}" class:shadow-md={!noShadow}>
+<div class="flex flex-col gap-2 {restProps.class}">
   {#if muted}
     <div class="flex items-center justify-between">
       <div class="row-2 relative">
@@ -60,6 +58,6 @@
         {formatTimestamp(event.created_at)}
       </Button>
     </div>
-    {@render children()}
+    {@render children?.()}
   {/if}
 </div>

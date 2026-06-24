@@ -6,6 +6,7 @@
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Page from "@lib/components/Page.svelte"
+  import PageContent from "@lib/components/PageContent.svelte"
   import ContentSearch from "@lib/components/ContentSearch.svelte"
   import PeopleItem from "@app/components/PeopleItem.svelte"
   import {bootstrapPubkeys} from "@app/social"
@@ -38,25 +39,27 @@
 </script>
 
 <Page>
-  <ContentSearch>
-    {#snippet input()}
-      <label class="row-2 input input-bordered w-full">
-        <Icon icon={Magnifier} />
-        <!-- svelte-ignore a11y_autofocus -->
-        <input
-          autofocus={!isMobile}
-          bind:value={term}
-          class="grow"
-          type="text"
-          placeholder="Search for people..." />
-      </label>
-    {/snippet}
-    {#snippet content()}
-      <div class="col-2 h-full" bind:this={element}>
-        {#each pubkeys.slice(0, limit) as pubkey (pubkey)}
-          <PeopleItem {pubkey} />
-        {/each}
-      </div>
-    {/snippet}
-  </ContentSearch>
+  <PageContent class="col-2 p-2 sm:col-4 sm:p-4">
+    <ContentSearch>
+      {#snippet input()}
+        <label class="row-2 input input-bordered w-full">
+          <Icon icon={Magnifier} />
+          <!-- svelte-ignore a11y_autofocus -->
+          <input
+            autofocus={!isMobile}
+            bind:value={term}
+            class="grow"
+            type="text"
+            placeholder="Search for people..." />
+        </label>
+      {/snippet}
+      {#snippet content()}
+        <div class="col-2 h-full" bind:this={element}>
+          {#each pubkeys.slice(0, limit) as pubkey (pubkey)}
+            <PeopleItem {pubkey} />
+          {/each}
+        </div>
+      {/snippet}
+    </ContentSearch>
+  </PageContent>
 </Page>

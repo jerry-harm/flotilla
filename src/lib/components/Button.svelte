@@ -14,6 +14,7 @@
     style?: string
     disabled?: boolean
     "data-tip"?: string
+    "aria-label"?: string
     "aria-pressed"?: boolean
   } = $props()
 

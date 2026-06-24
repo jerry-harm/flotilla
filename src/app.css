@@ -88,6 +88,10 @@
   @apply rounded-box text-base-content border-base-content/20 bg-base-100 border border-solid p-4 shadow-xl/5 sm:p-6;
 }
 
+@utility card2-interactive {
+  @apply cursor-pointer hover:scale-101 transition-all;
+}
+
 @utility column {
   @apply flex flex-col;
 }

@@ -54,7 +54,6 @@
       </div>
     {:else}
       <NoteCard
-        noShadow
         event={$quote}
         {url}
         class="border border-solid border-base-content/20 rounded-box p-4">

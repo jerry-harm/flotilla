@@ -14,6 +14,7 @@
   import ClockCircle from "@assets/icons/clock-circle.svg?dataurl"
   import InfoCircle from "@assets/icons/info-circle.svg?dataurl"
   import Login2 from "@assets/icons/login-3.svg?dataurl"
+  import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import cx from "classnames"
   import {fade, fly} from "@lib/transition"
   import Button from "@lib/components/Button.svelte"
@@ -28,7 +29,7 @@
   import RoomDetail from "@app/components/RoomDetail.svelte"
   import RoomItem from "@app/components/RoomItem.svelte"
   import RoomName from "@app/components/RoomName.svelte"
-  import SpaceSearch from "@app/components/SpaceSearch.svelte"
+  import RoomSearch from "@app/components/RoomSearch.svelte"
   import ThunkToast from "@app/components/ThunkToast.svelte"
   import RoomItemAddMember from "@src/app/components/RoomItemAddMember.svelte"
   import RoomComposeEdit from "@src/app/components/RoomComposeEdit.svelte"
@@ -424,7 +425,12 @@
     <RoomName {url} {h} />
   {/snippet}
   {#snippet action()}
-    <SpaceSearch {url} {h} />
+    <Button
+      class="btn btn-neutral btn-sm btn-square"
+      aria-label="Search"
+      onclick={() => pushModal(RoomSearch, {url, h})}>
+      <Icon size={4} icon={Magnifier} />
+    </Button>
     <Button class="btn btn-neutral btn-sm btn-square" onclick={showRoomDetail}>
       <Icon size={4} icon={InfoCircle} />
     </Button>
@@ -483,7 +489,7 @@
           </div>
         </div>
       {:else}
-        {#if loadingForward}
+        {#if loadingForward && elements.length > 0}
           <p class="py-20 flex justify-center">
             <Spinner loading={loadingForward}>Looking for messages...</Spinner>
           </p>

@@ -34,6 +34,7 @@
   import SpaceJoin from "@app/components/SpaceJoin.svelte"
   import RelayName from "@app/components/RelayName.svelte"
   import SpaceActionItems from "@app/components/SpaceActionItems.svelte"
+  import SpaceSearch from "@app/components/SpaceSearch.svelte"
   import RoomCreate from "@app/components/RoomCreate.svelte"
   import SpaceMenuRoomItem from "@app/components/SpaceMenuRoomItem.svelte"
   import VoiceWidget from "@app/components/VoiceWidget.svelte"
@@ -95,6 +96,8 @@
   }
 
   const showActionItems = () => pushModal(SpaceActionItems, {url})
+
+  const openSearch = () => pushModal(SpaceSearch, {url})
 
   const canCreateRoom = deriveUserCanCreateRoom(url)
 
@@ -248,6 +251,9 @@
         </SecondaryNavItem>
       {/if}
       {#if hasNip29($relay)}
+        <SecondaryNavItem onclick={openSearch}>
+          <Icon icon={Magnifier} /> Search
+        </SecondaryNavItem>
         {#if $userRooms.length > 0}
           <div class="h-2 shrink-0"></div>
           <SecondaryNavHeader>Your Rooms</SecondaryNavHeader>

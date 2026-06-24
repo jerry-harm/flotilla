@@ -12,6 +12,7 @@
   import {fade, fly} from "@lib/transition"
   import ChatRound from "@assets/icons/chat-round.svg?dataurl"
   import AltArrowDown from "@assets/icons/alt-arrow-down.svg?dataurl"
+  import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
@@ -32,6 +33,7 @@
   import {publishDelete} from "@app/deletes"
   import {checked} from "@app/notifications"
   import {pushToast} from "@app/toast"
+  import {pushModal} from "@app/modal"
   import {makeFeed} from "@app/feeds"
   import {popKey} from "@lib/implicit"
 
@@ -308,12 +310,17 @@
     <strong>Chat</strong>
   {/snippet}
   {#snippet action()}
-    <SpaceSearch {url} />
+    <Button
+      class="btn btn-neutral btn-sm btn-square"
+      aria-label="Search"
+      onclick={() => pushModal(SpaceSearch, {url})}>
+      <Icon size={4} icon={Magnifier} />
+    </Button>
   {/snippet}
 </SpaceBar>
 
 <PageContent bind:element onscroll={onScroll} class="flex-col-reverse !mb-0">
-  {#if loadingForward}
+  {#if loadingForward && elements.length > 0}
     <p class="py-20 flex justify-center">
       <Spinner loading={loadingForward}>Looking for messages...</Spinner>
     </p>

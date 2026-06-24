@@ -144,7 +144,7 @@
 
 <div class="relative">
   {#if warning}
-    <div class="card2 card2-sm bg-alt row-2">
+    <div class="card2 card2-sm shadow-none row-2">
       <Icon icon={Danger} />
       <p>
         This note has been flagged by the author as "{warning}".<br />
