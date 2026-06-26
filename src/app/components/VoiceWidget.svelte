@@ -31,15 +31,15 @@
     toggleCamera,
     toggleScreenShare,
     videoCallLayout,
-  } from "@app/call/video"
-  import {
-    VoiceState,
-    currentVoiceSession,
-    currentVoiceRoom,
-    voiceMicMuted,
-    voiceState,
-  } from "@app/call/stores"
-  import {cancelJoinVoiceRoom, leaveVoiceRoom, toggleMute} from "@app/call/voice"
+    CallState,
+    currentCallSession,
+    callTargetRoom,
+    callMicMuted,
+    callState,
+    cancelJoinVoiceRoom,
+    leaveVoiceRoom,
+    toggleMute,
+  } from "@app/call"
 
   const {relay, h} = $derived($page.params)
   const url = $derived(relay ? decodeRelay(relay) : undefined)
@@ -49,27 +49,27 @@
   const routeDisplayedRoom = $derived($displayedRoomStore)
 
   const isViewingCurrentVoiceRoom = $derived(
-    $currentVoiceRoom !== undefined &&
+    $callTargetRoom !== undefined &&
       url !== undefined &&
       typeof h === "string" &&
-      $currentVoiceRoom.url === url &&
-      $currentVoiceRoom.h === h,
+      $callTargetRoom.url === url &&
+      $callTargetRoom.h === h,
   )
 
   const targetRoom = $derived.by((): Room | undefined => {
-    if ($voiceState === VoiceState.Joining || $voiceState === VoiceState.Connected) {
-      return $currentVoiceRoom
+    if ($callState === CallState.Joining || $callState === CallState.Connected) {
+      return $callTargetRoom
     }
-    if ($voiceState === VoiceState.Disconnected) {
+    if ($callState === CallState.Disconnected) {
       if (routeDisplayedRoom) {
         if (getRoomType(routeDisplayedRoom) === RoomType.Voice) {
           return routeDisplayedRoom
         }
         return undefined
       }
-      return $currentVoiceRoom
+      return $callTargetRoom
     }
-    return $currentVoiceRoom
+    return $callTargetRoom
   })
 
   const roomName = $derived(targetRoom ? displayRoom(targetRoom.url, targetRoom.h) : "")
@@ -93,7 +93,7 @@
     pushModal(VoiceCallAudioSettingsDialog)
   }
 
-  const showChatButton = $derived($voiceState === VoiceState.Connected && isViewingCurrentVoiceRoom)
+  const showChatButton = $derived($callState === CallState.Connected && isViewingCurrentVoiceRoom)
 
   const isChatPanelActive = $derived(
     showChatButton &&
@@ -134,9 +134,9 @@
         onclick={goToRoom}
         aria-label="Open room {roomName}">
         <div class="flex flex-col gap-0.5">
-          {#if $voiceState === VoiceState.Joining}
+          {#if $callState === CallState.Joining}
             <span class="text-sm font-semibold text-warning">Joining...</span>
-          {:else if $voiceState === VoiceState.Connected}
+          {:else if $callState === CallState.Connected}
             <span class="text-sm font-semibold text-success">Voice Connected</span>
           {:else}
             <span class="text-sm font-semibold text-neutral-content">Disconnected</span>
@@ -168,7 +168,7 @@
       {/if}
     </div>
     <div class="flex flex-wrap items-center gap-2">
-      {#if $voiceState === VoiceState.Joining}
+      {#if $callState === CallState.Joining}
         <span class="loading loading-spinner loading-sm"></span>
         <Button
           data-tip="Cancel"
@@ -176,18 +176,18 @@
           onclick={cancelJoinVoiceRoom}>
           <Icon icon={CloseCircle} size={4} />
         </Button>
-      {:else if $voiceState === VoiceState.Connected && $currentVoiceSession}
+      {:else if $callState === CallState.Connected && $currentCallSession}
         <Button
-          data-tip={$voiceMicMuted ? "Unmute" : "Mute"}
+          data-tip={$callMicMuted ? "Unmute" : "Mute"}
           class={cx(
             mediaToggleClass,
             "overflow-visible",
-            $voiceMicMuted && "text-error ring-1 ring-error/50 ring-offset-0 ring-offset-base-100",
+            $callMicMuted && "text-error ring-1 ring-error/50 ring-offset-0 ring-offset-base-100",
           )}
           onclick={toggleMute}>
           <span class="relative inline-flex items-center justify-center overflow-visible">
             <Icon icon={Microphone} size={4} />
-            {#if $voiceMicMuted}
+            {#if $callMicMuted}
               <span
                 class="pointer-events-none absolute inset-0 flex items-center justify-center overflow-visible"
                 aria-hidden="true">
@@ -199,23 +199,21 @@
           </span>
         </Button>
         <Button
-          data-tip={$currentVoiceSession.cameraOn ? "Turn off camera" : "Turn on camera"}
+          data-tip={$currentCallSession.cameraOn ? "Turn off camera" : "Turn on camera"}
           class={cx(
             mediaToggleClass,
             "overflow-visible",
-            $currentVoiceSession.cameraOn && "text-primary",
-            !$currentVoiceSession.cameraOn &&
+            $currentCallSession.cameraOn && "text-primary",
+            !$currentCallSession.cameraOn &&
               "text-error ring-1 ring-error/50 ring-offset-0 ring-offset-base-100",
           )}
           onclick={toggleCamera}>
-          <Icon
-            icon={$currentVoiceSession.cameraOn ? VideocameraRecord : VideocameraOff}
-            size={4} />
+          <Icon icon={$currentCallSession.cameraOn ? VideocameraRecord : VideocameraOff} size={4} />
         </Button>
         {#if !Capacitor.isNativePlatform()}
           <Button
-            data-tip={$currentVoiceSession.screenShareOn ? "Stop sharing" : "Share screen"}
-            class={cx(mediaToggleClass, $currentVoiceSession.screenShareOn && "text-primary")}
+            data-tip={$currentCallSession.screenShareOn ? "Stop sharing" : "Share screen"}
+            class={cx(mediaToggleClass, $currentCallSession.screenShareOn && "text-primary")}
             onclick={toggleScreenShare}>
             <Icon icon={Monitor} size={4} />
           </Button>

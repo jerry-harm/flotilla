@@ -41,8 +41,14 @@
   import {userSettingsValues} from "@app/settings"
   import VoiceWidget from "@app/components/VoiceWidget.svelte"
   import VideoCallContent from "@app/components/VideoCallContent.svelte"
-  import {VoiceState, currentVoiceRoom, voiceState} from "@app/call/stores"
-  import {VideoCallLayout, videoCallLayout, videoTileCount} from "@app/call/video"
+  import {
+    CallState,
+    callTargetRoom,
+    callState,
+    VideoCallLayout,
+    videoCallLayout,
+    videoTileCount,
+  } from "@app/call"
   import {makeFeed} from "@app/feeds"
   import {popKey} from "@lib/implicit"
   import {checked, deferredRoomPath, setChecked} from "@app/notifications"
@@ -59,15 +65,13 @@
 
   const voiceConnectedHere = $derived(
     isVoiceRoom &&
-      $voiceState === VoiceState.Connected &&
-      $currentVoiceRoom?.url === url &&
-      $currentVoiceRoom?.h === h,
+      $callState === CallState.Connected &&
+      $callTargetRoom?.url === url &&
+      $callTargetRoom?.h === h,
   )
 
   const showMobileVideoPanel = $derived(
-    isVoiceRoom &&
-      $voiceState === VoiceState.Connected &&
-      $videoCallLayout === VideoCallLayout.Video,
+    isVoiceRoom && $callState === CallState.Connected && $videoCallLayout === VideoCallLayout.Video,
   )
 
   const pageContentHiddenDesktopVideoOnly = $derived(
@@ -92,13 +96,13 @@
   let prevVideoTileCount = $state(0)
 
   $effect(() => {
-    if ($voiceState !== VoiceState.Connected) {
+    if ($callState !== CallState.Connected) {
       videoCallLayout.set(VideoCallLayout.Chat)
       prevVideoTileCount = 0
       return
     }
 
-    const here = isVoiceRoom && $currentVoiceRoom?.url === url && $currentVoiceRoom?.h === h
+    const here = isVoiceRoom && $callTargetRoom?.url === url && $callTargetRoom?.h === h
     const n = $videoTileCount
 
     if (!here) {
@@ -455,7 +459,7 @@
       "flex min-h-0 min-w-0 flex-1 flex-col",
       voiceConnectedHere && $videoCallLayout === VideoCallLayout.Video && "md:hidden",
     )}>
-    {#if isVoiceRoom && $voiceState === VoiceState.Connected}
+    {#if isVoiceRoom && $callState === CallState.Connected}
       <VideoCallContent layout={$videoCallLayout} mobile {url} {h} class="md:hidden" />
     {/if}
 
@@ -584,7 +588,7 @@
           {/key}
         {/if}
       </div>
-      {#if isVoiceRoom || $voiceState === VoiceState.Joining || $voiceState === VoiceState.Connected}
+      {#if isVoiceRoom || $callState === CallState.Joining || $callState === CallState.Connected}
         <div
           class={cx(
             "hide-on-keyboard flex-shrink-0 p-2 md:hidden",

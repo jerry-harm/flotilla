@@ -13,19 +13,17 @@
   import VoiceParticipantMediaBadges from "@app/components/VoiceParticipantMediaBadges.svelte"
   import {makeRoomId} from "@app/groups"
   import {
-    VoiceState,
-    currentVoiceRoom,
+    CallState,
+    callTargetRoom,
     isParticipantSpeaking,
     mediaStateByIdentity,
     participantKey,
-    voiceState,
-    type VoiceParticipant,
-  } from "@app/call/stores"
-  import {
+    callState,
     cancelJoinVoiceRoom,
-    deriveVoiceParticipants,
-    loadVoiceParticipants,
-  } from "@app/call/voice"
+    deriveCallParticipants,
+    loadCallParticipants,
+    type CallParticipant,
+  } from "@app/call"
 
   interface Props {
     url: string
@@ -36,13 +34,13 @@
 
   const {url, h, replaceState = false, notification = false}: Props = $props()
 
-  const participants = deriveVoiceParticipants(url, h)
+  const participants = deriveCallParticipants(url, h)
   const participantPubkeys = $derived($participants.flatMap(p => (p.pubkey ? [p.pubkey] : [])))
   const isActive = $derived(
-    $voiceState === VoiceState.Connected && $currentVoiceRoom?.id === makeRoomId(url, h),
+    $callState === CallState.Connected && $callTargetRoom?.id === makeRoomId(url, h),
   )
   const isJoining = $derived(
-    $voiceState === VoiceState.Joining && $currentVoiceRoom?.id === makeRoomId(url, h),
+    $callState === CallState.Joining && $callTargetRoom?.id === makeRoomId(url, h),
   )
 
   const handleClick = async (e: MouseEvent) => {
@@ -60,7 +58,7 @@
   }
 
   $effect(() => {
-    void loadVoiceParticipants(url, h)
+    void loadCallParticipants(url, h)
   })
 
   $effect(() => {
@@ -87,8 +85,8 @@
     </div>
     {#if participantPubkeys.length > 0}
       {#if isActive}
-        {#each $participants as p (participantKey(p as VoiceParticipant))}
-          {@const media = $mediaStateByIdentity(p.identity)}
+        {#each $participants as p (participantKey(p as CallParticipant))}
+          {@const media = $mediaStateByIdentity(p.liveKitIdentity)}
           <div class="flex items-center gap-2 ml-6">
             <div
               class={cx(

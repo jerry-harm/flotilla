@@ -15,7 +15,7 @@
   import {AbortError, TimeoutError} from "$lib/util"
   import ProfileCircles from "@app/components/ProfileCircles.svelte"
   import {displayRoom} from "@app/groups"
-  import {deriveVoiceParticipants, joinVoiceRoom, loadVoiceParticipants} from "@app/call/voice"
+  import {deriveCallParticipants, joinVoiceRoom, loadCallParticipants} from "@app/call"
   import {popModal} from "@app/modal"
   import {pushToast} from "@app/toast"
 
@@ -27,7 +27,7 @@
   const {url, h}: Props = $props()
 
   const spaceLabel = $derived(displayRelayUrl(url))
-  const participants = deriveVoiceParticipants(url, h)
+  const participants = deriveCallParticipants(url, h)
   const participantPubkeys = $derived($participants.flatMap(p => (p.pubkey ? [p.pubkey] : [])))
 
   let audioInputs = $state<MediaDeviceInfo[]>([])
@@ -45,7 +45,7 @@
   }
 
   $effect(() => {
-    void loadVoiceParticipants(url, h)
+    void loadCallParticipants(url, h)
     void loadDevices()
   })
 

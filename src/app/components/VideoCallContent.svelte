@@ -18,13 +18,11 @@
     videoCallViewportSync,
     ViewportSize,
     videoPrimaryTileKey,
-  } from "@app/call/video"
-  import {
-    currentVoiceSession,
-    currentVoiceRoom,
+    currentCallSession,
+    callTargetRoom,
     mediaStateByIdentity,
     pubkeyFromLiveKitIdentity,
-  } from "@app/call/stores"
+  } from "@app/call"
 
   type Props = {
     layout: VideoCallLayout
@@ -35,7 +33,7 @@
   }
 
   type VideoTileData = {
-    identity: string
+    liveKitIdentity: string
     isLocal: boolean
     trackSid: string
     track: Track | undefined
@@ -64,7 +62,7 @@
   })
 
   const isViewingCurrentCallRoom = $derived(
-    $currentVoiceRoom?.url === url && $currentVoiceRoom?.h === h,
+    $callTargetRoom?.url === url && $callTargetRoom?.h === h,
   )
 
   const showVideoContent = $derived(
@@ -75,19 +73,19 @@
   )
 
   const videoTiles = $derived.by(() => {
-    const session = $currentVoiceSession
-    if (!session || $currentVoiceRoom?.url !== url || $currentVoiceRoom?.h !== h) {
+    const session = $currentCallSession
+    if (!session || $callTargetRoom?.url !== url || $callTargetRoom?.h !== h) {
       return []
     }
 
-    const room = session.room
+    const livekit = session.livekit
     const videoTiles: VideoTileData[] = []
-    const user = room.localParticipant
+    const user = livekit.localParticipant
 
     if (session.cameraOn) {
       const localPub = user.getTrackPublication(Track.Source.Camera)
       videoTiles.push({
-        identity: user.identity,
+        liveKitIdentity: user.identity,
         isLocal: true,
         trackSid: localPub?.trackSid ?? "local-camera",
         track: localPub?.track,
@@ -98,7 +96,7 @@
     if (session.screenShareOn) {
       const localPub = user.getTrackPublication(Track.Source.ScreenShare)
       videoTiles.push({
-        identity: user.identity,
+        liveKitIdentity: user.identity,
         isLocal: true,
         trackSid: localPub?.trackSid ?? "local-screen",
         track: localPub?.track,
@@ -106,11 +104,11 @@
       })
     }
 
-    for (const rp of room.remoteParticipants.values()) {
+    for (const rp of livekit.remoteParticipants.values()) {
       const camPub = rp.getTrackPublication(Track.Source.Camera)
       if (camPub?.isSubscribed && camPub.track) {
         videoTiles.push({
-          identity: rp.identity,
+          liveKitIdentity: rp.identity,
           isLocal: false,
           trackSid: camPub.trackSid,
           track: camPub.track,
@@ -120,16 +118,16 @@
       const screenPub = rp.getTrackPublication(Track.Source.ScreenShare)
       if (screenPub?.isSubscribed && screenPub.track) {
         videoTiles.push({
-          identity: rp.identity,
+          liveKitIdentity: rp.identity,
           isLocal: false,
           trackSid: screenPub.trackSid,
           track: screenPub.track,
           source: Track.Source.ScreenShare,
         })
       }
-      if (!videoTiles.some(t => t.identity === rp.identity)) {
+      if (!videoTiles.some(t => t.liveKitIdentity === rp.identity)) {
         videoTiles.push({
-          identity: rp.identity,
+          liveKitIdentity: rp.identity,
           isLocal: false,
           trackSid: `avatar-${rp.identity}`,
           track: undefined,
@@ -138,9 +136,9 @@
       }
     }
 
-    if (!videoTiles.some(t => t.identity === user.identity)) {
+    if (!videoTiles.some(t => t.liveKitIdentity === user.identity)) {
       videoTiles.push({
-        identity: user.identity,
+        liveKitIdentity: user.identity,
         isLocal: true,
         trackSid: "local-avatar",
         track: undefined,
@@ -151,8 +149,8 @@
     return videoTiles
   })
 
-  /** Identity + source only — LiveKit can change trackSid after publish, which broke spotlight + stale-key effect. */
-  const tileKey = (t: VideoTileData) => `${t.identity}\x1f${t.source}`
+  /** LiveKit identity + source only — LiveKit can change trackSid after publish, which broke spotlight + stale-key effect. */
+  const tileKey = (t: VideoTileData) => `${t.liveKitIdentity}\x1f${t.source}`
 
   const primaryTile = $derived.by(() => {
     const k = $videoPrimaryTileKey
@@ -183,13 +181,13 @@
 
   $effect(() => {
     for (const t of videoTiles) {
-      const pk = pubkeyFromLiveKitIdentity(t.identity)
+      const pk = pubkeyFromLiveKitIdentity(t.liveKitIdentity)
       if (pk) loadProfile(pk)
     }
   })
 
-  const labelFor = (identity: string, source: VideoTileData["source"]) => {
-    const pk = pubkeyFromLiveKitIdentity(identity)
+  const labelFor = (liveKitIdentity: string, source: VideoTileData["source"]) => {
+    const pk = pubkeyFromLiveKitIdentity(liveKitIdentity)
     const name = pk ? displayProfileByPubkey(pk) : "Unknown"
     return source === Track.Source.ScreenShare ? `${name} · screen` : name
   }
@@ -212,7 +210,7 @@
 </script>
 
 {#snippet videoTile(tile: VideoTileData, layout: TileLayout)}
-  {@const media = $mediaStateByIdentity(tile.identity)}
+  {@const media = $mediaStateByIdentity(tile.liveKitIdentity)}
   <div
     class={cx(
       "relative isolate overflow-hidden rounded-box shadow-sm",
@@ -229,7 +227,7 @@
         class="pointer-events-none absolute inset-0" />
     {:else}
       <div class="absolute inset-0 flex items-center justify-center">
-        <ProfileCircle pubkey={pubkeyFromLiveKitIdentity(tile.identity)} {url} size={14} />
+        <ProfileCircle pubkey={pubkeyFromLiveKitIdentity(tile.liveKitIdentity)} {url} size={14} />
       </div>
     {/if}
     {#if tile.track}
@@ -243,7 +241,7 @@
     {/if}
     <span
       class="pointer-events-none absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] truncate rounded bg-base-100/80 px-1.5 py-0.5 text-xs">
-      {labelFor(tile.identity, tile.source)}{tile.isLocal ? " (you)" : ""}
+      {labelFor(tile.liveKitIdentity, tile.source)}{tile.isLocal ? " (you)" : ""}
     </span>
     {#if videoTiles.length > 1}
       {@const pinned = $videoPrimaryTileKey === tileKey(tile)}

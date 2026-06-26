@@ -57,7 +57,7 @@ import {loadFeedsForPubkey} from "@app/feeds"
 import {RELAY_ROLE} from "@app/members"
 import {FEATURED_CONTENT_D} from "@app/featured"
 import {hasBlossomSupport} from "@app/uploads"
-import {LIVEKIT_PARTICIPANTS} from "@app/call/voice"
+import {LIVEKIT_PARTICIPANTS} from "@app/call"
 
 // Utils
 

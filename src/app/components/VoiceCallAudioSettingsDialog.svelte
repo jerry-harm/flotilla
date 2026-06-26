@@ -7,12 +7,17 @@
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
-  import {currentVoiceSession, type VoiceSession} from "@app/call/stores"
-  import {DeviceKind, supportsAudioOutputSelection, switchVoiceActiveDevice} from "@app/call/voice"
+  import {
+    currentCallSession,
+    DeviceKind,
+    supportsAudioOutputSelection,
+    switchCallActiveDevice,
+    type CallSession,
+  } from "@app/call"
   import {popModal} from "@app/modal"
 
-  const selectValueForActiveDevice = (session: VoiceSession, kind: DeviceKind): string => {
-    const livekitDeviceId = session.room.getActiveDevice(kind)
+  const selectValueForActiveDevice = (session: CallSession, kind: DeviceKind): string => {
+    const livekitDeviceId = session.livekit.getActiveDevice(kind)
     if (livekitDeviceId === undefined || livekitDeviceId === "" || livekitDeviceId === "default") {
       return ""
     }
@@ -47,7 +52,7 @@
   })
 
   $effect(() => {
-    const session = $currentVoiceSession
+    const session = $currentCallSession
     if (!session) {
       popModal()
       return
@@ -58,15 +63,15 @@
   })
 
   const onInputChange = () => {
-    void switchVoiceActiveDevice(DeviceKind.AudioInput, selectedInput)
+    void switchCallActiveDevice(DeviceKind.AudioInput, selectedInput)
   }
 
   const onOutputChange = () => {
-    void switchVoiceActiveDevice(DeviceKind.AudioOutput, selectedOutput)
+    void switchCallActiveDevice(DeviceKind.AudioOutput, selectedOutput)
   }
 
   const onVideoChange = () => {
-    void switchVoiceActiveDevice(DeviceKind.VideoInput, selectedVideo)
+    void switchCallActiveDevice(DeviceKind.VideoInput, selectedVideo)
   }
 
   const onDone = () => {
