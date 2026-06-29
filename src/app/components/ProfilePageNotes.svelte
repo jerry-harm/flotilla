@@ -2,7 +2,7 @@
   import {onMount} from "svelte"
   import {derived, writable} from "svelte/store"
   import type {Writable} from "svelte/store"
-  import {sortBy, now} from "@welshman/lib"
+  import {sortBy, uniqBy, now} from "@welshman/lib"
   import {NOTE, getReplyTags, getListTags, getEventTagValues} from "@welshman/util"
   import type {TrustedEvent} from "@welshman/util"
   import {derivePinList} from "@welshman/app"
@@ -30,7 +30,7 @@
         relays: Router.get().FromPubkeys([pubkey]).getUrls(),
         filters: [{ids: $pinnedIds}],
         signal: controller.signal,
-        onEvent: e => events.update($events => $events.concat(e)),
+        onEvent: e => events.update($events => uniqBy(e => e.id, $events.concat(e))),
       })
 
       return () => controller.abort()
@@ -50,7 +50,7 @@
 
   onMount(() => {
     const feed = makeFeed({
-      url: Router.get().FromPubkeys([pubkey]).getUrls()[0],
+      relays: Router.get().FromPubkeys([pubkey]).getUrls(),
       element: element!,
       filters: [{kinds: [NOTE], authors: [pubkey]}],
       onBackwardExhausted: () => {
@@ -75,8 +75,9 @@
     {/if}
   {/each}
   {#if !exhausted}
-    <p class="my-12 flex items-center justify-center">
+    <p class="my-12 flex items-center justify-center gap-2">
       <Spinner loading />
+      Loading notes...
     </p>
   {/if}
 </div>

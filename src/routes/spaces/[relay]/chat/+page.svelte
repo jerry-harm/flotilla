@@ -260,7 +260,7 @@
     cleanup?.()
 
     const feed = makeFeed({
-      url,
+      relays: [url],
       at: at || now(),
       element: element!,
       filters: [{kinds: [MESSAGE, RELAY_ADD_MEMBER]}],

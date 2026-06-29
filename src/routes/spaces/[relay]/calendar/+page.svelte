@@ -95,7 +95,7 @@
 
   onMount(() => {
     const feed = makeCalendarFeed({
-      url,
+      relays: [url],
       element: element!,
       filters: [{kinds: [EVENT_TIME]}, makeCommentFilter([EVENT_TIME])],
       onExhausted: () => {

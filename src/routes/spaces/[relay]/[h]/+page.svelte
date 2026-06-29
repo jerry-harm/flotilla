@@ -379,7 +379,7 @@
     cleanup?.()
 
     const feed = makeFeed({
-      url,
+      relays: [url],
       at: at || now(),
       element: element!,
       filters: [{kinds: [MESSAGE, ROOM_ADD_MEMBER], "#h": [h]}],

@@ -19,25 +19,17 @@
   import {decodePubkey} from "@lib/util"
   import Page from "@lib/components/Page.svelte"
   import PageContent from "@lib/components/PageContent.svelte"
-  import Spinner from "@lib/components/Spinner.svelte"
   import ProfilePage from "@app/components/ProfilePage.svelte"
   import {loadGroupList} from "@app/groups"
 
   const {npub} = $page.params as MakeNonOptional<typeof $page.params>
 
-  let pubkey = $state<string | undefined>()
-  let ready = $state(false)
+  const pubkey = decodePubkey(npub)
 
   onMount(async () => {
-    const decoded = decodePubkey(npub)
-
-    if (!decoded) {
-      goto("/people", {replaceState: true})
-
-      return
+    if (!pubkey) {
+      return goto("/people", {replaceState: true})
     }
-
-    pubkey = decoded
 
     try {
       await loadProfile(pubkey)
@@ -66,8 +58,6 @@
         relays: Router.get().FromPubkeys([pubkey]).getUrls(),
         filters,
       })
-
-      ready = true
     } catch {
       goto("/people", {replaceState: true})
     }
@@ -76,12 +66,8 @@
 
 <Page>
   <PageContent class="p-0 md:p-4">
-    {#if ready && pubkey}
+    {#if pubkey}
       <ProfilePage {pubkey} />
-    {:else}
-      <p class="flex items-center justify-center py-20">
-        <Spinner loading />
-      </p>
     {/if}
   </PageContent>
 </Page>

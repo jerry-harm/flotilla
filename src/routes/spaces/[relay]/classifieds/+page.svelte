@@ -46,7 +46,7 @@
 
   onMount(() => {
     const feed = makeFeed({
-      url,
+      relays: [url],
       element: element!,
       filters: [{kinds: [CLASSIFIED]}, makeCommentFilter([CLASSIFIED])],
       onBackwardExhausted: () => {

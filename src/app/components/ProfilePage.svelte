@@ -10,6 +10,7 @@
     follow,
     unfollow,
     tagPubkey,
+    loadRelayList,
   } from "@welshman/app"
   import {compressFile} from "@lib/html"
   import Copy from "@assets/icons/copy.svg?dataurl"
@@ -24,6 +25,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Link from "@lib/components/Link.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import Popover from "@lib/components/Popover.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ProfileTrust from "@app/components/ProfileTrust.svelte"
@@ -254,7 +256,14 @@
             <ProfileTrust pubkey={target} {isSelf} />
             <ProfileSharedSpaces pubkey={target} {isSelf} />
           </div>
-          <ProfilePageNotes pubkey={target} />
+          {#await loadRelayList(target)}
+            <p class="my-12 flex items-center justify-center gap-2">
+              <Spinner loading />
+              Loading notes...
+            </p>
+          {:then}
+            <ProfilePageNotes pubkey={target} />
+          {/await}
         </div>
       </div>
     </div>

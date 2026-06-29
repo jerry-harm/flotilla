@@ -18,6 +18,7 @@ import {
   now,
   on,
   sortBy,
+  uniqBy,
   MONTH,
   YEAR,
 } from "@welshman/lib"
@@ -105,14 +106,14 @@ export const userFeedFavorites = makeUserData(feedFavoritesByPubkey, loadFeedFav
 export const loadUserFeedFavorites = makeUserLoader(loadFeedFavorites)
 
 export const makeFeed = ({
-  url,
+  relays,
   filters,
   element,
   onBackwardExhausted,
   onForwardExhausted,
   at = now(),
 }: {
-  url: string
+  relays: string[]
   filters: Filter[]
   element: HTMLElement
   onBackwardExhausted?: () => void
@@ -121,9 +122,15 @@ export const makeFeed = ({
 }) => {
   const controller = new AbortController()
   const events = writable<TrustedEvent[]>([])
+  const seen = new Set<string>()
 
   let interval = int(MONTH)
-  let buffer = sortEventsDesc(getEventsForUrl(url, filters))
+  let buffer = sortEventsDesc(
+    uniqBy(
+      e => e.id,
+      relays.flatMap(url => Array.from(getEventsForUrl(url, filters))),
+    ),
+  )
   let backwardWindow = [at - interval, at]
   let forwardWindow = [at, at + interval]
 
@@ -142,6 +149,12 @@ export const makeFeed = ({
     const visible: TrustedEvent[] = []
 
     for (const event of newEvents) {
+      if (seen.has(event.id)) {
+        continue
+      }
+
+      seen.add(event.id)
+
       if (between([backwardWindow[0], forwardWindow[1]], event.created_at)) {
         visible.push(event)
       } else {
@@ -164,6 +177,7 @@ export const makeFeed = ({
             $events = [...$events, event]
           }
         }
+
         return $events
       })
     }
@@ -182,7 +196,9 @@ export const makeFeed = ({
         }
 
         const matching = added.filter(
-          event => matchFilters(filters, event) && tracker.getRelays(event.id).has(url),
+          event =>
+            matchFilters(filters, event) &&
+            relays.some(url => tracker.getRelays(event.id).has(url)),
         )
 
         if (matching.length > 0) {
@@ -190,8 +206,8 @@ export const makeFeed = ({
         }
       }),
     ),
-    on(tracker, "add", (id: string, trackerUrl: string) => {
-      if (trackerUrl === url) {
+    on(tracker, "add", (id: string, url: string) => {
+      if (relays.includes(url)) {
         const event = repository.getEvent(id)
 
         if (event && matchFilters(filters, event)) {
@@ -203,7 +219,7 @@ export const makeFeed = ({
 
   const loadTimeframe = async (since: number, until: number) => {
     const events = await request({
-      relays: [url],
+      relays,
       autoClose: true,
       signal: controller.signal,
       filters: filters.map(filter => ({...filter, since, until})),
@@ -270,18 +286,19 @@ export const makeFeed = ({
 }
 
 export const makeCalendarFeed = ({
-  url,
+  relays,
   filters,
   element,
   onExhausted,
 }: {
-  url: string
+  relays: string[]
   filters: Filter[]
   element: HTMLElement
   onExhausted?: () => void
 }) => {
   const interval = int(5, MONTH)
   const controller = new AbortController()
+  const seen = new Set<string>()
 
   let exhaustedScrollers = 0
   let backwardWindow = [now() - interval, now()]
@@ -291,15 +308,26 @@ export const makeCalendarFeed = ({
 
   const getEnd = (event: TrustedEvent) => parseInt(getTagValue("end", event.tags) || "")
 
-  const events = writable(sortBy(getStart, getEventsForUrl(url, filters)))
+  const events = writable(
+    sortBy(
+      getStart,
+      uniqBy(
+        e => e.id,
+        relays.flatMap(url => Array.from(getEventsForUrl(url, filters))),
+      ),
+    ),
+  )
 
   // Batch-insert calendar events into the store with a single update
   const insertEvents = (newEvents: TrustedEvent[]) => {
-    const valid = newEvents.filter(e => !isNaN(getStart(e)) && !isNaN(getEnd(e)))
+    const valid = newEvents.filter(e => !isNaN(getStart(e)) && !isNaN(getEnd(e)) && !seen.has(e.id))
+
     if (valid.length === 0) return
 
     events.update($events => {
       for (const event of valid) {
+        seen.add(event.id)
+
         const start = getStart(event)
         const address = getAddress(event)
 
@@ -320,6 +348,7 @@ export const makeCalendarFeed = ({
           $events = [...$events.filter(e => getAddress(e) !== address), event]
         }
       }
+
       return $events
     })
   }
@@ -342,8 +371,8 @@ export const makeCalendarFeed = ({
         }
       }),
     ),
-    on(tracker, "add", (id: string, trackerUrl: string) => {
-      if (trackerUrl === url) {
+    on(tracker, "add", (id: string, url: string) => {
+      if (relays.includes(url)) {
         const event = repository.getEvent(id)
 
         if (event && matchFilters(filters, event)) {
@@ -357,7 +386,7 @@ export const makeCalendarFeed = ({
     const hashes = daysBetween(since, until).map(String)
 
     request({
-      relays: [url],
+      relays,
       autoClose: true,
       signal: controller.signal,
       filters: [{kinds: [EVENT_TIME], "#D": hashes}],
