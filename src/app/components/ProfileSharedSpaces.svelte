@@ -41,7 +41,7 @@
         {@const isMember = !isSelf && $userSpaceUrls.includes(url)}
         <Link
           href={makeSpacePath(url)}
-          class="card card-interactive flex flex-row items-center gap-3 p-3 sm:p-4">
+          class="card card-interactive flex flex-row items-center justify-between gap-3 p-3 sm:p-4">
           <RelayIcon {url} size={8} />
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">

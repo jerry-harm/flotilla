@@ -48,8 +48,6 @@ export const setupHistory = () =>
 
 export const makeProfilePath = (pubkey: string) => `/people/${nip19.npubEncode(pubkey)}`
 
-export const goToProfile = (pubkey: string) => goto(makeProfilePath(pubkey))
-
 // Chat
 
 export const makeChatPath = (pubkeys: string[]) => `/chat/${makeChatId(pubkeys)}`

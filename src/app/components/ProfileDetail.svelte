@@ -1,5 +1,6 @@
 <script lang="ts">
   import {onMount} from "svelte"
+  import {goto} from "$app/navigation"
   import {displayProfileByPubkey, loadMessagingRelayList} from "@welshman/app"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import UserCircle from "@assets/icons/user-circle.svg?dataurl"
@@ -25,7 +26,7 @@
   } from "@app/members"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
-  import {goToProfile} from "@app/routes"
+  import {makeProfilePath} from "@app/routes"
 
   export type Props = {
     pubkey: string
@@ -42,7 +43,7 @@
 
   const back = () => history.back()
 
-  const viewProfile = () => goToProfile(pubkey)
+  const viewProfile = () => goto(makeProfilePath(pubkey), {replaceState: true})
 
   const toggleMenu = () => {
     showMenu = !showMenu

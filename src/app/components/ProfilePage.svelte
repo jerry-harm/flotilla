@@ -28,7 +28,6 @@
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ProfileTrust from "@app/components/ProfileTrust.svelte"
   import ProfileSharedSpaces from "@app/components/ProfileSharedSpaces.svelte"
-  import ProfilePinnedNotes from "@app/components/ProfilePinnedNotes.svelte"
   import ProfilePageNotes from "@app/components/ProfilePageNotes.svelte"
   import ProfileQrCode from "@app/components/ProfileQrCode.svelte"
   import ProfileEdit from "@app/components/ProfileEdit.svelte"
@@ -255,7 +254,6 @@
             <ProfileTrust pubkey={target} {isSelf} />
             <ProfileSharedSpaces pubkey={target} {isSelf} />
           </div>
-          <ProfilePinnedNotes pubkey={target} />
           <ProfilePageNotes pubkey={target} />
         </div>
       </div>

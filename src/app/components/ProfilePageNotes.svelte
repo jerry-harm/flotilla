@@ -1,15 +1,17 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import {derived, get, writable} from "svelte/store"
-  import {sortBy, uniqBy} from "@welshman/lib"
-  import {feedFromFilter} from "@welshman/feeds"
+  import {derived, writable} from "svelte/store"
+  import type {Writable} from "svelte/store"
+  import {sortBy, now} from "@welshman/lib"
   import {NOTE, getReplyTags, getListTags, getEventTagValues} from "@welshman/util"
   import type {TrustedEvent} from "@welshman/util"
-  import {derivePinList, makeFeedController} from "@welshman/app"
-  import {createScroller} from "@lib/html"
+  import {derivePinList} from "@welshman/app"
+  import {Router} from "@welshman/router"
+  import {load} from "@welshman/net"
   import {fly} from "@lib/transition"
   import Spinner from "@lib/components/Spinner.svelte"
   import NoteItem from "@app/components/NoteItem.svelte"
+  import {makeFeed} from "@app/feeds"
 
   type Props = {
     pubkey: string
@@ -18,51 +20,52 @@
   const {pubkey}: Props = $props()
 
   const pinList = derivePinList(pubkey)
-  const pinnedIds = derived(pinList, $pinList => new Set(getEventTagValues(getListTags($pinList))))
+  const pinnedIds = derived(pinList, $pinList => getEventTagValues(getListTags($pinList)))
 
-  let element: HTMLElement | undefined = $state()
-  const events = writable<TrustedEvent[]>([])
-  let exhausted = $state(false)
-  let buffer: TrustedEvent[] = []
+  $effect(() => {
+    if ($pinnedIds.length > 0) {
+      const controller = new AbortController()
 
-  const ctrl = makeFeedController({
-    useWindowing: true,
-    feed: feedFromFilter({kinds: [NOTE], authors: [pubkey]}),
-    onEvent: (event: TrustedEvent) => {
-      if (getReplyTags(event.tags).replies.length === 0 && !get(pinnedIds).has(event.id)) {
-        buffer.push(event)
-      }
-    },
-    onExhausted: () => {
-      exhausted = true
-    },
+      load({
+        relays: Router.get().FromPubkeys([pubkey]).getUrls(),
+        filters: [{ids: $pinnedIds}],
+        signal: controller.signal,
+        onEvent: e => events.update($events => $events.concat(e)),
+      })
+
+      return () => controller.abort()
+    }
   })
 
+  let element: HTMLElement | undefined = $state()
+  let exhausted = $state(false)
+  let events: Writable<TrustedEvent[]> = $state(writable([]))
+
+  const feedEvents = $derived(
+    sortBy(
+      e => ($pinnedIds.includes(e.id) ? -(now() + e.created_at) : -e.created_at),
+      $events.filter(e => getReplyTags(e.tags).replies.length === 0),
+    ),
+  )
+
   onMount(() => {
-    const scroller = createScroller({
+    const feed = makeFeed({
+      url: Router.get().FromPubkeys([pubkey]).getUrls()[0],
       element: element!,
-      delay: 300,
-      threshold: 3000,
-      onScroll: () => {
-        buffer = uniqBy(
-          e => e.id,
-          sortBy(e => -e.created_at, buffer),
-        )
-
-        events.update($events => uniqBy(e => e.id, [...$events, ...buffer.splice(0, 5)]))
-
-        if (buffer.length < 50) {
-          ctrl.load(50)
-        }
+      filters: [{kinds: [NOTE], authors: [pubkey]}],
+      onBackwardExhausted: () => {
+        exhausted = true
       },
     })
 
-    return () => scroller.stop()
+    events = feed.events
+
+    return () => feed.cleanup()
   })
 </script>
 
 <div class="flex flex-col gap-4" bind:this={element}>
-  {#each $events as event (event.id)}
+  {#each feedEvents as event (event.id)}
     <div in:fly>
       <NoteItem {event} />
     </div>
