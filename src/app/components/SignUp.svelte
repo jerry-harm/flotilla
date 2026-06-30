@@ -2,8 +2,9 @@
   import cx from "classnames"
   import type {ClientOptions} from "@pomade/core"
   import type {Profile} from "@welshman/util"
+  import {first} from "@welshman/lib"
   import {makeProfile, makeSecret, RELAYS, MESSAGING_RELAYS, makeEvent} from "@welshman/util"
-  import {loginWithNip01, publishThunk} from "@welshman/app"
+  import {loginWithNip01, publishThunk, waitForThunkCompletion} from "@welshman/app"
   import Key from "@assets/icons/key-minimalistic.svg?dataurl"
   import Letter from "@assets/icons/letter.svg?dataurl"
   import {getKey, setKey} from "@lib/implicit"
@@ -17,6 +18,7 @@
   import SignUpProfile from "@app/components/SignUpProfile.svelte"
   import SignUpComplete from "@app/components/SignUpComplete.svelte"
   import {initProfile} from "@app/profiles"
+  import {attemptRelayAccess} from "@app/relays"
   import {
     POMADE_SIGNERS,
     PLATFORM_NAME,
@@ -39,24 +41,32 @@
 
   const login = () => pushModal(LogIn)
 
-  const completeSignup = () => {
-    // Add default outbox/inbox relays
-    publishThunk({
-      event: makeEvent(RELAYS, {tags: DEFAULT_RELAYS.map(url => ["r", url])}),
-      relays: [...INDEXER_RELAYS, ...DEFAULT_RELAYS],
-    })
+  const completeSignup = async () => {
+    // Join all default spaces first
+    const defaultSpaceUrls = await Promise.all(
+      DEFAULT_SPACES.map(async ([url, claim]) => {
+        await attemptRelayAccess(url, claim)
 
-    // Add default messaging relays
-    publishThunk({
-      event: makeEvent(MESSAGING_RELAYS, {tags: DEFAULT_MESSAGING_RELAYS.map(url => ["r", url])}),
-      relays: DEFAULT_RELAYS,
-    })
+        return url
+      })
+    )
 
-    // Save the user's profile
-    initProfile(getKey<Profile>("signup.profile")!)
+    // Add default outbox/inbox/messaging relays, profile, spaces
+    const thunks = await Promise.all([
+      publishThunk({
+        event: makeEvent(RELAYS, {tags: DEFAULT_RELAYS.map(url => ["r", url])}),
+        relays: [...INDEXER_RELAYS, ...DEFAULT_RELAYS],
+      }),
+      publishThunk({
+        event: makeEvent(MESSAGING_RELAYS, {tags: DEFAULT_MESSAGING_RELAYS.map(url => ["r", url])}),
+        relays: DEFAULT_RELAYS,
+      }),
+      initProfile(getKey<Profile>("signup.profile")!),
+      setSpaces(defaultSpaceUrls),
+    ])
 
-    // Auto-join default spaces
-    setSpaces(DEFAULT_SPACES)
+    // Wait for all the thunks to complete
+    await Promise.all(thunks.map(waitForThunkCompletion))
 
     // Don't show any notifications for old content
     setChecked("*")
@@ -71,12 +81,12 @@
       profile: () => pushModal(SignUpProfile, {next: flows.email.complete, step: 2, totalSteps: 3}),
       complete: () =>
         pushModal(SignUpComplete, {next: flows.email.finalize, step: 3, totalSteps: 3}),
-      finalize: () => {
+      finalize: async () => {
         const email = getKey<string>("signup.email")!
         const clientOptions = getKey<ClientOptions>("signup.clientOptions")!
 
         loginWithPomade(clientOptions, email)
-        completeSignup()
+        await completeSignup()
       },
     },
     nostr: {
@@ -84,11 +94,11 @@
       key: () => pushModal(SignUpKey, {next: flows.nostr.complete, step: 2, totalSteps: 3}),
       complete: () =>
         pushModal(SignUpComplete, {next: flows.nostr.finalize, step: 3, totalSteps: 3}),
-      finalize: () => {
+      finalize: async () => {
         const secret = getKey<string>("signup.secret")!
 
         loginWithNip01(secret)
-        completeSignup()
+        await completeSignup()
       },
     },
   }

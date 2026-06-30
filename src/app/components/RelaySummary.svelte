@@ -24,7 +24,7 @@
         <div class="relative">
           <div
             class="flex justify-center items-center h-12 w-12 min-w-12 rounded-full border-2 border-solid bg-surface-more border-line">
-            <RelayIcon {url} size={10} />
+            <RelayIcon {url} size={10} class="rounded-full" />
           </div>
         </div>
         {#if $rooms.includes(url)}
@@ -40,7 +40,9 @@
         <p class="text-xs sm:text-sm opacity-75">{url}</p>
       </div>
     </div>
-    <RelayDescription {url} class="text-sm sm:text-md" />
+    <div class="text-sm sm:text-md">
+      <RelayDescription {url} />
+    </div>
   </div>
   {#if !hideFavorites && $favorited.size > 0}
     <div class="flex gap-2 card card-sm">

@@ -49,6 +49,10 @@
   @apply border border-solid;
 }
 
+[data-fl-theme="navy"] .card-button {
+  @apply border border-solid;
+}
+
 [data-fl-theme="clay"] .card-button {
   @apply border-2 border-solid shadow-sm;
 

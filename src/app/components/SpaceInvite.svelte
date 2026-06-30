@@ -134,16 +134,16 @@
     </ModalHeader>
     <div>
       {#if loading}
-        <p class="flex-justify-center items-center">
+        <p class="flex justify-center items-center">
           <Spinner {loading}>Requesting an invite link...</Spinner>
         </p>
       {:else if isGenericError}
-        <p class="flex-justify-center items-center">
-          Unable to reach the relay. Please check your connection and try again.
+        <p class="flex justify-center items-center">
+          Unable to reach the space. Please check your connection and try again.
         </p>
       {:else if isExplicitAuthError}
-        <p class="flex-justify-center items-center">
-          Oops! It looks like you're not a member of this relay.
+        <p class="flex justify-center items-center">
+          Oops! It looks like you're not a member of this space.
         </p>
       {:else}
         <div class="flex flex-col items-center gap-6">

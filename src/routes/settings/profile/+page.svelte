@@ -142,7 +142,7 @@
       {/snippet}
       {#snippet info()}
         <p>
-          Your public key is your nostr user identifier. It also allows other people to authenticate
+          Your public key is your user identifier. It also allows other people to authenticate
           your messages.
         </p>
       {/snippet}

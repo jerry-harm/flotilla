@@ -1,11 +1,16 @@
 <script lang="ts">
   import {deriveRelay} from "@welshman/app"
+  import Content from "@app/components/Content.svelte"
 
-  const {...props} = $props()
+  type Props = {
+    url: string
+  }
 
-  const relay = deriveRelay(props.url)
+  const {url}: Props = $props()
+
+  const relay = deriveRelay(url)
 </script>
 
 {#if $relay?.description}
-  <p class={props.class}>{$relay.description}</p>
+  <Content event={{content: $relay.description, tags: []}} />
 {/if}

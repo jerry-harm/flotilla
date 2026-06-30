@@ -66,7 +66,7 @@
     <div class="m-auto flex flex-col gap-4">
       <p>
         This space has opted not to publish <Button
-          class="button button-link"
+          class="link"
           onclick={showInfoSignatures}>digital signatures</Button
         >, which means that they have the ability to forge messages from other users.
       </p>

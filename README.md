@@ -22,7 +22,7 @@ You can also optionally create an `.env.local` file and populate it with the fol
 
 **Defaults**
 - `VITE_DEFAULT_PUBKEYS` - A comma-separated list of hex pubkeys for bootstrapping web of trust
-- `VITE_DEFAULT_SPACES` - A comma-separated list of relay urls that new users will be automatically joined to on signup
+- `VITE_DEFAULT_SPACES` - A comma-separated list of relay urls that new users will be automatically joined to on signup. Each one may optionally include an invite code, delimited by `|`, e.g. `my.space.com|CODE`.
 - `VITE_DEFAULT_RELAYS` - A comma-separated list of relay urls used as default outbox/inbox relays
 - `VITE_DEFAULT_MESSAGING_RELAYS` - A comma-separated list of relay urls used for encrypted direct messages
 - `VITE_DEFAULT_BLOSSOM_SERVERS` - A comma-separated list of blossom server urls used for file uploads

@@ -83,22 +83,22 @@ export const makeSpacePath = (url: string, ...extra: (string | undefined)[]) => 
   return path
 }
 
-export const goToSpace = (url: string) => {
+export const goToSpace = (url: string, hash = "") => {
   const prevPath = lastPageBySpaceUrl.get(encodeRelay(url))
 
   if (prevPath && prevPath !== makeSpacePath(url)) {
-    return goto(prevPath, {replaceState: true})
+    return goto(prevPath + hash, {replaceState: true})
   }
 
   if (!hasNip29(getRelay(url))) {
-    return goto(makeSpaceChatPath(url), {replaceState: true})
+    return goto(makeSpaceChatPath(url) + hash, {replaceState: true})
   }
 
   if (window.matchMedia(`(min-width: ${theme.screens.md})`).matches) {
-    return goto(makeSpacePath(url, "about"), {replaceState: true})
+    return goto(makeSpacePath(url, "about") + hash, {replaceState: true})
   }
 
-  return goto(makeSpacePath(url), {replaceState: true})
+  return goto(makeSpacePath(url) + hash, {replaceState: true})
 }
 
 // Content types, events

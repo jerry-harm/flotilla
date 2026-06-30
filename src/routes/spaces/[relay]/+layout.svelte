@@ -13,7 +13,7 @@
   import SpaceAuthError from "@app/components/SpaceAuthError.svelte"
   import SpaceTrustRelay from "@app/components/SpaceTrustRelay.svelte"
   import SpaceJoin from "@app/components/SpaceJoin.svelte"
-  import {pushModal} from "@app/modal"
+  import {modal, pushModal} from "@app/modal"
   import {makeSpacePath} from "@app/routes"
   import {decodeRelay, deriveRelayAuthError} from "@app/relays"
   import {userGroupList, userSpaceUrls} from "@app/groups"
@@ -35,34 +35,19 @@
 
   const showPendingTrust = once(() => pushModal(SpaceTrustRelay, {url}, {noEscape: true}))
 
-  // Watch for relay errors and notify the user
-  $effect(() => {
-    if ($authError) {
-      showAuthError()
-    } else if ($relaysPendingTrust.includes(url)) {
-      showPendingTrust()
-    }
-  })
-
-  // Direct links skip Discover — prompt to join when relay is not in the user's space list.
-  const shouldPromptJoin = $derived.by(() => {
+ // Watch for relay errors and notify the user
+ // Direct links skip Discover — prompt to join when relay is not in the user's space list.
+ $effect(() => {
     void $userGroupList
 
-    return (
-      Boolean($pubkey) &&
-      !$userSpaceUrls.includes(url) &&
-      !$authError &&
-      !$relaysPendingTrust.includes(url)
-    )
-  })
+    if ($modal) return
+    if ($authError) return showAuthError()
+    if ($relaysPendingTrust.includes(url)) return showPendingTrust()
 
-  $effect(() => {
-    if (!shouldPromptJoin || joinPrompted.has(url)) {
-      return
+    if (!$userSpaceUrls.includes(url)) {
+      joinPrompted.add(url)
+      pushModal(SpaceJoin, {url})
     }
-
-    joinPrompted.add(url)
-    pushModal(SpaceJoin, {url})
   })
 </script>
 
