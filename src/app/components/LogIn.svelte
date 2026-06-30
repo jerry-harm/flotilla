@@ -136,7 +136,7 @@
       Log in with Remote Signer
     </Button>
     {#if hasPomade && hasSigner}
-      <Button {disabled} onclick={loginWithEmail}>
+      <Button {disabled} onclick={loginWithEmail} class="button button-neutral">
         <Icon icon={Letter} />
         Log in with Email
       </Button>

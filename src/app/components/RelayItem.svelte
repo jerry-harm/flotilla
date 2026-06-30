@@ -14,7 +14,7 @@
   const connections = $derived($relayStats?.open_count || 0)
 </script>
 
-<Card sm class="flex flex-colap-2">
+<Card sm class="flex flex-col gap-2">
   <div class="flex items-center justify-between gap-4">
     <div class="ellipsize flex items-center gap-2">
       <Icon icon={Server} />

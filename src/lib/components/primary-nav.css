@@ -14,7 +14,7 @@
 
   .primary-nav__nav-item::after {
     content: "";
-    @apply absolute top-1/2 -left-1 h-0 w-1 -translate-y-1/2 rounded-r;
+    @apply absolute top-1/2 -left-1 h-0 w-1 -translate-y-1/2 rounded-r max-md:hidden;
     background-color: var(--content);
     transition: height 150ms ease;
   }

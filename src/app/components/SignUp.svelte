@@ -114,7 +114,7 @@
     </Button>
     <div class="text-sm">
       Already have an account?
-      <Button class="button button-link" onclick={login}>Log in instead</Button>
+      <Button class="link" onclick={login}>Log in instead</Button>
     </div>
   </ModalBody>
 </Modal>
