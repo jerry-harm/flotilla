@@ -6,6 +6,7 @@
   import UserCircle from "@assets/icons/user-circle.svg?dataurl"
   import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
   import MinusCircle from "@assets/icons/minus-circle.svg?dataurl"
+  import UserMinus from "@assets/icons/user-minus.svg?dataurl"
   import Restart from "@assets/icons/restart.svg?dataurl"
   import {fly} from "@lib/transition"
   import Icon from "@lib/components/Icon.svelte"
@@ -21,6 +22,7 @@
   import {
     deriveUserIsSpaceAdmin,
     deriveSpaceBannedPubkeyItems,
+    removeSpaceMembers,
     addSpaceMembers,
     banSpaceMembers,
   } from "@app/members"
@@ -69,6 +71,17 @@
       },
     })
 
+  const removeMember = async () => {
+    const error = await removeSpaceMembers(url!, [pubkey])
+
+    if (error) {
+      pushToast({theme: "error", message: error})
+    } else {
+      pushToast({message: "User has successfully been removed!"})
+      back()
+    }
+  }
+
   const restoreMember = async () => {
     const error = await addSpaceMembers(url!, [pubkey])
 
@@ -106,10 +119,16 @@
                     <li>
                       <Button onclick={restoreMember}>
                         <Icon icon={Restart} />
-                        Restore User
+                        Restore Membership
                       </Button>
                     </li>
                   {:else}
+                    <li>
+                      <Button onclick={removeMember}>
+                        <Icon icon={UserMinus} />
+                        Remove Member
+                      </Button>
+                    </li>
                     <li>
                       <Button class="text-error" onclick={banMember}>
                         <Icon icon={MinusCircle} />

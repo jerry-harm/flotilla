@@ -12,7 +12,7 @@ You can also optionally create an `.env.local` file and populate it with the fol
 - `VITE_PLATFORM_URL` - The url where the app will be hosted
 - `VITE_PLATFORM_NAME` - The name of the app
 - `VITE_PLATFORM_LOGO` - A logo url for the app. Can be a local path or https link. Must be a PNG file.
-- `VITE_PLATFORM_ACCENT` - A hex color for the app's accent color
+- `VITE_PLATFORM_ACCENT` - A hex color for the app's accent color (used only for generated manifest, for more control create a custom theme file)
 - `VITE_PLATFORM_DESCRIPTION` - A description of the app
 - `VITE_PLATFORM_TERMS` - URL to your terms of service page
 - `VITE_PLATFORM_PRIVACY` - URL to your privacy policy page
@@ -33,7 +33,6 @@ You can also optionally create an `.env.local` file and populate it with the fol
 - `VITE_BLOCKED_RELAYS` - A comma-separated list of relay urls that will be blocked
 - `VITE_PUSH_SERVER` - URL of the push notification server
 - `VITE_PUSH_BRIDGE` - WebSocket URL of the push notification relay bridge
-- `VITE_VAPID_PUBLIC_KEY` - VAPID public key for web push notifications
 - `VITE_POMADE_SIGNERS` - A comma-separated list of Pomade signer server URLs (3+ required to enable email signup)
 - `VITE_THUMBNAIL_URL` - URL of the image thumbnail service
 
