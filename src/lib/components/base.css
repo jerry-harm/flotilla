@@ -58,6 +58,7 @@
   --sair: var(--safe-area-inset-right, env(safe-area-inset-right));
 
   text-size-adjust: 100%;
+  font-size: 110%;
 }
 
 @layer base {

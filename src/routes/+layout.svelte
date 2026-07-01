@@ -1,6 +1,7 @@
 <script lang="ts">
   import "@lib/components/theme.css"
   import "@welshman/editor/index.css"
+  import {debounce} from "throttle-debounce"
   import * as nip19 from "nostr-tools/nip19"
   import type {Unsubscriber} from "svelte/store"
   import {get} from "svelte/store"
@@ -272,10 +273,12 @@
         document.body.setAttribute("data-theme", $theme)
         document.body.setAttribute("data-fl-theme", env.FL_THEME)
       }),
-      userSettingsValues.subscribe($userSettingsValues => {
-        // @ts-ignore
-        document.documentElement.style["font-size"] = `${$userSettingsValues.font_size}rem`
-      }),
+      userSettingsValues.subscribe(
+        debounce(100, $userSettingsValues => {
+          // @ts-ignore
+          document.documentElement.style["font-size"] = `${$userSettingsValues.font_size}rem`
+        }),
+      ),
     )
 
     return () => unsubscribers.forEach(call)
