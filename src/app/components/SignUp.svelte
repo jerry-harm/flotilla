@@ -2,7 +2,6 @@
   import cx from "classnames"
   import type {ClientOptions} from "@pomade/core"
   import type {Profile} from "@welshman/util"
-  import {first} from "@welshman/lib"
   import {makeProfile, makeSecret, RELAYS, MESSAGING_RELAYS, makeEvent} from "@welshman/util"
   import {loginWithNip01, publishThunk, waitForThunkCompletion} from "@welshman/app"
   import Key from "@assets/icons/key-minimalistic.svg?dataurl"
@@ -48,7 +47,7 @@
         await attemptRelayAccess(url, claim)
 
         return url
-      })
+      }),
     )
 
     // Add default outbox/inbox/messaging relays, profile, spaces

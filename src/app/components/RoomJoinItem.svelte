@@ -69,7 +69,7 @@
 <Card sm class="flex flex-col gap-4">
   <div class="flex justify-between gap-2">
     <div>
-      <Button class="button button-link inline text-primary" onclick={showProfile}>
+      <Button class="link text-primary" onclick={showProfile}>
         <ProfileName pubkey={event.pubkey} {url} />
       </Button>
       <span>

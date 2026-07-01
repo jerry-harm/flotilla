@@ -9,7 +9,7 @@
   import CardButton from "@lib/components/CardButton.svelte"
   import LogIn from "@app/components/LogIn.svelte"
   import SignUp from "@app/components/SignUp.svelte"
-  import {PLATFORM_TERMS, PLATFORM_PRIVACY, PLATFORM_NAME} from "@app/env"
+  import {PLATFORM_TERMS, PLATFORM_PRIVACY, PLATFORM_NAME, PLATFORM_DESCRIPTION} from "@app/env"
   import {pushModal} from "@app/modal"
 
   const logIn = () => pushModal(LogIn)
@@ -21,7 +21,7 @@
   <ModalBody>
     <div class="py-2">
       <h1 class="heading">Welcome to {PLATFORM_NAME}!</h1>
-      <p class="text-center">The chat app built for self-hosted communities.</p>
+      <p class="text-center">{PLATFORM_DESCRIPTION}</p>
     </div>
     <Button onclick={logIn}>
       <CardButton primary>

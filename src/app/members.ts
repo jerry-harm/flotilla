@@ -32,20 +32,60 @@ export const deriveSpaceMembers = (url: string) =>
 
 export const RELAY_ROLE = 33534
 
+// An hsl color tuple. Any component may be an empty string, in which case the
+// client supplies its own default. Usually only `hue` is set per the spec.
+export type SpaceRoleColor = {
+  hue: string // 0 to 360
+  saturation: string // 0 to 1
+  lightness: string // 0 to 1
+}
+
 export type SpaceRole = {
   id: string
   label: string
   description: string
-  color: number
+  color: SpaceRoleColor
   order: number
 }
 
-// hue is 0-255; map to 0-360deg. Saturation/lightness chosen to read on both themes.
-export const roleColorHue = (color: number) => (((color % 256) + 256) % 256) * (360 / 256)
+// Defaults filled in for empty color components, chosen to read on both themes.
+const DEFAULT_SATURATION = 0.7
+const DEFAULT_LIGHTNESS = 0.5
 
-export const roleColor = (color: number) => `hsl(${roleColorHue(color)}, 70%, 50%)`
+const roleColorValue = (value: string, fallback: number) => {
+  const parsed = parseFloat(value)
 
-export const roleColorSoft = (color: number) => `hsl(${roleColorHue(color)}, 70%, 90%)`
+  return isNaN(parsed) ? fallback : parsed
+}
+
+// Parse the ["color", hue, saturation, lightness] tag, preserving empty values.
+export const parseRoleColor = (tags: string[][]): SpaceRoleColor => {
+  const tag = first(getTags("color", tags)) ?? []
+
+  return {
+    hue: tag[1] ?? "",
+    saturation: tag[2] ?? "",
+    lightness: tag[3] ?? "",
+  }
+}
+
+// Build an hsl() string from a role color, using the role's values or our defaults.
+export const roleColor = (color: SpaceRoleColor) => {
+  const h = roleColorValue(color.hue, 0)
+  const s = roleColorValue(color.saturation, DEFAULT_SATURATION)
+  const l = roleColorValue(color.lightness, DEFAULT_LIGHTNESS)
+
+  return `hsl(${h}, ${s * 100}%, ${l * 100}%)`
+}
+
+// A translucent tint of the role color for use as a background fill.
+export const roleColorSoft = (color: SpaceRoleColor) => {
+  const h = roleColorValue(color.hue, 0)
+  const s = roleColorValue(color.saturation, DEFAULT_SATURATION)
+  const l = roleColorValue(color.lightness, DEFAULT_LIGHTNESS)
+
+  return `hsl(${h}, ${s * 100}%, ${l * 100}%, 0.15)`
+}
 
 export const deriveSpaceRoles = (url: string) =>
   derived(deriveRelaySignedEvents(url, [{kinds: [RELAY_ROLE]}]), $events => {
@@ -59,7 +99,7 @@ export const deriveSpaceRoles = (url: string) =>
           id,
           label: getTagValue("label", event.tags) ?? "",
           description: getTagValue("description", event.tags) ?? "",
-          color: parseInt(getTagValue("color", event.tags) ?? "0", 10) || 0,
+          color: parseRoleColor(event.tags),
           order: parseInt(getTagValue("order", event.tags) ?? "0", 10) || 0,
         })
       }
@@ -87,17 +127,21 @@ export const deriveSpaceMemberRoles = (url: string) =>
     return memberRoles
   })
 
+// Flatten a color tuple into management params, mirroring the color tag's value order.
+const roleColorParams = (color: SpaceRoleColor) =>
+  [color.hue, color.saturation, color.lightness] as unknown as string
+
 export const createRole = async (
   url: string,
   id: string,
   label: string,
   description: string,
-  color: number,
+  color: SpaceRoleColor,
   order: number,
 ): Promise<string | undefined> => {
   const {error} = await manageRelay(url, {
     method: "createrole" as ManagementMethod,
-    params: [id, label, description, color.toString(), order.toString()],
+    params: [id, label, description, roleColorParams(color), order.toString()],
   })
 
   return error
@@ -108,12 +152,12 @@ export const editRole = async (
   id: string,
   label: string,
   description: string,
-  color: number,
+  color: SpaceRoleColor,
   order: number,
 ): Promise<string | undefined> => {
   const {error} = await manageRelay(url, {
     method: "editrole" as ManagementMethod,
-    params: [id, label, description, color.toString(), order.toString()],
+    params: [id, label, description, roleColorParams(color), order.toString()],
   })
 
   return error

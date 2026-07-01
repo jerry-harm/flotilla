@@ -37,7 +37,7 @@
   {#if PLATFORM_RELAYS.length > 0}
     <Divider />
   {/if}
-  <div class="flex flex-col">
+  <div class="flex flex-col items-center">
     <PrimaryNavItem title="Settings" href="/settings/profile" prefix="/settings">
       {#if $userProfile?.picture}
         <ImageIcon alt="Settings" src={$userProfile?.picture} class="rounded-full" size={10} />

@@ -58,7 +58,7 @@
   <div>
     {#each value as item (item)}
       <Badge variant="neutral" class="mr-1">
-        <Button class="button button-ghost flex items-center" onclick={() => removeItem(item)}>
+        <Button class="p-1 flex items-center" onclick={() => removeItem(item)}>
           <Icon icon={CloseCircle} size={4} class="-ml-1 mt-px" />
         </Button>
         <span>{item}</span>

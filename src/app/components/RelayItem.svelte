@@ -3,6 +3,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Card from "@lib/components/Card.svelte"
   import Link from "@lib/components/Link.svelte"
+  import ContentMinimal from "@app/components/ContentMinimal.svelte"
   import {displayUrl} from "@welshman/lib"
   import {displayRelayUrl} from "@welshman/util"
   import {deriveRelay, deriveRelayStats} from "@welshman/app"
@@ -23,7 +24,7 @@
     {@render children?.()}
   </div>
   {#if $relay?.description}
-    <p class="ellipsize">{$relay.description}</p>
+    <ContentMinimal singleLine event={{content: $relay.description, tags: []}} />
   {/if}
   <span class="flex items-center gap-1 whitespace-nowrap text-sm">
     {#if $relay?.contact}

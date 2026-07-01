@@ -1,6 +1,5 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import {debounce} from "throttle-debounce"
   import {createScroller, isMobile} from "@lib/html"
   import {profileSearch} from "@welshman/app"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
@@ -9,22 +8,10 @@
   import PageContent from "@lib/components/PageContent.svelte"
   import ContentSearch from "@lib/components/ContentSearch.svelte"
   import PeopleItem from "@app/components/PeopleItem.svelte"
-  import {bootstrapPubkeys} from "@app/social"
 
   let term = $state("")
   let limit = $state(10)
-  let pubkeys = $state($bootstrapPubkeys)
   let element: Element | undefined = $state()
-
-  const search = debounce(200, (term: string) => {
-    if (term) {
-      pubkeys = $profileSearch.searchValues(term)
-    } else {
-      pubkeys = $bootstrapPubkeys
-    }
-  })
-
-  $effect(() => search(term))
 
   onMount(() => {
     const scroller = createScroller({
@@ -55,7 +42,7 @@
       {/snippet}
       {#snippet content()}
         <div class="flex flex-col gap-2 h-full" bind:this={element}>
-          {#each pubkeys.slice(0, limit) as pubkey (pubkey)}
+          {#each $profileSearch.searchValues(term).slice(0, limit) as pubkey (pubkey)}
             <PeopleItem {pubkey} />
           {/each}
         </div>

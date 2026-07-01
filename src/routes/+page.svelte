@@ -1,7 +1,6 @@
 <script lang="ts">
   import {goto} from "$app/navigation"
   import {page} from "$app/stores"
-  import {modal} from "@app/modal"
   import {goToSpace} from "@app/routes"
   import {PLATFORM_RELAYS} from "@app/env"
 

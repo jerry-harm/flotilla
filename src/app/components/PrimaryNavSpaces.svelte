@@ -29,7 +29,7 @@
 
 <svelte:window bind:innerHeight={windowHeight} />
 
-<div class="flex flex-col">
+<div class="flex flex-col items-center">
   {#each PLATFORM_RELAYS as url (url)}
     <PrimaryNavItemSpace {url} />
   {:else}

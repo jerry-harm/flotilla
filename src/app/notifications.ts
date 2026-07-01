@@ -18,7 +18,7 @@ import {notificationSettings} from "@app/settings"
 import {chatsById} from "@app/chats"
 import {userGroupList, getSpaceUrlsFromGroupList} from "@app/groups"
 import {hasNip29} from "@app/relays"
-import {dufflepud, DUFFLEPUD_URL} from "@app/env"
+import {dufflepud, DUFFLEPUD_URL, PLATFORM_RELAYS} from "@app/env"
 import {kv} from "@app/storage"
 import {page} from "$app/stores"
 
@@ -224,7 +224,10 @@ export const allNotifications = derived(
       }
     }
 
-    for (const url of getSpaceUrlsFromGroupList($userGroupList)) {
+    const urls =
+      PLATFORM_RELAYS.length > 0 ? PLATFORM_RELAYS : getSpaceUrlsFromGroupList($userGroupList)
+
+    for (const url of urls) {
       const spacePath = makeSpacePath(url)
       const events = sortEventsDesc((eventsByIdByUrl.get(url) || new Map()).values())
 

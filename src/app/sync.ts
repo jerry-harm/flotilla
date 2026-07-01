@@ -45,7 +45,7 @@ import {
   hasNegentropy,
 } from "@welshman/app"
 import {REACTION_KINDS, CONTENT_KINDS, makeCommentFilter} from "@app/content"
-import {INDEXER_RELAYS} from "@app/env"
+import {INDEXER_RELAYS, PLATFORM_RELAYS} from "@app/env"
 import {loadSettings} from "@app/settings"
 import {
   loadGroupList,
@@ -210,8 +210,10 @@ const syncUserData = () => {
   const syncGroupList = ($userGroupList: List | undefined) => {
     if ($userGroupList) {
       const keys = new Set<string>()
+      const urls =
+        PLATFORM_RELAYS.length > 0 ? PLATFORM_RELAYS : getSpaceUrlsFromGroupList($userGroupList)
 
-      for (const url of getSpaceUrlsFromGroupList($userGroupList)) {
+      for (const url of urls) {
         if (!unsubscribersByKey.has(url)) {
           unsubscribersByKey.set(url, syncUserSpaceMembership(url))
         }
@@ -310,7 +312,9 @@ const syncSpaces = () => {
   const unsubscribersByUrl = new Map<string, Unsubscriber>()
 
   const unsubscribe = store.subscribe(([$userGroupList, $page]) => {
-    const urls = new Set(getSpaceUrlsFromGroupList($userGroupList))
+    const urls = new Set(
+      PLATFORM_RELAYS.length > 0 ? PLATFORM_RELAYS : getSpaceUrlsFromGroupList($userGroupList),
+    )
     const currentUrl = $page.params.relay ? decodeRelay($page.params.relay) : undefined
 
     if (currentUrl) {

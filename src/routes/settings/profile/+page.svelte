@@ -142,8 +142,8 @@
       {/snippet}
       {#snippet info()}
         <p>
-          Your public key is your user identifier. It also allows other people to authenticate
-          your messages.
+          Your public key is your user identifier. It also allows other people to authenticate your
+          messages.
         </p>
       {/snippet}
     </FieldInline>
@@ -172,7 +172,7 @@
     <SignerStatus />
     {#if $session?.method === SessionMethod.Pomade}
       <div class="flex flex-col lg:flex-row gap-4 lg:gap-2 justify-end">
-        <Button onclick={startPasswordReset}>
+        <Button class="button button-neutral" onclick={startPasswordReset}>
           <Spinner {loading}>Update your password</Spinner>
         </Button>
         <Button class="button button-primary" onclick={startRecovery}

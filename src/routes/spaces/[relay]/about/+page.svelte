@@ -29,24 +29,16 @@
 
 <PageContent class="flex flex-col gap-4 p-4">
   <div class="card flex flex-col gap-4">
-    <div class="flex justify-between">
-      <div class="relative flex gap-4">
-        <div class="relative">
-          <RelayIcon {url} size={14} class="rounded-full" />
-        </div>
-        <div class="flex min-w-0 flex-col">
-          <h1 class="ellipsize whitespace-nowrap">
-            <RelayName {url} class="text-2xl font-bold" />
-          </h1>
-          <p class="ellipsize text-sm text-primary">{displayRelayUrl(url)}</p>
-        </div>
+    <div class="relative flex gap-4">
+      <div class="relative">
+        <RelayIcon {url} size={14} class="rounded-full" />
       </div>
-      {#if $userIsAdmin}
-        <Button class="button button-primary" onclick={startEdit}>
-          <Icon icon={Pen} />
-          <span class="hidden sm:inline">Edit</span>
-        </Button>
-      {/if}
+      <div class="flex min-w-0 flex-col">
+        <h1 class="ellipsize whitespace-nowrap">
+          <RelayName {url} class="text-2xl font-bold" />
+        </h1>
+        <p class="ellipsize text-sm text-primary">{displayRelayUrl(url)}</p>
+      </div>
     </div>
     <RelayDescription {url} />
     {#if $relay?.terms_of_service || $relay?.privacy_policy}
@@ -104,6 +96,12 @@
           </p>
         {/if}
       </div>
+    {/if}
+    {#if $userIsAdmin}
+      <Button class="button button-primary" onclick={startEdit}>
+        <Icon icon={Pen} />
+        <span class="hidden sm:inline">Edit Space</span>
+      </Button>
     {/if}
   </div>
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">

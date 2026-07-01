@@ -6,7 +6,6 @@
   import type {Snippet} from "svelte"
   import {page} from "$app/stores"
   import {once} from "@welshman/lib"
-  import {pubkey} from "@welshman/app"
   import Page from "@lib/components/Page.svelte"
   import SecondaryNav from "@lib/components/SecondaryNav.svelte"
   import SpaceMenu from "@app/components/SpaceMenu.svelte"
@@ -35,16 +34,16 @@
 
   const showPendingTrust = once(() => pushModal(SpaceTrustRelay, {url}, {noEscape: true}))
 
- // Watch for relay errors and notify the user
- // Direct links skip Discover — prompt to join when relay is not in the user's space list.
- $effect(() => {
+  // Watch for relay errors and notify the user
+  // Direct links skip Discover — prompt to join when relay is not in the user's space list.
+  $effect(() => {
     void $userGroupList
 
     if ($modal) return
     if ($authError) return showAuthError()
     if ($relaysPendingTrust.includes(url)) return showPendingTrust()
 
-    if (!$userSpaceUrls.includes(url)) {
+    if (!$userSpaceUrls.includes(url) && !joinPrompted.has(url)) {
       joinPrompted.add(url)
       pushModal(SpaceJoin, {url})
     }
