@@ -1,6 +1,6 @@
 import {page} from "$app/stores"
 import type {Unsubscriber} from "svelte/store"
-import {last, call, assoc, chunk, WEEK, ago} from "@welshman/lib"
+import {last, call, assoc, WEEK, ago} from "@welshman/lib"
 import {merged} from "@welshman/store"
 import {
   getListTags,
@@ -25,7 +25,7 @@ import {
   unionFilters,
 } from "@welshman/util"
 import type {Filter, List, PublishedList, TrustedEvent} from "@welshman/util"
-import {request, requestOne, Difference, DifferenceEvent} from "@welshman/net"
+import {request} from "@welshman/net"
 import {
   pubkey,
   loadRelay,
@@ -42,7 +42,6 @@ import {
   getFollows,
   repository,
   shouldUnwrap,
-  hasNegentropy,
 } from "@welshman/app"
 import {REACTION_KINDS, CONTENT_KINDS, makeCommentFilter} from "@app/content"
 import {INDEXER_RELAYS, PLATFORM_RELAYS} from "@app/env"
@@ -87,29 +86,31 @@ const pullOneWithFallback = async (
     }
   }
 
-  const shouldFallback =
-    !hasNegentropy(url) ||
-    (await new Promise(resolve => {
-      if (signal.aborted) {
-        resolve(false)
-        return
-      }
+  // Temporarily disable negentropy until the new welshman lands, which fixes
+  // error handling (neg-err with auth-required were never getting retried)
+  const shouldFallback = true
+  // !hasNegentropy(url) ||
+  // (await new Promise(resolve => {
+  //   if (signal.aborted) {
+  //     resolve(false)
+  //     return
+  //   }
 
-      // If teardown wins while the diff is opening, skip the fallback path and let cleanup stay in control.
-      const diff = new Difference({relay: url, filter, events: cachedEvents, signal})
+  //   // If teardown wins while the diff is opening, skip the fallback path and let cleanup stay in control.
+  //   const diff = new Difference({relay: url, filter, events: cachedEvents, signal})
 
-      diff.on(DifferenceEvent.Error, () => {
-        resolve(true)
-      })
+  //   diff.on(DifferenceEvent.Error, () => {
+  //     resolve(true)
+  //   })
 
-      diff.on(DifferenceEvent.Close, () => {
-        for (const ids of chunk(100, Array.from(diff.need))) {
-          requestOne({relay: url, signal, autoClose: true, filters: [{ids}], onEvent})
-        }
+  //   diff.on(DifferenceEvent.Close, () => {
+  //     for (const ids of chunk(100, Array.from(diff.need))) {
+  //       requestOne({relay: url, signal, autoClose: true, filters: [{ids}], onEvent})
+  //     }
 
-        resolve(false)
-      })
-    }))
+  //     resolve(false)
+  //   })
+  // }))
 
   if (shouldFallback && !signal.aborted) {
     request({relays: [url], signal, autoClose: true, filters: [{since, ...filter}], onEvent})
