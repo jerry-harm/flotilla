@@ -35,7 +35,7 @@
   import {authPolicy, blockPolicy, trustPolicy, mostlyRestrictedPolicy} from "@app/policies"
   import {db, kv, ss} from "@app/storage"
   import {device} from "@app/device"
-  import {getSetting, userSettingsValues, notificationSettings} from "@app/settings"
+  import {getSetting, userSettings, notificationSettings} from "@app/settings"
   import {DUFFLEPUD_URL, INDEXER_RELAYS, POMADE_SIGNERS} from "@app/env"
   import {pushState} from "@app/push/adapters/common"
   import {syncApplicationData} from "@app/sync"
@@ -79,6 +79,10 @@
   if (import.meta.env.DEV) {
     maybeInstallRelayMocks()
   }
+
+  // Do this asap to avoid a font size flash
+  // @ts-ignore
+  document.documentElement.style["font-size"] = `${localStorage.getItem("font-size") || 1.1}rem`
 
   const policies = [authPolicy, blockPolicy, trustPolicy, mostlyRestrictedPolicy]
 
@@ -275,10 +279,14 @@
         document.body.setAttribute("data-theme", $theme)
         document.body.setAttribute("data-fl-theme", env.FL_THEME)
       }),
-      userSettingsValues.subscribe(
-        debounce(100, $userSettingsValues => {
-          // @ts-ignore
-          document.documentElement.style["font-size"] = `${$userSettingsValues.font_size}rem`
+      userSettings.subscribe(
+        debounce(100, $userSettings => {
+          if ($userSettings) {
+            localStorage.setItem("font-size", $userSettings.values.font_size)
+
+            // @ts-ignore
+            document.documentElement.style["font-size"] = `${$userSettings.values.font_size}rem`
+          }
         }),
       ),
     )
