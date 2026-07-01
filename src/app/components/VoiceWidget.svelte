@@ -6,10 +6,11 @@
   import cx from "classnames"
   import {displayRelayUrl} from "@welshman/util"
   import Microphone from "@assets/icons/microphone.svg?dataurl"
+  import MicrophoneOff from "@assets/icons/microphone-off.svg?dataurl"
   import VideocameraOff from "@assets/icons/videocamera-off.svg?dataurl"
   import VideocameraRecord from "@assets/icons/videocamera-record.svg?dataurl"
   import Monitor from "@assets/icons/monitor.svg?dataurl"
-  import PhoneRounded from "@assets/icons/phone-rounded.svg?dataurl"
+  import EndCall from "@assets/icons/end-call-rounded.svg?dataurl"
   import PhoneCallingRounded from "@assets/icons/phone-calling-rounded.svg?dataurl"
   import ChatRound from "@assets/icons/chat-round.svg?dataurl"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
@@ -162,7 +163,7 @@
         </Button>
       {/if}
     </div>
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex items-center gap-1.5">
       {#if $callState === CallState.Joining}
         <Spinner size="sm" />
         <Button
@@ -176,23 +177,16 @@
           data-tip={$callMicMuted ? "Unmute" : "Mute"}
           class={cx(
             "button button-sm button-square tip tip-top",
-            $callMicMuted ? "button-error" : "button-neutral",
+            $callMicMuted ? "button-neutral" : "button-primary",
           )}
           onclick={toggleMute}>
-          <span class="relative inline-flex">
-            <Icon icon={Microphone} size={4} />
-            {#if $callMicMuted}
-              <span
-                class="absolute left-1/2 top-1/2 h-0.5 w-6 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-current"
-                aria-hidden="true"></span>
-            {/if}
-          </span>
+          <Icon icon={$callMicMuted ? MicrophoneOff : Microphone} size={$callMicMuted ? 4 : 4.5} />
         </Button>
         <Button
           data-tip={$currentCallSession.cameraOn ? "Turn off camera" : "Turn on camera"}
           class={cx(
             "button button-sm button-square tip tip-top",
-            $currentCallSession.cameraOn ? "button-primary" : "button-error",
+            $currentCallSession.cameraOn ? "button-primary" : "button-neutral",
           )}
           onclick={toggleCamera}>
           <Icon icon={$currentCallSession.cameraOn ? VideocameraRecord : VideocameraOff} size={4} />
@@ -205,7 +199,7 @@
               $currentCallSession.screenShareOn ? "button-primary" : "button-neutral",
             )}
             onclick={toggleScreenShare}>
-            <Icon icon={Monitor} size={4} />
+            <Icon icon={Monitor} size={3.75} />
           </Button>
         {/if}
         <Button
@@ -218,14 +212,14 @@
           data-tip="Leave room"
           class="button button-error button-sm button-square tip tip-top"
           onclick={leaveVoiceRoom}>
-          <Icon icon={PhoneRounded} size={4} />
+          <Icon icon={EndCall} size={4.5} />
         </Button>
       {:else}
         <Button
           data-tip="Join Voice"
           class="button button-primary button-sm button-square tip tip-top"
           onclick={openJoinDialog}>
-          <Icon icon={PhoneCallingRounded} size={4} />
+          <Icon icon={PhoneCallingRounded} size={4.5} />
         </Button>
       {/if}
     </div>

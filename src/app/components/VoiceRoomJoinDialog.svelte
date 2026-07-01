@@ -1,7 +1,6 @@
 <script lang="ts">
   import {displayRelayUrl} from "@welshman/util"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
-  import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
   import Volume from "@assets/icons/volume.svg?dataurl"
   import Button from "@lib/components/Button.svelte"
   import FieldInline from "@lib/components/FieldInline.svelte"
@@ -128,9 +127,6 @@
       <Icon icon={AltArrowLeft} />
       Don't join
     </Button>
-    <Button class="button button-primary" onclick={joinVoice}>
-      Join voice
-      <Icon icon={AltArrowRight} />
-    </Button>
+    <Button class="button button-primary" onclick={joinVoice}>Join voice</Button>
   </ModalFooter>
 </Modal>
