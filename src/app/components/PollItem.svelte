@@ -3,7 +3,7 @@
   import {getTagValue} from "@welshman/util"
   import Link from "@lib/components/Link.svelte"
   import NoteContent from "@app/components/NoteContent.svelte"
-  import CommentActions from "@app/components/CommentActions.svelte"
+  import PollActions from "@app/components/PollActions.svelte"
   import RoomLink from "@app/components/RoomLink.svelte"
   import ProfileLink from "@app/components/ProfileLink.svelte"
   import {makePollPath} from "@app/routes"
@@ -29,6 +29,6 @@
         in <RoomLink {url} {h} />
       {/if}
     </span>
-    <CommentActions segment="polls" showActivity {url} {event} />
+    <PollActions showActivity {url} {event} />
   </div>
 </Link>

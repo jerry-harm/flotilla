@@ -7,7 +7,6 @@
   import Icon from "@lib/components/Icon.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import {uploadFile} from "@app/uploads"
-  import {pushToast} from "@app/toast"
 
   interface Props {
     file?: File | undefined
@@ -17,6 +16,10 @@
   let {file = $bindable(), url = $bindable()}: Props = $props()
 
   const id = randomId()
+
+  // Profile pictures are shown small (avatar-sized), so compress hard: this keeps
+  // the base64 fallback below small enough to embed directly in the profile event.
+  const compressOptions = {maxWidth: 128, maxHeight: 128, quality: 0.6, mimeType: "image/jpeg"}
 
   const onDragEnter = () => {
     active = true
@@ -33,11 +36,11 @@
   const onDrop = async (e: any) => {
     active = false
 
-    file = await compressFile(e.dataTransfer.files[0])
+    file = await compressFile(e.dataTransfer.files[0], compressOptions)
   }
 
   const onChange = async (e: any) => {
-    file = await compressFile(e.target.files[0])
+    file = await compressFile(e.target.files[0], compressOptions)
   }
 
   const onClear = () => {
@@ -55,15 +58,24 @@
       if (file) {
         loading = true
 
-        const {error, result} = await uploadFile(file)
+        const {result} = await uploadFile(file)
 
         loading = false
 
         if (result?.url) {
           url = result.url
         } else {
-          file = undefined
-          pushToast({theme: "error", message: error || "Failed to upload image."})
+          const reader = new FileReader()
+
+          reader.addEventListener(
+            "load",
+            () => {
+              url = reader.result as string
+            },
+            false,
+          )
+
+          reader.readAsDataURL(file)
         }
       } else {
         url = initialUrl
@@ -73,7 +85,12 @@
 </script>
 
 <form>
-  <input {id} type="file" accept="image/*" onchange={onChange} class="hidden" />
+  <input
+    {id}
+    type="file"
+    accept="image/jpeg,image/png,image/webp"
+    onchange={onChange}
+    class="hidden" />
   <label
     for={id}
     aria-label="Drag and drop files here."
@@ -85,7 +102,7 @@
     ondragleave={stopPropagation(preventDefault(onDragLeave))}
     ondrop={stopPropagation(preventDefault(onDrop))}>
     <button
-      onclick={url && stopPropagation(onClear)}
+      onclick={url ? stopPropagation(onClear) : undefined}
       class="absolute right-0 top-0 h-5 w-5 overflow-hidden rounded-full flex items-center justify-center"
       style="background: {url ? 'var(--error)' : 'var(--primary)'};">
       {#if url}

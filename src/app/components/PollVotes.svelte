@@ -5,7 +5,6 @@
   import {pubkey, publishThunk, abortThunk} from "@welshman/app"
   import {formatTimestampRelative} from "@welshman/lib"
   import {deriveEvents} from "@app/repository"
-  import {pushToast} from "@app/toast"
   import {makePollResponse} from "@app/polls"
   import PollOption from "@app/components/PollOption.svelte"
   import {
@@ -30,7 +29,6 @@
   const options = getPollOptions(event)
   const closed = isPollClosed(event)
   const endsAt = getPollEndsAt(event)
-  const publishDelay = pollType === "multiplechoice" ? 10_000 : undefined
 
   const getOwnResponse = (responses: TrustedEvent[]) => {
     let latest: TrustedEvent | undefined
@@ -61,19 +59,12 @@
     activeThunk = publishThunk({
       relays: [url],
       event: makePollResponse({event, selectedIds: selection}),
-      delay: publishDelay,
+      delay: pollType === "multiplechoice" ? 1000 : undefined,
     })
   }
 
-  const publishCurrentSelection = () => {
-    const selection = pollType === "singlechoice" ? selectedIds.slice(0, 1) : selectedIds
-
-    if (selection.length === 0) {
-      return pushToast({theme: "error", message: "Please select at least one option."})
-    }
-
-    publishSelection(selection)
-  }
+  const publishCurrentSelection = () =>
+    publishSelection(pollType === "singlechoice" ? selectedIds.slice(0, 1) : selectedIds)
 
   const results = $derived(getPollResults(event, $responses))
   const ownResponse = $derived(getOwnResponse($responses))
