@@ -5,7 +5,9 @@
   import AddCircle from "@assets/icons/add-circle.svg?dataurl"
   import GallerySend from "@assets/icons/gallery-send.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import {uploadFile} from "@app/uploads"
+  import {pushToast} from "@app/toast"
 
   interface Props {
     file?: File | undefined
@@ -45,27 +47,23 @@
   }
 
   let active = $state(false)
+  let loading = $state(false)
   let initialUrl = $state(url)
 
   $effect(() => {
     call(async () => {
       if (file) {
-        const {result} = await uploadFile(file)
+        loading = true
+
+        const {error, result} = await uploadFile(file)
+
+        loading = false
 
         if (result?.url) {
           url = result.url
         } else {
-          const reader = new FileReader()
-
-          reader.addEventListener(
-            "load",
-            () => {
-              url = reader.result as string
-            },
-            false,
-          )
-
-          reader.readAsDataURL(file)
+          file = undefined
+          pushToast({theme: "error", message: error || "Failed to upload image."})
         }
       } else {
         url = initialUrl
@@ -86,22 +84,21 @@
     ondragover={stopPropagation(preventDefault(onDragOver))}
     ondragleave={stopPropagation(preventDefault(onDragLeave))}
     ondrop={stopPropagation(preventDefault(onDrop))}>
-    <div
-      class="absolute right-0 top-0 h-5 w-5 overflow-hidden rounded-full"
+    <button
+      onclick={url && stopPropagation(onClear)}
+      class="absolute right-0 top-0 h-5 w-5 overflow-hidden rounded-full flex items-center justify-center"
       style="background: {url ? 'var(--error)' : 'var(--primary)'};">
       {#if url}
-        <span
-          role="button"
-          tabindex="-1"
-          onmousedown={stopPropagation(onClear)}
-          ontouchstart={stopPropagation(onClear)}>
-          <Icon icon={CloseCircle} class="scale-150 bg-surface-more!" />
-        </span>
+        <Icon icon={CloseCircle} class="scale-150 bg-surface-more!" />
       {:else}
         <Icon icon={AddCircle} class="scale-150 bg-surface-more!" />
       {/if}
-    </div>
-    {#if !url}
+    </button>
+    {#if loading}
+      <div class="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+        <Spinner />
+      </div>
+    {:else if !url}
       <Icon icon={GallerySend} size={7} />
     {/if}
   </label>
