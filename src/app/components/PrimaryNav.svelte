@@ -10,6 +10,7 @@
   import Divider from "@lib/components/Divider.svelte"
   import MenuSettings from "@app/components/MenuSettings.svelte"
   import PrimaryNavItem from "@lib/components/PrimaryNavItem.svelte"
+  import PrimaryNavItemSpace from "@app/components/PrimaryNavItemSpace.svelte"
   import PrimaryNavSpaces from "@app/components/PrimaryNavSpaces.svelte"
   import {userSpaceUrls} from "@app/groups"
   import {PLATFORM_RELAYS} from "@app/env"
@@ -66,23 +67,23 @@
   class="hide-on-keyboard border-top bottom-sai fixed left-0 right-0 z-nav h-14 border border-line bg-surface md:hidden">
   <div class="flex h-full justify-between px-2">
     <div class="flex items-center gap-6">
-      <PrimaryNavItem title="Search" href="/people">
-        <ImageIcon alt="Search" src={Magnifier} size={8} />
-      </PrimaryNavItem>
-      <PrimaryNavItem
-        title="Messages"
-        href="/chat"
-        onclick={chatHandler}
-        notification={$notifications.has("/chat")}>
+      {#if PLATFORM_RELAYS.length === 1}
+        <PrimaryNavItemSpace url={PLATFORM_RELAYS[0]} />
+      {:else}
+        <PrimaryNavItem href="/people">
+          <ImageIcon alt="Search" src={Magnifier} size={8} />
+        </PrimaryNavItem>
+      {/if}
+      <PrimaryNavItem href="/chat" onclick={chatHandler} notification={$notifications.has("/chat")}>
         <ImageIcon alt="Messages" src={Letter} size={8} />
       </PrimaryNavItem>
       {#if PLATFORM_RELAYS.length !== 1}
-        <PrimaryNavItem title="Spaces" href="/spaces" notification={anySpaceNotifications}>
+        <PrimaryNavItem href="/spaces" notification={anySpaceNotifications}>
           <ImageIcon alt="Spaces" src={Widget} size={8} />
         </PrimaryNavItem>
       {/if}
     </div>
-    <PrimaryNavItem title="Settings" onclick={showSettingsMenu}>
+    <PrimaryNavItem onclick={showSettingsMenu}>
       {#if $userProfile?.picture}
         <ImageIcon alt="Settings" src={$userProfile?.picture} size={10} class="rounded-full" />
       {:else}

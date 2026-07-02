@@ -1,8 +1,10 @@
 <script lang="ts">
   import {page} from "$app/stores"
+  import {goto} from "$app/navigation"
   import {displayRelayUrl} from "@welshman/util"
   import {deriveRelay} from "@welshman/app"
   import Pen from "@assets/icons/pen.svg?dataurl"
+  import ArrowLeft from "@assets/icons/arrow-left.svg?dataurl"
   import ShieldUser from "@assets/icons/shield-user.svg?dataurl"
   import BillList from "@assets/icons/bill-list.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -17,6 +19,7 @@
   import SpaceMembersSummary from "@app/components/SpaceMembersSummary.svelte"
   import SpaceFeaturedContent from "@app/components/SpaceFeaturedContent.svelte"
   import {deriveUserIsSpaceAdmin} from "@app/members"
+  import {makeSpacePath} from "@app/routes"
   import {decodeRelay} from "@app/relays"
   import {pushModal} from "@app/modal"
 
@@ -25,9 +28,14 @@
   const userIsAdmin = deriveUserIsSpaceAdmin(url)
 
   const startEdit = () => pushModal(SpaceEdit, {url, initialValues: $relay || {url}})
+
+  const showMenu = () => goto(makeSpacePath(url))
 </script>
 
 <PageContent class="flex flex-col gap-4 p-4">
+  <Button onclick={showMenu} class="button button-neutral md:hidden place-self-start">
+    <Icon icon={ArrowLeft} size={7} /> Go Back
+  </Button>
   <div class="card flex flex-col gap-4">
     <div class="relative flex gap-4">
       <div class="relative">
@@ -35,7 +43,7 @@
       </div>
       <div class="flex min-w-0 flex-col">
         <h1 class="ellipsize whitespace-nowrap">
-          <RelayName {url} class="text-2xl font-bold" />
+          <RelayName {url} class="text-xl sm:text-2xl font-bold" />
         </h1>
         <p class="ellipsize text-sm text-primary">{displayRelayUrl(url)}</p>
       </div>
@@ -100,7 +108,7 @@
     {#if $userIsAdmin}
       <Button class="button button-primary" onclick={startEdit}>
         <Icon icon={Pen} />
-        <span class="hidden sm:inline">Edit Space</span>
+        Edit Space
       </Button>
     {/if}
   </div>

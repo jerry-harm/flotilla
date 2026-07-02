@@ -313,8 +313,7 @@
       <div class="h-5 shrink-0"></div>
     </div>
   </SecondaryNavSection>
-  <div
-    class="flex shrink-0 flex-col gap-2 p-2 pt-0 -mt-4 pb-[calc(var(--saib)+0.25rem)] md:pb-2 z-nav">
+  <div class="flex shrink-0 flex-col gap-2 p-2 pt-0 -mt-4 pb-1 md:pb-2 z-nav">
     <VoiceWidget />
     <Link href={makeSpacePath(url, "about")} class="button button-neutral button-sm h-10">
       <SocketStatusIndicator {url} />

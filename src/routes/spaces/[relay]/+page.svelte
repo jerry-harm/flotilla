@@ -22,7 +22,7 @@
 <svelte:window bind:innerWidth={width} />
 
 {#if width <= md}
-  <div class="primary-nav flex mb-14">
+  <div class="primary-nav">
     <PrimaryNavSpaces />
   </div>
   <SecondaryNav visible class="w-auto grow pb-16">

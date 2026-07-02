@@ -7,7 +7,6 @@
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import PageBar from "@lib/components/PageBar.svelte"
-  import RelayIcon from "@app/components/RelayIcon.svelte"
   import {decodeRelay} from "@app/relays"
   import {makeSpacePath} from "@app/routes"
 
@@ -32,7 +31,6 @@
     <div class="flex grow items-center justify-between gap-4">
       <div class="flex min-w-0 flex-col">
         <div class="flex min-w-0 items-start gap-2">
-          <RelayIcon {url} size={5} class="shrink-0 rounded-full md:hidden" />
           <div class="hidden shrink-0 md:flex md:items-center place-self-center">
             {@render leading?.()}
           </div>
@@ -40,7 +38,7 @@
             {@render title?.()}
           </div>
         </div>
-        <div class="text-xs text-primary pl-7 md:hidden">
+        <div class="text-xs text-primary md:hidden">
           {displayRelayUrl(url)}
         </div>
       </div>
