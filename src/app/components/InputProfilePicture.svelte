@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {randomId, call} from "@welshman/lib"
+  import {randomId} from "@welshman/lib"
   import {preventDefault, stopPropagation, compressFile} from "@lib/html"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
   import AddCircle from "@assets/icons/add-circle.svg?dataurl"
@@ -36,31 +36,21 @@
   const onDrop = async (e: any) => {
     active = false
 
-    file = await compressFile(e.dataTransfer.files[0], compressOptions)
+    submit(e.dataTransfer.files[0])
   }
 
   const onChange = async (e: any) => {
-    file = await compressFile(e.target.files[0], compressOptions)
+    submit(e.target.files[0])
   }
 
-  const onClear = () => {
-    initialUrl = undefined
-    file = undefined
-    url = undefined
-  }
+  const submit = async (file: File) => {
+    loading = true
 
-  let active = $state(false)
-  let loading = $state(false)
-  let initialUrl = $state(url)
+    try {
+      file = await compressFile(file, compressOptions)
 
-  $effect(() => {
-    call(async () => {
       if (file) {
-        loading = true
-
         const {result} = await uploadFile(file)
-
-        loading = false
 
         if (result?.url) {
           url = result.url
@@ -80,8 +70,20 @@
       } else {
         url = initialUrl
       }
-    })
-  })
+    } finally {
+      loading = false
+    }
+  }
+
+  const onClear = () => {
+    initialUrl = undefined
+    file = undefined
+    url = undefined
+  }
+
+  let active = $state(false)
+  let loading = $state(false)
+  let initialUrl = $state(url)
 </script>
 
 <form>
