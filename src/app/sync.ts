@@ -1,6 +1,6 @@
 import {page} from "$app/stores"
 import type {Unsubscriber} from "svelte/store"
-import {last, call, assoc, WEEK, ago} from "@welshman/lib"
+import {call, assoc, WEEK, MONTH, ago} from "@welshman/lib"
 import {merged} from "@welshman/store"
 import {
   getListTags,
@@ -79,7 +79,6 @@ const pullOneWithFallback = async (
   if (signal.aborted) return
 
   const cachedEvents = repository.query([filter]).filter(isSignedEvent)
-  const since = last(cachedEvents.slice(10))?.created_at || 0
 
   if (onEvent) {
     for (const event of cachedEvents) {
@@ -114,7 +113,7 @@ const pullOneWithFallback = async (
   // }))
 
   if (shouldFallback && !signal.aborted) {
-    request({relays: [url], signal, autoClose: true, filters: [{since, ...filter}], onEvent})
+    request({relays: [url], signal, autoClose: true, filters: [filter], onEvent})
   }
 }
 
@@ -289,21 +288,36 @@ const syncUserData = () => {
 // Spaces
 
 const syncSpace = (url: string) => {
-  const since = ago(WEEK)
   const controller = new AbortController()
-  const relayKinds = [RELAY_MEMBERS, RELAY_ROLE]
-  const roomMetaKinds = [ROOM_META, ROOM_ADMINS, ROOM_MEMBERS, LIVEKIT_PARTICIPANTS]
-  const roomDeleteKinds = [ROOM_DELETE, ROOM_JOIN, ROOM_LEAVE]
 
+  // Low cardinality we want everything for
   pullAndListen({
     url,
     signal: controller.signal,
     filters: [
-      {kinds: [...relayKinds, ...roomMetaKinds, ...roomDeleteKinds, ...CONTENT_KINDS, MESSAGE]},
+      {kinds: [RELAY_MEMBERS, RELAY_ROLE]},
       {kinds: [APP_DATA], "#d": [FEATURED_CONTENT_D]},
-      {kinds: [BOARD, PIN]},
-      {kinds: [...REACTION_KINDS, POLL_RESPONSE], since},
-      makeCommentFilter(CONTENT_KINDS, {since}),
+    ],
+  })
+
+  // Higher cardinality stuff we want as much as we can get
+  pullAndListen({
+    url,
+    signal: controller.signal,
+    filters: [
+      {kinds: [ROOM_META, ROOM_ADMINS, ROOM_MEMBERS, ROOM_DELETE, LIVEKIT_PARTICIPANTS, BOARD]},
+      {kinds: [APP_DATA], "#d": [FEATURED_CONTENT_D]},
+    ],
+  })
+
+  // Recent stuff, best effort
+  pullAndListen({
+    url,
+    signal: controller.signal,
+    filters: [
+      {kinds: [...CONTENT_KINDS, MESSAGE, PIN, ROOM_JOIN, ROOM_LEAVE], since: ago(MONTH)},
+      {kinds: [...REACTION_KINDS, POLL_RESPONSE], since: ago(WEEK)},
+      makeCommentFilter(CONTENT_KINDS, {since: ago(WEEK)}),
     ],
   })
 

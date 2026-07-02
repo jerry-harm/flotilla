@@ -17,6 +17,11 @@ fi
 if [[ $VITE_PLATFORM_LOGO =~ ^https:// ]]; then
   curl -fSL "$VITE_PLATFORM_LOGO" -o static/logo.png
   export VITE_PLATFORM_LOGO=static/logo.png
+
+  # @capacitor/assets reads its source logo from assets/, not static/, so
+  # propagate a custom platform logo there too for the native app icon/splash
+  cp "$VITE_PLATFORM_LOGO" assets/logo.png
+  cp "$VITE_PLATFORM_LOGO" assets/logo-dark.png
 fi
 
 # Ensure generator uses local path (dotenv may have loaded URL from .env)
