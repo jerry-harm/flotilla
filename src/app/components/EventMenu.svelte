@@ -3,8 +3,9 @@
   import type {Snippet} from "svelte"
   import {goto} from "$app/navigation"
   import type {TrustedEvent} from "@welshman/util"
-  import {COMMENT, ManagementMethod} from "@welshman/util"
+  import {COMMENT, getAddress, ManagementMethod} from "@welshman/util"
   import {pubkey, repository, relaysByUrl, manageRelay} from "@welshman/app"
+  import GalleryWide from "@assets/icons/gallery-wide.svg?dataurl"
   import ShareCircle from "@assets/icons/share-circle.svg?dataurl"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
@@ -17,6 +18,7 @@
   import Report from "@app/components/Report.svelte"
   import EventShare from "@app/components/EventShare.svelte"
   import EventDeleteConfirm from "@app/components/EventDeleteConfirm.svelte"
+  import PinboardSelect from "@app/components/PinboardSelect.svelte"
   import {hasNip29} from "@app/relays"
   import {deriveUserIsSpaceAdmin} from "@app/members"
   import {pushModal} from "@app/modal"
@@ -39,6 +41,8 @@
   const report = () => pushModal(Report, {url, event})
 
   const showInfo = () => pushModal(EventInfo, {url, event})
+
+  const addToLibrary = () => pushModal(PinboardSelect, {url, address: getAddress(event)})
 
   const share = async () => {
     if (hasNip29($relaysByUrl.get(url))) {
@@ -79,6 +83,12 @@
 </script>
 
 <ul class="menu whitespace-nowrap rounded-2xl bg-surface p-2" bind:this={ul}>
+  <li>
+    <Button onclick={showInfo}>
+      <Icon size={4} icon={Code2} />
+      {noun} Details
+    </Button>
+  </li>
   {#if isRoot}
     <li>
       <Button onclick={share}>
@@ -88,9 +98,9 @@
     </li>
   {/if}
   <li>
-    <Button onclick={showInfo}>
-      <Icon size={4} icon={Code2} />
-      {noun} Details
+    <Button onclick={addToLibrary}>
+      <Icon size={4} icon={GalleryWide} />
+      Add to Library
     </Button>
   </li>
   {@render customActions?.()}

@@ -119,7 +119,7 @@
       ondrop={stopPropagation(preventDefault(onDrop))}>
       <div class="flex flex-col items-center gap-2 text-center">
         <Icon icon={GallerySend} size={8} />
-        <p class="text-muted text-sm">Drag and drop images or click to select</p>
+        <p class="text-content-muted text-sm">Drag and drop images or click to select</p>
       </div>
     </label>
   </div>

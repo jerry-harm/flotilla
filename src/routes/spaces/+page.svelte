@@ -265,7 +265,7 @@
                       onclick={() => openSpace(url)}>
                       <div class="flex w-full items-start gap-2">
                         <div
-                          class="mt-4 flex cursor-grab p-1 text-subtle transition-colors group-hover:text-muted">
+                          class="mt-4 flex cursor-grab p-1 text-content-subtle transition-colors group-hover:text-content-muted">
                           <Icon icon={DragHandle} />
                         </div>
                         <RelaySummary hideFavorites {url} />

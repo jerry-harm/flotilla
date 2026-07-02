@@ -1,8 +1,9 @@
 <script lang="ts">
   import type {TrustedEvent} from "@welshman/util"
-  import {ManagementMethod} from "@welshman/util"
+  import {ManagementMethod, getAddress} from "@welshman/util"
   import {pubkey, manageRelay, repository} from "@welshman/app"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
+  import GalleryWide from "@assets/icons/gallery-wide.svg?dataurl"
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
   import Danger from "@assets/icons/danger.svg?dataurl"
   import Button from "@lib/components/Button.svelte"
@@ -10,6 +11,7 @@
   import Confirm from "@lib/components/Confirm.svelte"
   import EventInfo from "@app/components/EventInfo.svelte"
   import Report from "@app/components/Report.svelte"
+  import PinboardSelect from "@app/components/PinboardSelect.svelte"
   import EventDeleteConfirm from "@app/components/EventDeleteConfirm.svelte"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
@@ -24,6 +26,11 @@
   const {url, event, onClick}: Props = $props()
 
   const userIsAdmin = deriveUserIsSpaceAdmin(url)
+
+  const addToLibrary = () => {
+    onClick()
+    pushModal(PinboardSelect, {url, address: getAddress(event)})
+  }
 
   const report = () => {
     onClick()
@@ -65,7 +72,13 @@
   <li>
     <Button onclick={showInfo}>
       <Icon size={4} icon={Code2} />
-      Show JSON
+      Message Details
+    </Button>
+  </li>
+  <li>
+    <Button onclick={addToLibrary}>
+      <Icon size={4} icon={GalleryWide} />
+      Add to Library
     </Button>
   </li>
   {#if event.pubkey === $pubkey}

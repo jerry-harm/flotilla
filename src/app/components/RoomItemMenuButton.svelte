@@ -28,13 +28,12 @@
 
 <svelte:document onmousemove={onMouseMove} />
 
-<Tippy
-  bind:popover
-  component={RoomItemMenu}
-  class="button button-xs button-neutral join-item"
-  props={{url, event, onClick}}
-  params={{trigger: "manual", interactive: true}}>
-  <Button onclick={open}>
+<Button onclick={open} class="button button-xs button-neutral join-item">
+  <Tippy
+    bind:popover
+    component={RoomItemMenu}
+    props={{url, event, onClick}}
+    params={{trigger: "manual", interactive: true}}>
     <Icon icon={MenuDots} size={4} />
-  </Button>
-</Tippy>
+  </Tippy>
+</Button>

@@ -80,7 +80,7 @@
         </div>
       {:else if $members.length === 0}
         <div class="card bg-surface p-4">
-          <span class="text-muted">No members yet</span>
+          <span class="text-content-muted">No members yet</span>
         </div>
       {:else}
         {#each $members as pubkey (pubkey)}

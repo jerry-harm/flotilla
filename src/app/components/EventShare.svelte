@@ -1,5 +1,4 @@
 <script lang="ts">
-  import cx from "classnames"
   import {goto} from "$app/navigation"
   import type {TrustedEvent} from "@welshman/util"
   import {preventDefault} from "@lib/html"
@@ -14,7 +13,7 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
-  import RoomName from "@app/components/RoomName.svelte"
+  import RoomNameWithImage from "@app/components/RoomNameWithImage.svelte"
   import {roomsByUrl} from "@app/groups"
   import {makeRoomPath} from "@app/routes"
 
@@ -40,13 +39,15 @@
       <ModalTitle>Share {noun}</ModalTitle>
       <ModalSubtitle>Which room would you like to share this event to?</ModalSubtitle>
     </ModalHeader>
-    <div class="grid grid-cols-3 gap-2">
+    <div class="grid grid-cols-2 gap-2">
       {#each $roomsByUrl.get(url) || [] as room (room.h)}
         <Button
           type="button"
-          class={cx(`button button-${selection === room.h ? "primary" : "neutral"}`)}
+          class="flex justify-center button {selection === room.h
+            ? 'button-primary'
+            : 'button-neutral'}"
           onclick={() => toggleRoom(room.h)}>
-          #<RoomName {...room} />
+          <RoomNameWithImage {...room} />
         </Button>
       {/each}
     </div>

@@ -166,8 +166,8 @@ export const deleteBoard = (url: string, address: string) =>
     ]),
   )
 
-export const pinToReference = (pin: Pin): string => {
-  const [type, data = "", relay] = pin.value
+const valueToReference = (value: string[]): string => {
+  const [type, data = "", relay] = value
   const relays = relay ? [relay] : []
 
   if (type === "e") return nip19.neventEncode({id: data, relays})
@@ -180,6 +180,10 @@ export const pinToReference = (pin: Pin): string => {
 
   return data
 }
+
+export const pinToReference = (pin: Pin): string => valueToReference(pin.value)
+
+export const addressToReference = (address: string): string => valueToReference(["a", address])
 
 export const referenceToPin = (reference: string): Partial<Pin> | undefined => {
   const trimmed = reference.trim()

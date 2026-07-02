@@ -34,7 +34,7 @@
   <SecondaryNavItem href={path} title={roomName} {replaceState} {notification}>
     <RoomNameWithImage {url} {h} />
     {#if showDifferenceIcon}
-      <Icon icon={$shouldNotifyForRoom ? Bell : BellOff} size={4} class="opacity-50" />
+      <Icon icon={$shouldNotifyForRoom ? Bell : BellOff} size={4} class="ml-auto opacity-50" />
     {/if}
   </SecondaryNavItem>
 {/if}

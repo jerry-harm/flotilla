@@ -33,7 +33,6 @@ import {
   getTagValue,
   matchFilters,
   readList,
-  sortEventsDesc,
 } from "@welshman/util"
 import type {Filter, PublishedList, TrustedEvent} from "@welshman/util"
 import {load, mergeRepositoryUpdates, request} from "@welshman/net"
@@ -124,13 +123,8 @@ export const makeFeed = ({
   const events = writable<TrustedEvent[]>([])
   const seen = new Set<string>()
 
-  let interval = int(MONTH)
-  let buffer = sortEventsDesc(
-    uniqBy(
-      e => e.id,
-      relays.flatMap(url => Array.from(getEventsForUrl(url, filters))),
-    ),
-  )
+  let interval = int(6, MONTH)
+  let buffer: TrustedEvent[] = []
   let backwardWindow = [at - interval, at]
   let forwardWindow = [at, at + interval]
 
@@ -145,7 +139,7 @@ export const makeFeed = ({
   }
 
   // Batch-insert events into the visible store with a single update
-  const insertEvents = (newEvents: TrustedEvent[]) => {
+  const insertEvents = (newEvents: Iterable<TrustedEvent>) => {
     const visible: TrustedEvent[] = []
 
     for (const event of newEvents) {
@@ -153,10 +147,9 @@ export const makeFeed = ({
         continue
       }
 
-      seen.add(event.id)
-
       if (between([backwardWindow[0], forwardWindow[1]], event.created_at)) {
         visible.push(event)
+        seen.add(event.id)
       } else {
         insertIntoBuffer(event)
       }
@@ -273,6 +266,10 @@ export const makeFeed = ({
       }
     },
   })
+
+  for (const url of relays) {
+    insertEvents(getEventsForUrl(url, filters))
+  }
 
   return {
     events,

@@ -128,23 +128,21 @@
 </SpaceBar>
 
 <PageContent class="flex flex-col gap-4 p-4">
-  <div class="card flex flex-col gap-2">
-    <label class="input input-sm input-group flex w-full items-center gap-2">
-      <Icon size={4} icon={Magnifier} />
-      <input
-        bind:value={term}
-        class="min-w-0 grow"
-        type="text"
-        placeholder="Search people or roles..." />
-    </label>
-    {#if visibleMembers.length === 0}
-      <p class="flex flex-col items-center py-20 text-center">No members found.</p>
-    {:else}
-      <div class="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
-        {#each visibleMembers as { pubkey, roleList } (pubkey)}
-          <SpaceMember {url} {pubkey} roles={roleList} />
-        {/each}
-      </div>
-    {/if}
-  </div>
+  <label class="input input-group flex w-full items-center gap-2 card">
+    <Icon size={4} icon={Magnifier} />
+    <input
+      bind:value={term}
+      class="min-w-0 grow"
+      type="text"
+      placeholder="Search people or roles..." />
+  </label>
+  {#if visibleMembers.length === 0}
+    <p class="flex flex-col items-center py-20 text-center">No members found.</p>
+  {:else}
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      {#each visibleMembers as { pubkey, roleList } (pubkey)}
+        <SpaceMember {url} {pubkey} roles={roleList} />
+      {/each}
+    </div>
+  {/if}
 </PageContent>

@@ -3,7 +3,7 @@
   import {Router} from "@welshman/router"
   import {LOCALE, secondsToDate} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {displayRelayUrl} from "@welshman/util"
+  import {displayRelayUrl, toNostrURI} from "@welshman/util"
   import {tracker} from "@welshman/app"
   import FileText from "@assets/icons/file-text.svg?dataurl"
   import Copy from "@assets/icons/copy.svg?dataurl"
@@ -28,7 +28,7 @@
   const {url, event}: Props = $props()
 
   const relays = url ? [url] : Router.get().Event(event).getUrls()
-  const nevent1 = nip19.neventEncode({...event, relays})
+  const nevent1 = toNostrURI(nip19.neventEncode({...event, relays}))
   const seenOn = tracker.getRelays(event.id)
   const npub1 = nip19.npubEncode(event.pubkey)
   const json = JSON.stringify(event, null, 2)

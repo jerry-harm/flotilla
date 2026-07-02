@@ -5,9 +5,10 @@
   type Props = {
     url: string
     address: string
+    reference?: string
   }
 
-  const {url, address}: Props = $props()
+  const {url, address, reference}: Props = $props()
 
   const submit = async ({title, topics, value}: PinFormValues) => {
     const params = referenceToPin(value)
@@ -18,4 +19,10 @@
   }
 </script>
 
-<PinForm {url} heading="Add Link" action="Add link" successMessage="Link added!" {submit} />
+<PinForm
+  {url}
+  heading="Add Link"
+  action="Add link"
+  successMessage="Link added!"
+  values={{value: reference}}
+  {submit} />

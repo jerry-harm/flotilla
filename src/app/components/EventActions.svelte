@@ -52,14 +52,13 @@
   <EmojiButton {onEmoji} class="button button-neutral button-xs join-item">
     <Icon icon={SmileCircle} size={4} />
   </EmojiButton>
-  <Tippy
-    bind:popover
-    class="flex join-item button button-neutral button-xs"
-    component={EventMenu}
-    props={{url, noun, event, customActions, onClick: hidePopover}}
-    params={{trigger: "manual", interactive: true}}>
-    <Button onclick={showPopover}>
+  <Button onclick={showPopover} class="flex join-item button button-neutral button-xs">
+    <Tippy
+      bind:popover
+      component={EventMenu}
+      props={{url, noun, event, customActions, onClick: hidePopover}}
+      params={{trigger: "manual", interactive: true}}>
       <Icon icon={MenuDots} size={4} />
-    </Button>
-  </Tippy>
+    </Tippy>
+  </Button>
 </div>

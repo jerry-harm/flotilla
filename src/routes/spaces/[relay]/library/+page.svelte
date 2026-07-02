@@ -86,22 +86,20 @@
 </SpaceBar>
 
 <PageContent class="flex flex-col gap-4 p-4">
-  <div class="card flex flex-col gap-2">
-    <label class="input input-sm input-group flex w-full items-center gap-2">
-      <Icon size={4} icon={Magnifier} />
-      <input bind:value={term} class="min-w-0 grow" type="text" placeholder="Search library..." />
-    </label>
-    <Masonry items={filtered} getKey={board => board.address} columnWidth={80} gap={2}>
-      {#snippet child(board)}
-        <PinboardItem {url} {board} />
-      {/snippet}
-    </Masonry>
-    {#if loading}
-      <p class="flex items-center justify-center py-20">
-        <Spinner loading>Loading library...</Spinner>
-      </p>
-    {:else if filtered.length === 0}
-      <p class="flex flex-col items-center py-20 text-center">No shelves found.</p>
-    {/if}
-  </div>
+  <label class="card input input-group flex w-full items-center gap-2">
+    <Icon size={4} icon={Magnifier} />
+    <input bind:value={term} class="min-w-0 grow" type="text" placeholder="Search library..." />
+  </label>
+  <Masonry items={filtered} getKey={board => board.address} columnWidth={80} gap={4}>
+    {#snippet child(board)}
+      <PinboardItem {url} {board} />
+    {/snippet}
+  </Masonry>
+  {#if loading}
+    <p class="flex items-center justify-center py-20">
+      <Spinner loading>Loading library...</Spinner>
+    </p>
+  {:else if filtered.length === 0}
+    <p class="flex flex-col items-center py-20 text-center">No shelves found.</p>
+  {/if}
 </PageContent>

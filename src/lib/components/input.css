@@ -20,8 +20,7 @@
   .input:focus-within,
   .tiptap:focus,
   .tiptap:focus-within {
-    @apply outline-none;
-    border: 1px solid var(--primary) !important;
+    @apply border-primary outline-none;
     box-shadow:
       0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent),
       inset 0 2px 4px rgba(0, 0, 0, 0.04);

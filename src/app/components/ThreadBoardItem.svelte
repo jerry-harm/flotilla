@@ -3,7 +3,6 @@
   import type {TrustedEvent} from "@welshman/util"
   import {COMMENT, getTagValue} from "@welshman/util"
   import {goto} from "$app/navigation"
-  import Link from "@lib/components/Link.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
   import {deriveEventsForUrl} from "@app/repository"
@@ -25,21 +24,19 @@
   const goToThread = () => goto(path)
 </script>
 
-<tr class="cursor-pointer transition-colors hover:bg-surface text-sm" onclick={goToThread}>
-  <td class="px-4 py-2 align-top">
-    <Link href={path} class="ellipsize font-semibold">
-      {title || "Untitled thread"}
-    </Link>
+<tr
+  class="cursor-pointer transition-colors hover:bg-surface-less text-sm border-b border-solid border-line"
+  onclick={goToThread}>
+  <td class="px-4 py-3 align-top ellipsize">
+    {title || "Untitled thread"}
   </td>
-  <td class="px-4 py-2 align-middle">
-    <div class="flex items-center gap-2">
-      <ProfileCircle pubkey={event.pubkey} {url} size={5} />
-      <span class="ellipsize">
-        <ProfileName pubkey={event.pubkey} {url} />
-      </span>
-    </div>
+  <td class="px-4 py-3 align-middle flex items-center gap-2">
+    <ProfileCircle pubkey={event.pubkey} {url} size={5} />
+    <span class="ellipsize">
+      <ProfileName pubkey={event.pubkey} {url} />
+    </span>
   </td>
-  <td class="px-4 py-2 align-middle text-right">
+  <td class="px-4 py-3 align-middle text-right">
     {replyCount}
   </td>
   <td class="whitespace-nowrap px-4 py-2 align-middle text-right">

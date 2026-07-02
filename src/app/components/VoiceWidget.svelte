@@ -138,9 +138,9 @@
           {:else if $callState === CallState.Connected}
             <span class="text-sm font-semibold text-success">Voice Connected</span>
           {:else}
-            <span class="text-sm font-semibold text-muted">Disconnected</span>
+            <span class="text-sm font-semibold text-content-muted">Disconnected</span>
           {/if}
-          <span class="ellipsize text-xs text-muted">
+          <span class="ellipsize text-xs text-content-muted">
             {roomName} / {spaceName}
           </span>
         </div>

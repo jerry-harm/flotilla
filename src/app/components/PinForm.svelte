@@ -21,6 +21,7 @@
   import StringMultiInput from "@lib/components/StringMultiInput.svelte"
   import RelayName from "@app/components/RelayName.svelte"
   import {pushToast} from "@app/toast"
+  import {clearModals} from "@app/modal"
 
   type Props = {
     url: string
@@ -50,7 +51,7 @@
         pushToast({theme: "error", message: error})
       } else {
         pushToast({message: successMessage})
-        back()
+        clearModals()
       }
     } finally {
       loading = false
