@@ -46,9 +46,9 @@
           class="card card-sm card-interactive flex flex-row items-center justify-between gap-3"
           onclick={() => selectBoard(board)}>
           <span class="flex min-w-0 flex-col">
-            <strong class="ellipsize">{board.title || "Untitled shelf"}</strong>
+            <strong class="truncate min-w-0">{board.title || "Untitled shelf"}</strong>
             {#if board.description}
-              <span class="ellipsize text-sm opacity-70">{board.description}</span>
+              <span class="truncate min-w-0 text-sm opacity-70">{board.description}</span>
             {/if}
           </span>
           <Icon size={4} icon={AltArrowRight} class="shrink-0" />

@@ -52,11 +52,11 @@
         <ProfileCircle pubkey={event.pubkey} {url} size={10} class="md:size-14" />
       </Button>
       <div class="flex min-w-0 flex-col gap-1 md:items-center">
-        <Button onclick={openProfile} class="text-bold ellipsize text-sm">
+        <Button onclick={openProfile} class="text-bold truncate min-w-0 text-sm">
           {$profileDisplay}
         </Button>
         {#if $handle}
-          <span class="ellipsize text-xs opacity-75">{displayHandle($handle)}</span>
+          <span class="truncate min-w-0 text-xs opacity-75">{displayHandle($handle)}</span>
         {/if}
         {#if isOp}
           <Badge variant="primary">OP</Badge>

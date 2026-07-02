@@ -17,9 +17,9 @@
 
 <Card sm class="flex flex-col gap-2">
   <div class="flex items-center justify-between gap-4">
-    <div class="ellipsize flex items-center gap-2">
+    <div class="truncate min-w-0 flex items-center gap-2">
       <Icon icon={Server} />
-      <p class="ellipsize">{displayRelayUrl(url)}</p>
+      <p class="truncate min-w-0">{displayRelayUrl(url)}</p>
     </div>
     {@render children?.()}
   </div>
@@ -28,7 +28,7 @@
   {/if}
   <span class="flex items-center gap-1 whitespace-nowrap text-sm">
     {#if $relay?.contact}
-      <Link external class="ellipsize underline" href={$relay.contact}
+      <Link external class="truncate min-w-0 underline" href={$relay.contact}
         >{displayUrl($relay.contact)}</Link>
       &bull;
     {/if}

@@ -33,7 +33,7 @@
 <SecondaryNav>
   <SecondaryNavSection>
     <SecondaryNavItem class="w-full justify-between!">
-      <strong class="ellipsize flex items-center gap-3"> Your Settings </strong>
+      <strong class="truncate min-w-0 flex items-center gap-3"> Your Settings </strong>
     </SecondaryNavItem>
     <SecondaryNavItem href="/settings/profile">
       <Icon icon={UserCircle} /> Profile

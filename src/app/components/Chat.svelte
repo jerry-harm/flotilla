@@ -248,7 +248,7 @@
       <Icon icon={ArrowLeft} size={7} />
     </Button>
     <div class="flex items-center justify-between gap-4">
-      <div class="ellipsize flex items-center gap-4 whitespace-nowrap">
+      <div class="truncate min-w-0 flex items-center gap-4 whitespace-nowrap">
         <Button class="flex flex-col gap-1 sm:flex-row sm:gap-2" onclick={showMembers}>
           {#if others.length === 0}
             <div class="flex gap-2">

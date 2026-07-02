@@ -63,7 +63,7 @@
       {#snippet input()}
         <label class="input flex w-full items-center gap-2">
           <Icon icon={FileText} />
-          <input type="text" class="ellipsize min-w-0 grow" value={nevent1} />
+          <input type="text" class="truncate min-w-0 grow" value={nevent1} />
           <Button onclick={copyLink} class="flex items-center">
             <Icon icon={Copy} />
           </Button>
@@ -77,7 +77,7 @@
       {#snippet input()}
         <label class="input flex w-full items-center gap-2">
           <Icon icon={UserCircle} />
-          <input type="text" class="ellipsize min-w-0 grow" value={npub1} />
+          <input type="text" class="truncate min-w-0 grow" value={npub1} />
           <Button onclick={copyPubkey} class="flex items-center">
             <Icon icon={Copy} />
           </Button>

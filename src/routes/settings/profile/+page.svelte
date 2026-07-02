@@ -133,7 +133,7 @@
         <label class="input flex w-full items-center justify-between gap-2">
           <div class="flex gap-2 grow items-center">
             <Icon icon={LinkRound} />
-            <input readonly class="ellipsize grow" value={npub} />
+            <input readonly class="truncate min-w-0 grow" value={npub} />
           </div>
           <Button class="flex items-center" onclick={copyNpub}>
             <Icon icon={Copy} />

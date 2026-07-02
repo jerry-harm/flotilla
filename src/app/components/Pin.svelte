@@ -99,7 +99,7 @@
       {/if}
     </div>
     {#if pin.title}
-      <strong class="ellipsize pr-8">{pin.title}</strong>
+      <strong class="truncate min-w-0 pr-8">{pin.title}</strong>
     {/if}
   {/if}
   {#if pin.value[0] === "i"}

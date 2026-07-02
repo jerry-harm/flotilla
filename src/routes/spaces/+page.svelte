@@ -196,7 +196,7 @@
 <Page>
   <PageBar>
     <div class="flex items-center justify-between gap-4" in:fly>
-      <div class="ellipsize flex items-center gap-2 whitespace-nowrap">
+      <div class="truncate min-w-0 flex items-center gap-2 whitespace-nowrap">
         <Icon icon={Widget} size={6} />
         <strong>Spaces</strong>
       </div>

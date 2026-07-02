@@ -97,7 +97,7 @@
               style={$isParticipantSpeaking(p) ? "--tw-ring-color: var(--success)" : undefined}>
               <ProfileCircle pubkey={p.pubkey} size={5} class="h-5 w-5" />
             </div>
-            <span class="ellipsize min-w-0 flex-1 text-xs opacity-70">
+            <span class="truncate min-w-0 flex-1 text-xs opacity-70">
               {p.pubkey ? displayProfileByPubkey(p.pubkey) : "Unknown"}
             </span>
             <VoiceParticipantMediaBadges

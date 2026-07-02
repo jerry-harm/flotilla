@@ -132,7 +132,7 @@
         </p>
       </div>
       <label class="input flex w-full items-center justify-between gap-2">
-        <input readonly class="ellipsize grow" value={invoice} />
+        <input readonly class="truncate min-w-0 grow" value={invoice} />
         <Button class="flex items-center" onclick={copyInvoice}>
           <Icon icon={Copy} />
         </Button>

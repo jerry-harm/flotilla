@@ -144,7 +144,7 @@
         onclick={openMenu}>
         <div class="flex items-center justify-between">
           <strong class="flex items-center gap-1 relative">
-            <RelayName {url} class="ellipsize" />
+            <RelayName {url} class="truncate min-w-0" />
             <div
               class="absolute -right-3 top-0 h-2 w-2 rounded-full bg-primary text-primary-content transition-all opacity-0"
               class:opacity-100={$userIsAdmin && $actionItems.length > 0}>

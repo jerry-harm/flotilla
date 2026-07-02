@@ -150,7 +150,7 @@
 <SpaceBar {back} class="!h-auto min-h-20 py-3">
   {#snippet title()}
     <div class="flex min-w-0 flex-col gap-0.5">
-      <h1 class="ellipsize font-bold sm:text-xl">
+      <h1 class="truncate min-w-0 font-bold sm:text-xl">
         {getTagValue("title", $event?.tags || []) || ""}
       </h1>
       <p class="text-xs opacity-75">

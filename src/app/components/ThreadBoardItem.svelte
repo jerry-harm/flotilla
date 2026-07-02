@@ -27,12 +27,12 @@
 <tr
   class="cursor-pointer transition-colors hover:bg-surface-less text-sm border-b border-solid border-line"
   onclick={goToThread}>
-  <td class="px-4 py-3 align-top ellipsize">
+  <td class="px-4 py-3 align-top truncate">
     {title || "Untitled thread"}
   </td>
   <td class="px-4 py-3 align-middle flex items-center gap-2">
     <ProfileCircle pubkey={event.pubkey} {url} size={5} />
-    <span class="ellipsize">
+    <span class="truncate min-w-0">
       <ProfileName pubkey={event.pubkey} {url} />
     </span>
   </td>

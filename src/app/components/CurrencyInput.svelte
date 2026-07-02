@@ -72,7 +72,7 @@
   onclick={preventDefault(clearAndFocus)}>
   <Icon icon={AltArrowDown} />
   {#if currency}
-    <span class="text-sm ellipsize whitespace-nowrap">
+    <span class="min-w-0 truncate text-sm whitespace-nowrap">
       {displayCurrency(currency)}
     </span>
   {:else}

@@ -36,7 +36,7 @@
         {/if}
       </div>
       <div class="min-w-0">
-        <RelayName {url} class="ellipsize whitespace-nowrap text-lg sm:text-xl" />
+        <RelayName {url} class="truncate whitespace-nowrap text-lg sm:text-xl" />
         <p class="text-xs sm:text-sm opacity-75">{url}</p>
       </div>
     </div>

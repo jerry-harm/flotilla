@@ -78,7 +78,7 @@
       <ModalSubtitle>
         <span class="inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
           <Icon icon={Volume} size={4} class="shrink-0" />
-          <span class="ellipsize min-w-0">{displayRoom(url, h)}</span>
+          <span class="truncate min-w-0">{displayRoom(url, h)}</span>
           <span>·</span>
           <span>{spaceLabel}</span>
         </span>

@@ -12,6 +12,6 @@
   const room = deriveRoom(url, h)
 </script>
 
-<span class="ellipsize min-w-0 {props.class}">
+<span class="truncate min-w-0 {props.class}">
   {$room?.name || h}
 </span>

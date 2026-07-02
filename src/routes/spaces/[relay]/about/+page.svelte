@@ -42,10 +42,10 @@
         <RelayIcon {url} size={14} class="rounded-full" />
       </div>
       <div class="flex min-w-0 flex-col">
-        <h1 class="ellipsize whitespace-nowrap">
+        <h1 class="truncate min-w-0 whitespace-nowrap">
           <RelayName {url} class="text-xl sm:text-2xl font-bold" />
         </h1>
-        <p class="ellipsize text-sm text-primary">{displayRelayUrl(url)}</p>
+        <p class="truncate min-w-0 text-sm text-primary">{displayRelayUrl(url)}</p>
       </div>
     </div>
     <RelayDescription {url} />
@@ -70,37 +70,37 @@
       <div class="flex flex-wrap gap-1">
         {#if pubkey}
           <div class="badge badge-neutral text-wrap h-auto">
-            <span class="ellipsize">Administrator: <ProfileLink unstyled {pubkey} /></span>
+            <span class="truncate">Administrator: <ProfileLink unstyled {pubkey} /></span>
           </div>
         {/if}
         {#if $relay?.contact}
           <div class="badge badge-neutral text-wrap h-auto">
-            <span class="ellipsize">Contact: {$relay.contact}</span>
+            <span class="truncate">Contact: {$relay.contact}</span>
           </div>
         {/if}
         {#if software}
           <div class="badge badge-neutral text-wrap h-auto">
-            <span class="ellipsize">Software: {software}</span>
+            <span class="truncate">Software: {software}</span>
           </div>
         {/if}
         {#if version}
           <div class="badge badge-neutral text-wrap h-auto">
-            <span class="ellipsize">Version: {version}</span>
+            <span class="truncate">Version: {version}</span>
           </div>
         {/if}
         {#if limitation?.auth_required}
           <p class="badge badge-warning">
-            <span class="ellipsize">Auth Required</span>
+            <span class="truncate">Auth Required</span>
           </p>
         {/if}
         {#if limitation?.payment_required}
           <p class="badge badge-warning">
-            <span class="ellipsize">Payment Required</span>
+            <span class="truncate">Payment Required</span>
           </p>
         {/if}
         {#if limitation?.min_pow_difficulty}
           <p class="badge badge-warning text-wrap h-auto">
-            <span class="ellipsize">Min PoW: {limitation?.min_pow_difficulty}</span>
+            <span class="truncate">Min PoW: {limitation?.min_pow_difficulty}</span>
           </p>
         {/if}
       </div>

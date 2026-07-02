@@ -140,7 +140,7 @@
           {:else}
             <span class="text-sm font-semibold text-content-muted">Disconnected</span>
           {/if}
-          <span class="ellipsize text-xs text-content-muted">
+          <span class="truncate min-w-0 text-xs text-content-muted">
             {roomName} / {spaceName}
           </span>
         </div>

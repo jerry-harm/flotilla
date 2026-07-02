@@ -95,7 +95,7 @@
 
 <SpaceBar {back}>
   {#snippet title()}
-    <h1 class="ellipsize text-xl">{$board?.title || "Shelf"}</h1>
+    <h1 class="truncate text-xl">{$board?.title || "Shelf"}</h1>
   {/snippet}
   {#snippet action()}
     {#if canManage}
