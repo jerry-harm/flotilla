@@ -25,7 +25,7 @@
 </script>
 
 {#if $content.length > 0 || canEdit}
-  <Card class="bg-surface flex flex-col gap-3">
+  <Card class="bg-surface flex flex-col gap-3 @container">
     <div class="flex items-center justify-between gap-2">
       <h3 class="flex items-center gap-2 text-lg font-bold">
         <Icon icon={Bookmark} />
@@ -40,7 +40,7 @@
     {#if $content.length === 0}
       <p class="text-sm opacity-70">No featured content yet.</p>
     {:else}
-      <div class="flex flex-col gap-2">
+      <div class="grid grid-cols-1 @md:grid-cols-2 gap-2">
         {#each $content as value (value)}
           <Content event={{content: value, tags: []}} {url} />
         {/each}
