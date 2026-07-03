@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {onMount} from "svelte"
   import {DateInput} from "date-picker-svelte"
   import {secondsToDate, dateToSeconds} from "@welshman/lib"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
@@ -47,6 +48,16 @@
   let time: string | undefined = $state(initialTime)
   let minutes: string = $state(initialMinutes)
   let element: HTMLElement
+
+  // When mounted during a reactive flush (e.g. inside a modal), DateInput's legacy
+  // `$:` chain runs against a stale inner store and writes null back through the
+  // binding, wiping the initial date. It can't happen legitimately this early, so
+  // restore it after mount.
+  onMount(() => {
+    if (initialDate && !date) {
+      date = initialDate
+    }
+  })
 
   // Sync date to time and value
   $effect(() => {
