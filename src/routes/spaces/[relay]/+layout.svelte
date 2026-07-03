@@ -15,7 +15,7 @@
   import {modal, pushModal} from "@app/modal"
   import {makeSpacePath} from "@app/routes"
   import {decodeRelay, deriveRelayAuthError} from "@app/relays"
-  import {userGroupList, userSpaceUrls} from "@app/groups"
+  import {loadUserGroupList, userSpaceUrls} from "@app/groups"
   import {relaysPendingTrust} from "@app/policies"
 
   type Props = {
@@ -34,18 +34,25 @@
 
   const showPendingTrust = once(() => pushModal(SpaceTrustRelay, {url}, {noEscape: true}))
 
+  // Track this manually since we want to avoid race conditions in which we show this prompt before we load
+  let spacesLoaded = false
+
   // Watch for relay errors and notify the user
   // Direct links skip Discover — prompt to join when relay is not in the user's space list.
   $effect(() => {
-    void $userGroupList
-
     if ($modal) return
     if ($authError) return showAuthError()
     if ($relaysPendingTrust.includes(url)) return showPendingTrust()
+    if ($userSpaceUrls.includes(url)) return
+    if (joinPrompted.has(url)) return
 
-    if (!$userSpaceUrls.includes(url) && !joinPrompted.has(url)) {
+    if (spacesLoaded) {
       joinPrompted.add(url)
       pushModal(SpaceJoin, {url})
+    } else {
+      loadUserGroupList().then(() => {
+        spacesLoaded = true
+      })
     }
   })
 </script>
