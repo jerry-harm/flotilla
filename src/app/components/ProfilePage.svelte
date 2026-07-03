@@ -18,21 +18,17 @@
   import Letter from "@assets/icons/letter-opened.svg?dataurl"
   import UserPlus from "@assets/icons/user-plus.svg?dataurl"
   import PenNewSquare from "@assets/icons/pen-new-square.svg?dataurl"
-  import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
-  import ShareCircle from "@assets/icons/share-circle.svg?dataurl"
   import GallerySend from "@assets/icons/gallery-send.svg?dataurl"
-  import {fly} from "@lib/transition"
   import Icon from "@lib/components/Icon.svelte"
   import Link from "@lib/components/Link.svelte"
   import Button from "@lib/components/Button.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
-  import Popover from "@lib/components/Popover.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ProfileTrust from "@app/components/ProfileTrust.svelte"
   import ProfileSharedSpaces from "@app/components/ProfileSharedSpaces.svelte"
   import ProfilePageNotes from "@app/components/ProfilePageNotes.svelte"
-  import ProfileQrCode from "@app/components/ProfileQrCode.svelte"
   import ProfileEdit from "@app/components/ProfileEdit.svelte"
+  import ProfileMenu from "@app/components/ProfileMenu.svelte"
   import WotScore from "@app/components/WotScore.svelte"
   import Content from "@app/components/Content.svelte"
   import {updateProfile} from "@app/profiles"
@@ -62,26 +58,12 @@
       : `https://${$profile?.website || ""}`,
   )
 
-  let showMenu = $state(false)
   let bannerLoading = $state(false)
   let bannerInput: HTMLInputElement | undefined = $state()
 
   const copyNpub = () => clip(nip19.npubEncode(target))
 
-  const showShare = () => {
-    closeMenu()
-    pushModal(ProfileQrCode, {pubkey: target})
-  }
-
   const startEdit = () => pushModal(ProfileEdit)
-
-  const toggleMenu = () => {
-    showMenu = !showMenu
-  }
-
-  const closeMenu = () => {
-    showMenu = false
-  }
 
   const openChat = () => goToChat([target])
 
@@ -193,26 +175,8 @@
                       </Button>
                     {/if}
 
-                    <div class="relative shrink-0">
-                      <Button
-                        class="button button-circle button-ghost button-sm"
-                        onclick={toggleMenu}>
-                        <Icon icon={MenuDots} />
-                      </Button>
-                      {#if showMenu}
-                        <Popover hideOnClick onClose={closeMenu}>
-                          <ul
-                            transition:fly
-                            class="menu bg-surface absolute right-0 z-popover w-48 gap-1 rounded-2xl p-2">
-                            <li>
-                              <Button onclick={showShare}>
-                                <Icon icon={ShareCircle} />
-                                Share
-                              </Button>
-                            </li>
-                          </ul>
-                        </Popover>
-                      {/if}
+                    <div class="shrink-0">
+                      <ProfileMenu pubkey={target} />
                     </div>
                   </div>
                 {/if}
