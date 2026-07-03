@@ -36,7 +36,7 @@
   import {db, kv, ss} from "@app/storage"
   import {device} from "@app/device"
   import {getSetting, userSettings, notificationSettings} from "@app/settings"
-  import {DUFFLEPUD_URL, INDEXER_RELAYS, POMADE_SIGNERS} from "@app/env"
+  import {DUFFLEPUD_URL, DEFAULT_RELAYS, INDEXER_RELAYS, POMADE_SIGNERS} from "@app/env"
   import {pushState} from "@app/push/adapters/common"
   import {syncApplicationData} from "@app/sync"
   import * as groups from "@app/groups"
@@ -131,6 +131,7 @@
   pomadeContext.setArgonWorker(import("@pomade/core/argon-worker.js?worker"))
   appContext.dufflepudUrl = DUFFLEPUD_URL
   routerContext.getIndexerRelays = always(INDEXER_RELAYS)
+  routerContext.getDefaultRelays = always(DEFAULT_RELAYS)
   netContext.isEventValid = (event: TrustedEvent, url: string) =>
     getSetting<string[]>("trusted_relays").includes(url) || verifyEvent(event)
 

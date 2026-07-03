@@ -50,7 +50,7 @@
       joinPrompted.add(url)
       pushModal(SpaceJoin, {url})
     } else {
-      loadUserGroupList().then(() => {
+      loadUserGroupList([url]).then(() => {
         spacesLoaded = true
       })
     }
