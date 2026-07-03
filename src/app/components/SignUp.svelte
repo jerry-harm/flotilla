@@ -2,7 +2,15 @@
   import cx from "classnames"
   import type {ClientOptions} from "@pomade/core"
   import type {Profile} from "@welshman/util"
-  import {makeProfile, makeSecret, RELAYS, MESSAGING_RELAYS, makeEvent} from "@welshman/util"
+  import {
+    makeProfile,
+    makeSecret,
+    RELAYS,
+    PROFILE,
+    MESSAGING_RELAYS,
+    makeEvent,
+    createProfile,
+  } from "@welshman/util"
   import {loginWithNip01, publishThunk, waitForThunkCompletion} from "@welshman/app"
   import Key from "@assets/icons/key-minimalistic.svg?dataurl"
   import Letter from "@assets/icons/letter.svg?dataurl"
@@ -16,7 +24,6 @@
   import SignUpEmail from "@app/components/SignUpEmail.svelte"
   import SignUpProfile from "@app/components/SignUpProfile.svelte"
   import SignUpComplete from "@app/components/SignUpComplete.svelte"
-  import {initProfile} from "@app/profiles"
   import {attemptRelayAccess} from "@app/relays"
   import {
     POMADE_SIGNERS,
@@ -54,13 +61,16 @@
     const thunks = await Promise.all([
       publishThunk({
         event: makeEvent(RELAYS, {tags: DEFAULT_RELAYS.map(url => ["r", url])}),
-        relays: [...INDEXER_RELAYS, ...DEFAULT_RELAYS],
+        relays: [...INDEXER_RELAYS, ...DEFAULT_RELAYS, ...defaultSpaceUrls],
       }),
       publishThunk({
         event: makeEvent(MESSAGING_RELAYS, {tags: DEFAULT_MESSAGING_RELAYS.map(url => ["r", url])}),
-        relays: DEFAULT_RELAYS,
+        relays: [...DEFAULT_RELAYS, ...defaultSpaceUrls],
       }),
-      initProfile(getKey<Profile>("signup.profile")!),
+      publishThunk({
+        event: makeEvent(PROFILE, createProfile(getKey<Profile>("signup.profile")!)),
+        relays: [...DEFAULT_RELAYS, ...defaultSpaceUrls],
+      }),
       setSpaces(defaultSpaceUrls),
     ])
 

@@ -14,7 +14,6 @@ import type {Profile} from "@welshman/util"
 import {nthNe} from "@welshman/lib"
 import {publishThunk, pubkey, repository} from "@welshman/app"
 import {Router} from "@welshman/router"
-import {DEFAULT_RELAYS} from "@app/env"
 import {userSpaceUrls} from "@app/groups"
 
 export const broadcastUserData = async (relays: string[]) => {
@@ -27,12 +26,6 @@ export const broadcastUserData = async (relays: string[]) => {
       await publishThunk({event, relays}).complete
     }
   }
-}
-
-export const initProfile = (profile: Profile) => {
-  const event = makeEvent(PROFILE, createProfile(profile))
-
-  return publishThunk({event, relays: DEFAULT_RELAYS})
 }
 
 export const updateProfile = ({profile}: {profile: Profile}) => {
