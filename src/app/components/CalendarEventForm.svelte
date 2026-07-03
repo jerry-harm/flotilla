@@ -180,7 +180,7 @@
           </div>
           <Button
             data-tip="Add an image"
-            class="button button-neutral tip"
+            class="button button-neutral button-input tip"
             onclick={selectFiles}
             disabled={loading}>
             {#if $uploading}

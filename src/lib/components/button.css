@@ -102,6 +102,11 @@
   .button-xs {
     @apply h-7 gap-1 rounded-xl px-2 text-xs;
   }
+  /* for a button beside an .input/.input-editor in a flex row: stretch to the
+     row height instead of fixing one, since input height varies by theme */
+  .button-input {
+    @apply h-auto self-stretch;
+  }
 
   /* shapes */
   .button-block {
