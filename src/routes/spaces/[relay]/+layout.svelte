@@ -35,7 +35,7 @@
   const showPendingTrust = once(() => pushModal(SpaceTrustRelay, {url}, {noEscape: true}))
 
   // Track this manually since we want to avoid race conditions in which we show this prompt before we load
-  let spacesLoaded = false
+  let spacesLoaded = $state(false)
 
   // Watch for relay errors and notify the user
   // Direct links skip Discover — prompt to join when relay is not in the user's space list.
