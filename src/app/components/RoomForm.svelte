@@ -15,7 +15,7 @@
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import {pushToast} from "@app/toast"
-  import {uploadFile} from "@app/uploads"
+  import {compressFileForUpload, uploadFileOrFallback} from "@app/uploads"
   import {deriveHasLivekit} from "@app/relays"
   import {getRoomType, RoomType} from "@app/groups"
 
@@ -45,17 +45,14 @@
     room.livekit = roomType === RoomType.Voice
 
     if (imageFile) {
-      const {error, result} = await uploadFile(imageFile, {
-        maxWidth: 256,
-        maxHeight: 256,
+      const compressedFile = await compressFileForUpload(imageFile, {
+        maxWidth: 128,
+        maxHeight: 128,
       })
 
-      if (error) {
-        return pushToast({theme: "error", message: error})
-      }
+      const result = await uploadFileOrFallback(compressedFile)
 
       room.picture = result.url
-      room.pictureMeta = result.tags
     }
 
     const createMessage = await waitForThunkError(createRoom(url, room))

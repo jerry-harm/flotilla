@@ -1,12 +1,12 @@
 <script lang="ts">
   import {randomId} from "@welshman/lib"
-  import {preventDefault, stopPropagation, compressFile} from "@lib/html"
+  import {preventDefault, stopPropagation} from "@lib/html"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
   import AddCircle from "@assets/icons/add-circle.svg?dataurl"
   import GallerySend from "@assets/icons/gallery-send.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
-  import {uploadFile} from "@app/uploads"
+  import {compressFileForUpload, uploadFileOrFallback} from "@app/uploads"
 
   interface Props {
     file?: File | undefined
@@ -43,33 +43,17 @@
     submit(e.target.files[0])
   }
 
-  const submit = async (file: File) => {
+  const submit = async (newFile: File) => {
+    if (!newFile) {
+      url = initialUrl
+      return
+    }
+
     loading = true
 
     try {
-      file = await compressFile(file, compressOptions)
-
-      if (file) {
-        const {result} = await uploadFile(file)
-
-        if (result?.url) {
-          url = result.url
-        } else {
-          const reader = new FileReader()
-
-          reader.addEventListener(
-            "load",
-            () => {
-              url = reader.result as string
-            },
-            false,
-          )
-
-          reader.readAsDataURL(file)
-        }
-      } else {
-        url = initialUrl
-      }
+      file = await compressFileForUpload(newFile, compressOptions)
+      url = (await uploadFileOrFallback(file)).url
     } finally {
       loading = false
     }

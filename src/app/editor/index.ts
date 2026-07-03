@@ -27,7 +27,7 @@ import ProfileSuggestion from "@app/editor/ProfileSuggestion.svelte"
 import {RoomReferenceExtension} from "@app/editor/RoomReferenceExtension"
 import RoomSuggestion from "@app/editor/RoomSuggestion.svelte"
 import {NativeClipboardPasteExtension} from "@app/editor/clipboard"
-import {uploadFile} from "@app/uploads"
+import {compressFileForUpload, uploadFile} from "@app/uploads"
 import {deriveSpaceMembers} from "@app/members"
 import {makeRoomId, splitRoomId, userSpaceUrls, roomsByUrl} from "@app/groups"
 import {pushToast} from "@app/toast"
@@ -137,8 +137,8 @@ export const makeEditor = async ({
           },
           fileUpload: {
             config: {
-              upload: (attrs: FileAttributes) =>
-                uploadFile(attrs.file, {url, encrypt: encryptFiles}),
+              upload: async (attrs: FileAttributes) =>
+                uploadFile(await compressFileForUpload(attrs.file), {url, encrypt: encryptFiles}),
               onDrop: () => uploading?.set(true),
               onComplete: () => uploading?.set(false),
               onUploadError(currentEditor, task) {

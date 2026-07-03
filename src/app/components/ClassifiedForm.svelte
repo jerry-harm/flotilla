@@ -22,7 +22,7 @@
   import {makeEditor} from "@app/editor"
   import {DraftKey} from "@app/drafts"
   import {canEnforceNip70} from "@app/relays"
-  import {uploadFile} from "@app/uploads"
+  import {compressFileForUpload, uploadFile} from "@app/uploads"
 
   type Values = {
     d: string
@@ -103,7 +103,7 @@
         if (typeof image === "string") {
           tags.push(["image", image])
         } else {
-          const {result, error} = await uploadFile(image, {url})
+          const {result, error} = await uploadFile(await compressFileForUpload(image), {url})
 
           if (error) {
             return pushToast({

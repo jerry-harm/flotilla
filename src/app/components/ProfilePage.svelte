@@ -12,7 +12,6 @@
     tagPubkey,
     loadRelayList,
   } from "@welshman/app"
-  import {compressFile} from "@lib/html"
   import Copy from "@assets/icons/copy.svg?dataurl"
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import Letter from "@assets/icons/letter-opened.svg?dataurl"
@@ -32,7 +31,7 @@
   import WotScore from "@app/components/WotScore.svelte"
   import Content from "@app/components/Content.svelte"
   import {updateProfile} from "@app/profiles"
-  import {uploadFile} from "@app/uploads"
+  import {compressFileForUpload, uploadFile} from "@app/uploads"
   import {pushModal} from "@app/modal"
   import {clip, pushToast} from "@app/toast"
   import {goToChat} from "@app/routes"
@@ -90,7 +89,7 @@
     bannerLoading = true
 
     try {
-      const {result} = await uploadFile(await compressFile(file))
+      const {result} = await uploadFile(await compressFileForUpload(file))
 
       if (result?.url) {
         await updateProfile({profile: {...$profile, banner: result.url}})

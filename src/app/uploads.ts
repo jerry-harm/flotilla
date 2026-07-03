@@ -67,11 +67,20 @@ export const getBlossomServer = async (options: GetBlossomServerOptions = {}) =>
   return first(DEFAULT_BLOSSOM_SERVERS)!
 }
 
+export type CompressFileOptions = {
+  maxWidth?: number
+  maxHeight?: number
+  quality?: number
+  mimeType?: string
+}
+
+// Webp/gif/svg either break the compressor or lose animation, pass them through untouched
+export const compressFileForUpload = async (file: File, options: CompressFileOptions = {}) =>
+  file.type.match("image/(webp|gif|svg)") ? file : compressFile(file, options)
+
 export type UploadFileOptions = {
   url?: string
   encrypt?: boolean
-  maxWidth?: number
-  maxHeight?: number
 }
 
 export type UploadFileResult = {
@@ -82,10 +91,6 @@ export type UploadFileResult = {
 export const uploadFile = async (file: File, options: UploadFileOptions = {}) => {
   try {
     const {name, type} = file
-
-    if (!type.match("image/(webp|gif|svg)")) {
-      file = await compressFile(file, options)
-    }
 
     const tags: string[][] = []
 
@@ -139,4 +144,26 @@ export const uploadFile = async (file: File, options: UploadFileOptions = {}) =>
 
     return {error: e.toString()}
   }
+}
+
+const readFileAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.addEventListener("load", () => resolve(reader.result as string))
+    reader.addEventListener("error", () => reject(reader.error))
+    reader.readAsDataURL(file)
+  })
+
+export const uploadFileOrFallback = async (
+  file: File,
+  options: UploadFileOptions = {},
+): Promise<{url: string; tags: string[][]}> => {
+  const {result} = await uploadFile(file, options)
+
+  if (result?.url) {
+    return result
+  }
+
+  return {url: await readFileAsDataUrl(file), tags: []}
 }

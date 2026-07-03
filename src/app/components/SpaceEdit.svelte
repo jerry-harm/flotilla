@@ -21,7 +21,7 @@
   import IconPickerButton from "@lib/components/IconPickerButton.svelte"
   import {pushToast} from "@app/toast"
   import {clearModals} from "@app/modal"
-  import {uploadFile} from "@app/uploads"
+  import {compressFileForUpload, uploadFileOrFallback} from "@app/uploads"
 
   type Props = {
     url: string
@@ -58,11 +58,8 @@
     }
 
     if (imageFile) {
-      const {error, result} = await uploadFile(imageFile, {maxWidth: 256, maxHeight: 256})
-
-      if (error) {
-        return pushToast({theme: "error", message: error})
-      }
+      const compressedFile = await compressFileForUpload(imageFile, {maxWidth: 128, maxHeight: 128})
+      const result = await uploadFileOrFallback(compressedFile)
 
       const res = await manageRelay(url, {
         method: ManagementMethod.ChangeRelayIcon,
