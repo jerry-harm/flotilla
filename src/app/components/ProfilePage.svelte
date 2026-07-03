@@ -49,7 +49,6 @@
 
   const profile = deriveProfile(target)
   const profileDisplay = deriveProfileDisplay(target)
-  const encodedNpub = nip19.npubEncode(target)
   const isSelf = $derived($pubkey === target)
   const isFollowing = $derived.by(() => {
     void $followLists
@@ -67,7 +66,7 @@
   let bannerLoading = $state(false)
   let bannerInput: HTMLInputElement | undefined = $state()
 
-  const copyNpub = () => clip(encodedNpub)
+  const copyNpub = () => clip(nip19.npubEncode(target))
 
   const showShare = () => {
     closeMenu()

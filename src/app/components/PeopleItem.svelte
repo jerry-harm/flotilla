@@ -3,7 +3,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Link from "@lib/components/Link.svelte"
   import Profile from "@app/components/Profile.svelte"
-  import ProfileInfo from "@app/components/ProfileInfo.svelte"
+  import ProfileAbout from "@app/components/ProfileAbout.svelte"
   import ProfileBadges from "@app/components/ProfileBadges.svelte"
   import {makeProfilePath} from "@app/routes"
 
@@ -23,7 +23,7 @@
       View Profile
     </Link>
   </div>
-  <ProfileInfo {pubkey} {url} />
+  <ProfileAbout {pubkey} {url} />
   <ProfileBadges {pubkey} {url} />
   <Link href={makeProfilePath(pubkey)} class="button button-primary sm:hidden">
     <Icon icon={UserCircle} />

@@ -17,7 +17,7 @@
   import ModalBody from "@lib/components/ModalBody.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import Profile from "@app/components/Profile.svelte"
-  import ProfileInfo from "@app/components/ProfileInfo.svelte"
+  import ProfileAbout from "@app/components/ProfileAbout.svelte"
   import ProfileBadges from "@app/components/ProfileBadges.svelte"
   import {
     deriveUserIsSpaceAdmin,
@@ -142,7 +142,7 @@
           </div>
         {/if}
       </div>
-      <ProfileInfo {pubkey} {url} />
+      <ProfileAbout {pubkey} {url} />
       <ProfileBadges {pubkey} {url} />
     </div>
   </ModalBody>

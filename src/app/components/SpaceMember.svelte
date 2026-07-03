@@ -11,7 +11,7 @@
   import Popover from "@lib/components/Popover.svelte"
   import Confirm from "@lib/components/Confirm.svelte"
   import Profile from "@app/components/Profile.svelte"
-  import ProfileInfo from "@app/components/ProfileInfo.svelte"
+  import ProfileAbout from "@app/components/ProfileAbout.svelte"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
   import SpaceMemberRoles from "@app/components/SpaceMemberRoles.svelte"
   import RoleBadge from "@app/components/RoleBadge.svelte"
@@ -104,7 +104,7 @@
         </div>
       {/if}
       <div class="line-clamp-1 text-sm opacity-70">
-        <ProfileInfo {pubkey} {url} singleLine />
+        <ProfileAbout {pubkey} {url} singleLine />
       </div>
     </div>
     {#if canAssign || canUnassign || canUnallow || canBan}
