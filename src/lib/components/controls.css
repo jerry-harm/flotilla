@@ -68,7 +68,7 @@
     }
   }
 
-  .range {
+  input.range {
     @apply bg-surface-more w-full cursor-pointer appearance-none rounded-full;
     height: 0.5rem;
 

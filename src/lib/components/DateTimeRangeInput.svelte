@@ -1,44 +1,43 @@
 <script lang="ts">
   import {onMount} from "svelte"
   import {DatePicker} from "@svelte-plugins/datepicker"
-  import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
   import CalendarMinimalistic from "@assets/icons/calendar-minimalistic.svg?dataurl"
   import {anchorDatepicker} from "@lib/html"
   import Icon from "@lib/components/Icon.svelte"
-  import Button from "@lib/components/Button.svelte"
 
   interface Props {
-    value?: number | undefined
+    start?: number | undefined
+    end?: number | undefined
   }
 
-  let {value = $bindable()}: Props = $props()
+  let {start = $bindable(), end = $bindable()}: Props = $props()
 
   // The picker works in millisecond timestamps that include the time of day
-  // selected via its time input; we expose unix seconds
+  // selected via its time inputs; we expose unix seconds
   let element: HTMLElement
   let isOpen = $state(false)
-  let startDate: number | null = $state(value ? value * 1000 : null)
+  let startDate: number | null = $state(start ? start * 1000 : null)
+  let endDate: number | null = $state(end ? end * 1000 : null)
   let startDateTime = $state("")
+  let endDateTime = $state("")
 
-  // When no date is provided the library initializes its time input from the
-  // epoch (a locale-dependent afternoon); reset it to something friendlier
+  // When no date is provided the library initializes its time inputs from the
+  // epoch (a locale-dependent afternoon); reset them for the create flow
   onMount(() => {
     if (!startDate) startDateTime = "12:00"
+    if (!endDate) endDateTime = "13:00"
   })
 
   const toggle = () => {
     isOpen = !isOpen
   }
 
-  const clear = () => {
-    startDate = null
-    isOpen = false
-  }
-
   const fmt = (ts: number) =>
     new Date(ts).toLocaleString([], {dateStyle: "medium", timeStyle: "short"})
 
-  const display = $derived(startDate ? fmt(startDate) : "")
+  const display = $derived(
+    startDate ? (endDate ? `${fmt(startDate)} – ${fmt(endDate)}` : fmt(startDate)) : "",
+  )
 
   $effect(() => {
     if (isOpen && element) {
@@ -47,7 +46,11 @@
   })
 
   $effect(() => {
-    value = startDate ? Math.round(startDate / 1000) : undefined
+    start = startDate ? Math.round(startDate / 1000) : undefined
+  })
+
+  $effect(() => {
+    end = endDate ? Math.round(endDate / 1000) : undefined
   })
 </script>
 
@@ -55,7 +58,10 @@
   <DatePicker
     bind:isOpen
     bind:startDate
+    bind:endDate
     bind:startDateTime
+    bind:endDateTime
+    isRange
     showTimePicker
     enableFutureDates
     includeFont={false}>
@@ -65,14 +71,9 @@
         type="text"
         readonly
         class="grow cursor-pointer"
-        placeholder="Select date"
+        placeholder="Select dates"
         value={display}
         onclick={toggle} />
-      {#if startDate}
-        <Button onclick={clear} class="h-5">
-          <Icon icon={CloseCircle} />
-        </Button>
-      {/if}
     </label>
   </DatePicker>
 </div>

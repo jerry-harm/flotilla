@@ -1,7 +1,7 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
   import {writable} from "svelte/store"
-  import {randomId, HOUR} from "@welshman/lib"
+  import {randomId} from "@welshman/lib"
   import {makeEvent, EVENT_TIME} from "@welshman/util"
   import {publishThunk, waitForThunkError} from "@welshman/app"
   import {preventDefault} from "@lib/html"
@@ -16,7 +16,7 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
-  import DateTimeInput from "@lib/components/DateTimeInput.svelte"
+  import DateTimeRangeInput from "@lib/components/DateTimeRangeInput.svelte"
   import EditorContent from "@app/editor/EditorContent.svelte"
   import {PROTECTED, publishRoomQuote} from "@app/groups"
   import {makeEditor} from "@app/editor"
@@ -134,7 +134,6 @@
   let location = $state(initialValues?.location ?? "")
   let start: number | undefined = $state(initialValues?.start)
   let end: number | undefined = $state(initialValues?.end)
-  let endDirty = $state(Boolean(initialValues?.end))
   let content = $state(initialValues?.content ?? "")
 
   const onChange = (json: object) => {
@@ -145,14 +144,6 @@
 
   $effect(() => {
     draftKey.set({d, title, location, start, end, content})
-  })
-
-  $effect(() => {
-    if (!endDirty && start) {
-      end = start + HOUR
-    } else if (end) {
-      endDirty = true
-    }
   })
 </script>
 
@@ -194,18 +185,10 @@
     </Field>
     <Field>
       {#snippet label()}
-        Start*
+        <p>Date and time*</p>
       {/snippet}
       {#snippet input()}
-        <DateTimeInput bind:value={start} />
-      {/snippet}
-    </Field>
-    <Field>
-      {#snippet label()}
-        End*
-      {/snippet}
-      {#snippet input()}
-        <DateTimeInput bind:value={end} />
+        <DateTimeRangeInput bind:start bind:end />
       {/snippet}
     </Field>
     <Field>

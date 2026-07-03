@@ -264,6 +264,91 @@ body.keyboard-open .room__compose {
   padding: 0.65rem;
 }
 
+/* @svelte-plugins/datepicker — the library declares its variables on :root,
+   where chained var() references resolve immediately, and our theme tokens
+   only exist under .fl; so each color is overridden individually here. The
+   tripled selector out-specifies the component's scoped .datepicker rule. */
+.datepicker.datepicker.datepicker {
+  --datepicker-font-family: var(--font-body);
+  --datepicker-color: var(--content);
+  --datepicker-border-color: var(--line);
+  --datepicker-state-active: var(--primary);
+  --datepicker-state-hover: var(--surface-more);
+
+  --datepicker-container-background: var(--surface);
+  --datepicker-container-border: var(--border-thin) solid var(--line);
+
+  --datepicker-calendar-header-color: var(--content);
+  --datepicker-calendar-header-text-color: var(--content);
+  --datepicker-calendar-header-month-nav-color: var(--content);
+  --datepicker-calendar-header-month-nav-background-hover: var(--surface-more);
+  --datepicker-calendar-header-year-nav-color: var(--content);
+
+  --datepicker-calendar-dow-color: var(--content-muted);
+  --datepicker-calendar-day-color: var(--content);
+  --datepicker-calendar-day-color-hover: var(--content);
+  --datepicker-calendar-day-background-hover: var(--surface-more);
+  --datepicker-calendar-day-color-disabled: var(--content-subtle);
+  --datepicker-calendar-day-other-color: var(--content-subtle);
+  --datepicker-calendar-today-border: var(--border-thin) solid var(--line-more);
+
+  /* pale wash for in-range days and the square connectors that join the
+     endpoint circles; endpoints themselves get full primary + primary-content */
+  --fl-dp-wash: color-mix(in srgb, var(--primary) 14%, var(--surface));
+
+  --datepicker-calendar-range-color: var(--content);
+  --datepicker-calendar-range-background: var(--fl-dp-wash);
+  --datepicker-calendar-range-background-disabled: var(--fl-dp-wash);
+  --datepicker-calendar-range-start-box-shadow: inset -20px 0 0 var(--fl-dp-wash);
+  --datepicker-calendar-range-end-box-shadow: inset 20px 0 0 var(--fl-dp-wash);
+  --datepicker-calendar-range-start-box-shadow-selected: inset -20px 0 0 var(--fl-dp-wash);
+  --datepicker-calendar-range-end-box-shadow-selected: inset 20px 0 0 var(--fl-dp-wash);
+  --datepicker-calendar-range-start-end-background: var(--primary);
+  --datepicker-calendar-range-start-end-color: var(--primary-content);
+  --datepicker-calendar-range-selected-background: var(--primary);
+  --datepicker-calendar-range-selected-color: var(--primary-content);
+  --datepicker-calendar-range-included-background: var(--fl-dp-wash);
+  --datepicker-calendar-range-included-box-shadow: inset 20px 0 0 var(--fl-dp-wash);
+  --datepicker-calendar-range-included-color: var(--content);
+
+  --datepicker-timepicker-input-border: var(--border-thin) solid var(--line);
+}
+
+/* While only the start of a range is picked, the cell doesn't yet have the
+   .range class, so the library's generic day-hover rule (square, gray) paints
+   over the selected circle. Keep the selected look on hover instead. The :not()
+   chain exists to out-specify that hover rule, which carries five of its own. */
+.datepicker.datepicker.datepicker
+  .calendar
+  .date.start:not(.range):not(.other):not(.past):not(.future):not(.disabled)
+  span:hover,
+.datepicker.datepicker.datepicker
+  .calendar
+  .date.end:not(.range):not(.other):not(.past):not(.future):not(.disabled)
+  span:hover {
+  background-color: var(--primary);
+  color: var(--primary-content);
+  border-radius: var(--datepicker-calendar-range-selected-border-radius);
+}
+
+/* Hovering the picked start makes the cell both ends of a zero-width preview
+   range; the library's !important sibling rules still paint a square connector
+   shadow behind the circle, so remove it (their !important, out-specified) */
+.datepicker.datepicker.datepicker .calendars-container .calendar .date.rangehover.start.end {
+  box-shadow: none !important;
+}
+
+/* A freshly picked start with no end and no hover preview carries the same
+   classes as the start of a real range, so the library paints its half-cell
+   connector shadow toward a range that doesn't exist yet. The only reliable
+   distinguisher is whether the next day is in-range. */
+.datepicker.datepicker.datepicker
+  .calendars-container
+  .calendar
+  .date.range.start:not(:has(+ .range, + .rangehover)) {
+  box-shadow: none;
+}
+
 /* link-content (tiptap pill) */
 .link-content {
   @apply bg-surface text-content max-w-full overflow-hidden px-1 text-ellipsis whitespace-nowrap;
