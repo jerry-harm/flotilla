@@ -186,6 +186,10 @@ export const makeFeed = ({
         if (removed.size > 0) {
           buffer = buffer.filter(e => !removed.has(e.id))
           events.update($events => $events.filter(e => !removed.has(e.id)))
+
+          for (const id of removed) {
+            seen.delete(id)
+          }
         }
 
         const matching = added.filter(
@@ -359,6 +363,10 @@ export const makeCalendarFeed = ({
 
         if (removed.size > 0) {
           events.update($events => $events.filter(e => !removed.has(e.id)))
+
+          for (const id of removed) {
+            seen.delete(id)
+          }
         }
 
         const matching = added.filter(event => matchFilters(filters, event))
