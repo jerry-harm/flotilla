@@ -4,8 +4,9 @@
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Link from "@lib/components/Link.svelte"
+  import RoomNameWithImage from "@app/components/RoomNameWithImage.svelte"
   import {PLATFORM_URL} from "@app/env"
-  import {displayRoom, isRoomId, splitRoomId} from "@app/groups"
+  import {isRoomId, splitRoomId} from "@app/groups"
   import {makeRoomPath, makeSpacePath} from "@app/routes"
 
   const {
@@ -49,8 +50,7 @@
 
 <Link {external} {href} class={className}>
   {#if roomReference}
-    ~<span class="text-primary">{displayRelayUrl(roomReference.url)}</span> /
-    {displayRoom(roomReference.url, roomReference.h)}
+    <RoomNameWithImage {...roomReference} />
   {:else if relayReference}
     <span class="text-primary">{displayRelayUrl(relayReference)}</span>
   {:else}

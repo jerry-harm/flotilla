@@ -209,9 +209,5 @@ export const referenceToPin = (reference: string): Partial<Pin> | undefined => {
     // Not a nostr entity; fall through to external url handling.
   }
 
-  if (/^https?:\/\//i.test(trimmed)) {
-    return {value: ["i", trimmed]}
-  }
-
-  return undefined
+  return {value: ["i", trimmed]}
 }

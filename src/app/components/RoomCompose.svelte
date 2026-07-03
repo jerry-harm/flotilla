@@ -118,16 +118,18 @@
         <Icon icon={GallerySend} />
       {/if}
     </Button>
-    <Tippy
-      bind:popover
-      class="join-item h-10 w-10 min-w-10 button button-neutral"
-      component={ComposeMenu}
-      props={{url, h, onClick: hidePopover}}
-      params={{trigger: "manual", interactive: true}}>
-      <Button disabled={$uploading} onclick={showPopover}>
+    <Button
+      disabled={$uploading}
+      onclick={showPopover}
+      class="join-item h-10 w-10 min-w-10 button button-neutral">
+      <Tippy
+        bind:popover
+        component={ComposeMenu}
+        props={{url, h, onClick: hidePopover}}
+        params={{trigger: "manual", interactive: true}}>
         <Icon icon={WidgetAdd} />
-      </Button>
-    </Tippy>
+      </Tippy>
+    </Button>
   </div>
   <div class="chat-editor grow overflow-hidden rounded-box">
     <EditorContent {autofocus} {editor} />
