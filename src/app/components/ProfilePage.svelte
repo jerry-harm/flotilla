@@ -136,7 +136,7 @@
               <div
                 class="w-fit rounded-full border-4 border-surface bg-surface sm:border-surface-more sm:bg-surface-more">
                 <ProfileCircle pubkey={target} size={16} class="sm:hidden" />
-                <ProfileCircle pubkey={target} size={20} class="hidden! sm:block" />
+                <ProfileCircle pubkey={target} size={20} class="hidden! sm:block!" />
               </div>
             </div>
 
