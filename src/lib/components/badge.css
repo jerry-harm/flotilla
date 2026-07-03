@@ -2,6 +2,10 @@
   .badge {
     @apply inline-flex items-center gap-1 rounded-full border-2 border-solid border-transparent px-2 py-1 text-sm font-semibold whitespace-nowrap;
 
+    &.badge-sm {
+      @apply h-6 text-xs;
+    }
+
     &.badge-neutral {
       @apply bg-surface-less text-content-muted border-line;
     }
