@@ -1,4 +1,6 @@
 <script lang="ts">
+  import {remove} from "@welshman/lib"
+  import {pubkey} from "@welshman/app"
   import CheckCircle from "@assets/icons/check-circle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import RelayName from "@app/components/RelayName.svelte"
@@ -47,7 +49,7 @@
   {#if !hideFavorites && $favorited.size > 0}
     <div class="flex gap-2 card card-sm">
       Favorited By:
-      <ProfileCircles pubkeys={Array.from($favorited)} />
+      <ProfileCircles pubkeys={remove($pubkey!, Array.from($favorited))} />
     </div>
   {/if}
 </div>

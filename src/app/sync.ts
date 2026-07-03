@@ -2,10 +2,13 @@ import {page} from "$app/stores"
 import type {Unsubscriber} from "svelte/store"
 import {call, assoc, WEEK, MONTH, ago} from "@welshman/lib"
 import {merged} from "@welshman/store"
+import {Router} from "@welshman/router"
 import {
   getListTags,
   getRelayTagValues,
   WRAP,
+  MUTES,
+  FOLLOWS,
   ROOM_META,
   ROOM_DELETE,
   ROOM_ADMINS,
@@ -25,7 +28,7 @@ import {
   unionFilters,
 } from "@welshman/util"
 import type {Filter, List, PublishedList, TrustedEvent} from "@welshman/util"
-import {request} from "@welshman/net"
+import {request, load} from "@welshman/net"
 import {
   pubkey,
   loadRelay,
@@ -54,7 +57,6 @@ import {
   getSpaceRoomsFromGroupList,
 } from "@app/groups"
 import {decodeRelay} from "@app/relays"
-import {loadFeedsForPubkey} from "@app/feeds"
 import {RELAY_ROLE} from "@app/members"
 import {FEATURED_CONTENT_D} from "@app/featured"
 import {BOARD, PIN} from "@app/pinboards"
@@ -244,26 +246,27 @@ const syncUserData = () => {
   const syncRelayList = ($userRelayList: PublishedList | undefined) => {
     const pubkey = $userRelayList?.event?.pubkey
 
-    if (!pubkey) return
-
-    loadBlossomServerList(pubkey)
-    loadBlockedRelayList(pubkey)
-    loadFollowList(pubkey)
-    loadGroupList(pubkey)
-    loadMuteList(pubkey)
-    loadProfile(pubkey)
-    loadSettings(pubkey)
-    loadFeedsForPubkey(pubkey)
+    if (pubkey) {
+      loadBlossomServerList(pubkey)
+      loadBlockedRelayList(pubkey)
+      loadFollowList(pubkey)
+      loadGroupList(pubkey)
+      loadMuteList(pubkey)
+      loadProfile(pubkey)
+      loadSettings(pubkey)
+    }
   }
 
   const syncFollowNetwork = ($userFollowList: List | undefined) => {
     const author = $userFollowList?.event?.pubkey
 
-    if (!author) return
+    if (author) {
+      const authors = getFollows(author)
 
-    for (const follow of getFollows(author)) {
-      loadFollowList(follow)
-      loadMuteList(follow)
+      load({
+        filters: [{kinds: [FOLLOWS, MUTES], authors}],
+        relays: Router.get().FromPubkeys(authors).limit(8).getUrls(),
+      })
     }
   }
 
@@ -306,7 +309,6 @@ const syncSpace = (url: string) => {
     signal: controller.signal,
     filters: [
       {kinds: [ROOM_META, ROOM_ADMINS, ROOM_MEMBERS, ROOM_DELETE, LIVEKIT_PARTICIPANTS, BOARD]},
-      {kinds: [APP_DATA], "#d": [FEATURED_CONTENT_D]},
     ],
   })
 
