@@ -2,26 +2,13 @@
   import {onMount} from "svelte"
   import {Client} from "@pomade/core"
   import {session, isPomadeSession} from "@welshman/app"
-  import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
-  import {fly} from "@lib/transition"
-  import Icon from "@lib/components/Icon.svelte"
-  import Button from "@lib/components/Button.svelte"
+  import MenuButton from "@lib/components/MenuButton.svelte"
   import Badge from "@lib/components/Badge.svelte"
-  import Popover from "@lib/components/Popover.svelte"
-  import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
+  import PomadeSessionMenu from "@app/components/PomadeSessionMenu.svelte"
   import {pushToast} from "@app/toast"
   import {loadOtherPomadeSessions} from "@app/pomade"
   import type {PomadeSessionWithPeers} from "@app/pomade"
 
-  const toggleMenu = (client: string) => {
-    menuClient = menuClient === client ? "" : client
-  }
-
-  const closeMenu = () => {
-    menuClient = ""
-  }
-
-  let menuClient = $state("")
   let sessions = $state<PomadeSessionWithPeers[]>([])
 
   const deleteSession = async (sessionItem: PomadeSessionWithPeers) => {
@@ -83,27 +70,9 @@
               {/if}
             </span>
           </div>
-          <div class="relative">
-            <Button
-              class="button button-ghost button-sm button-circle"
-              onclick={() => toggleMenu(sessionItem.client)}>
-              <Icon icon={MenuDots} />
-            </Button>
-            {#if menuClient === sessionItem.client}
-              <Popover hideOnClick onClose={closeMenu}>
-                <ul
-                  transition:fly
-                  class="menu bg-surface absolute right-0 z-popover mt-2 w-48 gap-1 rounded-2xl p-2">
-                  <li>
-                    <Button onclick={() => deleteSession(sessionItem)}>
-                      <Icon icon={TrashBin2} />
-                      Delete Session
-                    </Button>
-                  </li>
-                </ul>
-              </Popover>
-            {/if}
-          </div>
+          <MenuButton
+            component={PomadeSessionMenu}
+            componentProps={{onDelete: () => deleteSession(sessionItem)}} />
         </div>
         <div class="flex gap-1">
           <Badge variant="neutral">

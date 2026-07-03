@@ -1,24 +1,15 @@
 <script lang="ts">
   import {ManagementMethod} from "@welshman/util"
   import {displayProfileByPubkey} from "@welshman/app"
-  import {fly} from "@lib/transition"
-  import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
-  import Pen from "@assets/icons/pen.svg?dataurl"
-  import UserMinus from "@assets/icons/user-minus.svg?dataurl"
-  import MinusCircle from "@assets/icons/minus-circle.svg?dataurl"
-  import Button from "@lib/components/Button.svelte"
-  import Icon from "@lib/components/Icon.svelte"
-  import Popover from "@lib/components/Popover.svelte"
-  import Confirm from "@lib/components/Confirm.svelte"
+  import MenuButton from "@lib/components/MenuButton.svelte"
   import Profile from "@app/components/Profile.svelte"
   import ProfileAbout from "@app/components/ProfileAbout.svelte"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
-  import SpaceMemberRoles from "@app/components/SpaceMemberRoles.svelte"
+  import SpaceMemberMenu from "@app/components/SpaceMemberMenu.svelte"
   import RoleBadge from "@app/components/RoleBadge.svelte"
-  import {removeSpaceMembers, banSpaceMembers, type SpaceRole} from "@app/members"
+  import {type SpaceRole} from "@app/members"
   import {deriveSupportedMethods} from "@app/relays"
   import {pushModal} from "@app/modal"
-  import {pushToast} from "@app/toast"
 
   interface Props {
     url: string
@@ -34,56 +25,7 @@
   const canAssign = $derived($supportedMethods.some(m => (m as string) === "assignrole"))
   const canUnassign = $derived($supportedMethods.some(m => (m as string) === "unassignrole"))
 
-  let menuOpen = $state(false)
-
-  const back = () => history.back()
-  const closeMenu = () => (menuOpen = false)
-
-  const openProfile = () => {
-    menuOpen = false
-    pushModal(ProfileDetail, {pubkey, url})
-  }
-
-  const editRoles = () => {
-    menuOpen = false
-    pushModal(SpaceMemberRoles, {url, pubkey})
-  }
-
-  const removeMember = () => {
-    menuOpen = false
-    pushModal(Confirm, {
-      title: "Remove Member",
-      message: `Remove @${displayProfileByPubkey(pubkey)} from the space?`,
-      confirm: async () => {
-        const error = await removeSpaceMembers(url, [pubkey])
-
-        if (error) {
-          pushToast({theme: "error", message: error})
-        } else {
-          pushToast({message: "Member has successfully been removed!"})
-          back()
-        }
-      },
-    })
-  }
-
-  const banMember = () => {
-    menuOpen = false
-    pushModal(Confirm, {
-      title: "Ban Member",
-      message: `Ban @${displayProfileByPubkey(pubkey)} from the space?`,
-      confirm: async () => {
-        const error = await banSpaceMembers(url, [pubkey])
-
-        if (error) {
-          pushToast({theme: "error", message: error})
-        } else {
-          pushToast({message: "Member has successfully been banned!"})
-          back()
-        }
-      },
-    })
-  }
+  const openProfile = () => pushModal(ProfileDetail, {pubkey, url})
 </script>
 
 <div class="card card-interactive card-sm relative">
@@ -108,44 +50,11 @@
       </div>
     </div>
     {#if canAssign || canUnassign || canUnallow || canBan}
-      <div class="pointer-events-auto relative shrink-0">
-        <Button
+      <div class="pointer-events-auto shrink-0">
+        <MenuButton
           class="button button-ghost button-sm button-square"
-          onclick={() => (menuOpen = !menuOpen)}>
-          <Icon icon={MenuDots} />
-        </Button>
-        {#if menuOpen}
-          <Popover hideOnClick onClose={closeMenu}>
-            <ul
-              transition:fly
-              class="menu bg-surface absolute right-0 z-popover mt-2 w-52 gap-1 rounded-2xl p-2">
-              {#if canAssign || canUnassign}
-                <li>
-                  <Button onclick={editRoles}>
-                    <Icon icon={Pen} />
-                    Edit roles
-                  </Button>
-                </li>
-              {/if}
-              {#if canUnallow}
-                <li>
-                  <Button onclick={removeMember}>
-                    <Icon icon={UserMinus} />
-                    Remove member
-                  </Button>
-                </li>
-              {/if}
-              {#if canBan}
-                <li>
-                  <Button class="text-error" onclick={banMember}>
-                    <Icon icon={MinusCircle} />
-                    Ban member
-                  </Button>
-                </li>
-              {/if}
-            </ul>
-          </Popover>
-        {/if}
+          component={SpaceMemberMenu}
+          componentProps={{url, pubkey}} />
       </div>
     {/if}
   </div>

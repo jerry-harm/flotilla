@@ -1,14 +1,9 @@
 <script lang="ts">
   import {displayRelayUrl, ManagementMethod} from "@welshman/util"
-  import {manageRelay} from "@welshman/app"
-  import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
-  import Restart from "@assets/icons/restart.svg?dataurl"
-  import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
-  import {fly} from "@lib/transition"
   import Button from "@lib/components/Button.svelte"
   import Icon from "@lib/components/Icon.svelte"
-  import Popover from "@lib/components/Popover.svelte"
+  import MenuButton from "@lib/components/MenuButton.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import ModalHeader from "@lib/components/ModalHeader.svelte"
@@ -16,9 +11,9 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import Profile from "@app/components/Profile.svelte"
-  import {deriveSpaceBannedPubkeyItems, addSpaceMembers} from "@app/members"
+  import SpaceMemberBannedMenu from "@app/components/SpaceMemberBannedMenu.svelte"
+  import {deriveSpaceBannedPubkeyItems} from "@app/members"
   import {deriveSupportedMethods} from "@app/relays"
-  import {pushToast} from "@app/toast"
 
   interface Props {
     url: string
@@ -32,41 +27,6 @@
   const canRestore = $derived($supportedMethods.includes(ManagementMethod.AllowPubkey))
 
   const back = () => history.back()
-
-  const toggleMenu = (pubkey: string) => {
-    menuPubkey = menuPubkey === pubkey ? undefined : pubkey
-  }
-
-  const closeMenu = () => {
-    menuPubkey = undefined
-  }
-
-  const unbanMember = async (pubkey: string) => {
-    const {error} = await manageRelay(url, {
-      method: ManagementMethod.UnbanPubkey,
-      params: [pubkey],
-    })
-
-    if (error) {
-      pushToast({theme: "error", message: error})
-    } else {
-      pushToast({message: "User has successfully been removed from the ban list!"})
-      back()
-    }
-  }
-
-  const restoreMember = async (pubkey: string) => {
-    const error = await addSpaceMembers(url, [pubkey])
-
-    if (error) {
-      pushToast({theme: "error", message: error})
-    } else {
-      pushToast({message: "User has successfully been restored to membership!"})
-      back()
-    }
-  }
-
-  let menuPubkey = $state<string | undefined>()
 </script>
 
 <Modal>
@@ -86,37 +46,7 @@
               <Profile {pubkey} {url} />
             </div>
             {#if canUnban || canRestore}
-              <div class="relative">
-                <Button
-                  class="button button-ghost button-sm button-circle"
-                  onclick={() => toggleMenu(pubkey)}>
-                  <Icon icon={MenuDots} />
-                </Button>
-                {#if menuPubkey === pubkey}
-                  <Popover hideOnClick onClose={closeMenu}>
-                    <ul
-                      transition:fly
-                      class="menu bg-surface absolute right-0 z-popover mt-2 w-48 gap-1 rounded-2xl p-2">
-                      {#if canUnban}
-                        <li>
-                          <Button onclick={() => unbanMember(pubkey)}>
-                            <Icon icon={CloseCircle} />
-                            Unban User
-                          </Button>
-                        </li>
-                      {/if}
-                      {#if canRestore}
-                        <li>
-                          <Button onclick={() => restoreMember(pubkey)}>
-                            <Icon icon={Restart} />
-                            Restore User
-                          </Button>
-                        </li>
-                      {/if}
-                    </ul>
-                  </Popover>
-                {/if}
-              </div>
+              <MenuButton component={SpaceMemberBannedMenu} componentProps={{url, pubkey}} />
             {/if}
           </div>
         </div>

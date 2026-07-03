@@ -1,14 +1,5 @@
 <script lang="ts">
-  import {goto} from "$app/navigation"
-  import type {RoomMeta} from "@welshman/util"
-  import {displayRelayUrl, makeRoomMeta} from "@welshman/util"
-  import type {Thunk} from "@welshman/app"
-  import {deleteRoom, waitForThunkError, repository, joinRoom, leaveRoom} from "@welshman/app"
-  import Pen from "@assets/icons/pen.svg?dataurl"
-  import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
-  import Login3 from "@assets/icons/login-3.svg?dataurl"
-  import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
-  import ClockCircle from "@assets/icons/clock-circle.svg?dataurl"
+  import {displayRelayUrl} from "@welshman/util"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import EyeClosed from "@assets/icons/eye-closed.svg?dataurl"
   import Eye from "@assets/icons/eye.svg?dataurl"
@@ -17,32 +8,22 @@
   import Microphone from "@assets/icons/microphone.svg?dataurl"
   import Bookmark from "@assets/icons/bookmark.svg?dataurl"
   import Bell from "@assets/icons/bell.svg?dataurl"
-  import {fly} from "@lib/transition"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
-  import Spinner from "@lib/components/Spinner.svelte"
-  import Popover from "@lib/components/Popover.svelte"
-  import Confirm from "@lib/components/Confirm.svelte"
+  import MenuButton from "@lib/components/MenuButton.svelte"
   import Tooltip from "@lib/components/Tooltip.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import ProfileCircles from "@app/components/ProfileCircles.svelte"
   import RoomMembers from "@app/components/RoomMembers.svelte"
-  import RoomEdit from "@app/components/RoomEdit.svelte"
+  import RoomDetailMenu from "@app/components/RoomDetailMenu.svelte"
   import RoomName from "@app/components/RoomName.svelte"
   import RoomImage from "@app/components/RoomImage.svelte"
   import {deriveRoom, deriveUserRooms, addRoom, removeRoom} from "@app/groups"
-  import {
-    deriveRoomMembers,
-    deriveUserIsRoomAdmin,
-    deriveUserRoomMembershipStatus,
-    MembershipStatus,
-  } from "@app/members"
+  import {deriveRoomMembers} from "@app/members"
   import {deriveShouldNotify, toggleRoomNotifications} from "@app/settings"
-  import {makeSpacePath} from "@app/routes"
   import {pushModal} from "@app/modal"
-  import {pushToast} from "@app/toast"
 
   type Props = {
     url: string
@@ -53,42 +34,12 @@
 
   const room = deriveRoom(url, h)
   const members = deriveRoomMembers(url, h)
-  const userIsAdmin = deriveUserIsRoomAdmin(url, h)
-  const membershipStatus = deriveUserRoomMembershipStatus(url, h)
   const userRooms = deriveUserRooms(url)
 
   const isFavorite = $derived($userRooms.includes(h))
   const shouldNotify = deriveShouldNotify(url, h)
 
   const back = () => history.back()
-
-  const toggleMenu = () => {
-    showMenu = !showMenu
-  }
-
-  const closeMenu = () => {
-    showMenu = false
-  }
-
-  const startEdit = () => pushModal(RoomEdit, {url, h})
-
-  const handleLoading = async (f: (url: string, room: RoomMeta) => Thunk) => {
-    loading = true
-
-    try {
-      const message = await waitForThunkError(f(url, makeRoomMeta({h})))
-
-      if (message && !message.startsWith("duplicate:")) {
-        pushToast({theme: "error", message})
-      }
-    } finally {
-      loading = false
-    }
-  }
-
-  const join = () => handleLoading(joinRoom)
-
-  const leave = () => handleLoading(leaveRoom)
 
   const showMembers = () => pushModal(RoomMembers, {url, h})
 
@@ -103,28 +54,6 @@
   const toggleShouldNotify = () => {
     toggleRoomNotifications(url, h)
   }
-
-  const startDelete = () =>
-    pushModal(Confirm, {
-      title: "Are you sure you want to delete this room?",
-      message:
-        "This room will no longer be accessible to space members, and all messages posted to it will be deleted.",
-      confirm: async () => {
-        const thunk = deleteRoom(url, $room)
-        const message = await waitForThunkError(thunk)
-
-        if (message) {
-          repository.removeEvent(thunk.event.id)
-          pushToast({theme: "error", message})
-        } else {
-          await removeRoom(url, h)
-          goto(makeSpacePath(url))
-        }
-      },
-    })
-
-  let loading = $state(false)
-  let showMenu = $state(false)
 </script>
 
 <Modal>
@@ -139,62 +68,7 @@
           <span class="text-primary">{displayRelayUrl(url)}</span>
         </div>
       </div>
-      <div class="relative">
-        <Button class="button button-ghost button-sm button-circle" onclick={toggleMenu}>
-          <Icon icon={MenuDots} />
-        </Button>
-        {#if showMenu}
-          <Popover hideOnClick onClose={closeMenu}>
-            <ul
-              transition:fly
-              class="bg-surface menu absolute right-0 z-popover w-48 gap-1 rounded-2xl p-2 shadow-md">
-              {#if $userIsAdmin}
-                <li>
-                  <Button onclick={startEdit}>
-                    <Icon icon={Pen} />
-                    Edit Room
-                  </Button>
-                </li>
-                <li>
-                  <Button class="text-error" onclick={startDelete}>
-                    <Icon icon={TrashBin2} />
-                    Delete Room
-                  </Button>
-                </li>
-              {:else if $membershipStatus === MembershipStatus.Initial}
-                <li>
-                  <Button disabled={loading} onclick={join}>
-                    {#if loading}
-                      <Spinner size="sm" />
-                    {:else}
-                      <Icon icon={Login3} />
-                    {/if}
-                    Join member list
-                  </Button>
-                </li>
-              {:else if $membershipStatus === MembershipStatus.Pending}
-                <li>
-                  <Button>
-                    <Icon icon={ClockCircle} />
-                    Membership pending
-                  </Button>
-                </li>
-              {:else}
-                <li>
-                  <Button disabled={loading} onclick={leave}>
-                    {#if loading}
-                      <Spinner size="sm" />
-                    {:else}
-                      <Icon icon={Login3} />
-                    {/if}
-                    Leave member list
-                  </Button>
-                </li>
-              {/if}
-            </ul>
-          </Popover>
-        {/if}
-      </div>
+      <MenuButton component={RoomDetailMenu} componentProps={{url, h}} />
     </div>
     {#if $room?.about}
       <p>{$room.about}</p>

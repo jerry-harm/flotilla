@@ -1,14 +1,9 @@
 <script lang="ts">
-  import {waitForThunkError, removeRoomMember} from "@welshman/app"
-  import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
-  import MinusCircle from "@assets/icons/minus-circle.svg?dataurl"
   import AddCircle from "@assets/icons/add-circle.svg?dataurl"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
-  import {fly} from "@lib/transition"
   import Button from "@lib/components/Button.svelte"
   import Icon from "@lib/components/Icon.svelte"
-  import Popover from "@lib/components/Popover.svelte"
-  import Confirm from "@lib/components/Confirm.svelte"
+  import MenuButton from "@lib/components/MenuButton.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
@@ -18,10 +13,9 @@
   import Profile from "@app/components/Profile.svelte"
   import RoomName from "@app/components/RoomName.svelte"
   import RoomMembersAdd from "@app/components/RoomMembersAdd.svelte"
-  import {deriveRoom} from "@app/groups"
+  import RoomMemberMenu from "@app/components/RoomMemberMenu.svelte"
   import {deriveRoomMembers, deriveUserIsRoomAdmin} from "@app/members"
   import {pushModal} from "@app/modal"
-  import {pushToast} from "@app/toast"
 
   interface Props {
     url: string
@@ -30,39 +24,12 @@
 
   const {url, h}: Props = $props()
 
-  const room = deriveRoom(url, h)
   const members = deriveRoomMembers(url, h)
   const userIsAdmin = deriveUserIsRoomAdmin(url, h)
 
   const back = () => history.back()
 
-  const toggleMenu = (pubkey: string) => {
-    menuPubkey = menuPubkey === pubkey ? undefined : pubkey
-  }
-
-  const closeMenu = () => {
-    menuPubkey = undefined
-  }
-
   const addMember = () => pushModal(RoomMembersAdd, {url, h})
-
-  const removeMember = (pubkey: string) =>
-    pushModal(Confirm, {
-      title: "Remove Member",
-      message: "Are you sure you want to remove this user from the room?",
-      confirm: async () => {
-        const error = await waitForThunkError(removeRoomMember(url, $room, pubkey))
-
-        if (error) {
-          pushToast({theme: "error", message: error})
-        } else {
-          pushToast({message: "Member has successfully been removed!"})
-          back()
-        }
-      },
-    })
-
-  let menuPubkey = $state<string | undefined>()
 </script>
 
 <Modal>
@@ -89,27 +56,7 @@
               <div class="min-w-0 flex-1">
                 <Profile {pubkey} {url} />
               </div>
-              <div class="relative">
-                <Button
-                  class="button button-ghost button-sm button-circle"
-                  onclick={() => toggleMenu(pubkey)}>
-                  <Icon icon={MenuDots} />
-                </Button>
-                {#if menuPubkey === pubkey}
-                  <Popover hideOnClick onClose={closeMenu}>
-                    <ul
-                      transition:fly
-                      class="menu bg-surface absolute right-0 z-popover mt-2 w-48 gap-1 rounded-2xl p-2">
-                      <li>
-                        <Button class="text-error" onclick={() => removeMember(pubkey)}>
-                          <Icon icon={MinusCircle} />
-                          Remove Member
-                        </Button>
-                      </li>
-                    </ul>
-                  </Popover>
-                {/if}
-              </div>
+              <MenuButton component={RoomMemberMenu} componentProps={{url, h, pubkey}} />
             </div>
           </div>
         {/each}

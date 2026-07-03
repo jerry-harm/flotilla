@@ -1,0 +1,71 @@
+<script lang="ts">
+  import {onMount} from "svelte"
+  import AddCircle from "@assets/icons/add-circle.svg?dataurl"
+  import Pen from "@assets/icons/pen.svg?dataurl"
+  import TrashBin from "@assets/icons/trash-bin-2.svg?dataurl"
+  import Icon from "@lib/components/Icon.svelte"
+  import Button from "@lib/components/Button.svelte"
+  import Confirm from "@lib/components/Confirm.svelte"
+  import RoleEdit from "@app/components/RoleEdit.svelte"
+  import RoleAddMembers from "@app/components/RoleAddMembers.svelte"
+  import {deleteRole, type SpaceRole} from "@app/members"
+  import {pushModal} from "@app/modal"
+  import {pushToast} from "@app/toast"
+
+  type Props = {
+    url: string
+    role: SpaceRole
+    onClick: () => void
+  }
+
+  const {url, role, onClick}: Props = $props()
+
+  const back = () => history.back()
+
+  const editRole = () => pushModal(RoleEdit, {url, role})
+
+  const addMembers = () => pushModal(RoleAddMembers, {url, role})
+
+  const confirmDelete = () =>
+    pushModal(Confirm, {
+      title: "Delete Role",
+      message: `Delete the "${role.label}" role? Members will keep their space membership.`,
+      confirm: async () => {
+        const error = await deleteRole(url, role.id)
+
+        if (error) {
+          pushToast({theme: "error", message: error})
+        } else {
+          pushToast({message: "Role deleted!"})
+          back()
+        }
+      },
+    })
+
+  let ul: Element
+
+  onMount(() => {
+    ul.addEventListener("click", onClick)
+  })
+</script>
+
+<ul class="menu whitespace-nowrap rounded-2xl bg-surface p-2" bind:this={ul}>
+  <li>
+    <Button onclick={addMembers}>
+      <Icon icon={AddCircle} />
+      Add members
+    </Button>
+  </li>
+  <li>
+    <Button onclick={editRole}>
+      <Icon icon={Pen} />
+      Edit role
+    </Button>
+  </li>
+  <li>
+    <Button class="text-error" onclick={confirmDelete}>
+      <Icon icon={TrashBin} />
+      Delete role
+    </Button>
+  </li>
+</ul>
