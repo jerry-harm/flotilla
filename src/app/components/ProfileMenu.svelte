@@ -1,16 +1,11 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
-  import {deriveProfile} from "@welshman/app"
+  import type {Instance} from "tippy.js"
   import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
-  import Code2 from "@assets/icons/code-2.svg?dataurl"
-  import ShareCircle from "@assets/icons/share-circle.svg?dataurl"
-  import {fly} from "@lib/transition"
   import Icon from "@lib/components/Icon.svelte"
+  import Tippy from "@lib/components/Tippy.svelte"
   import Button from "@lib/components/Button.svelte"
-  import Popover from "@lib/components/Popover.svelte"
-  import ProfileInfo from "@app/components/ProfileInfo.svelte"
-  import ProfileQrCode from "@app/components/ProfileQrCode.svelte"
-  import {pushModal} from "@app/modal"
+  import ProfileMenuList from "@app/components/ProfileMenuList.svelte"
 
   type Props = {
     pubkey: string
@@ -20,54 +15,19 @@
 
   const {pubkey, url, customActions}: Props = $props()
 
-  const profile = deriveProfile(pubkey)
+  const showPopover = () => popover?.show()
 
-  let showMenu = $state(false)
+  const hidePopover = () => popover?.hide()
 
-  const toggleMenu = () => {
-    showMenu = !showMenu
-  }
-
-  const closeMenu = () => {
-    showMenu = false
-  }
-
-  const showInfo = () => {
-    closeMenu()
-    pushModal(ProfileInfo, {event: $profile!.event, url})
-  }
-
-  const showShare = () => {
-    closeMenu()
-    pushModal(ProfileQrCode, {pubkey})
-  }
+  let popover: Instance | undefined = $state()
 </script>
 
-<div class="relative">
-  <Button class="button button-circle button-ghost button-sm" onclick={toggleMenu}>
+<Button onclick={showPopover} class="button button-circle button-ghost button-sm">
+  <Tippy
+    bind:popover
+    component={ProfileMenuList}
+    props={{pubkey, url, customActions, onClick: hidePopover}}
+    params={{trigger: "manual", interactive: true, placement: "bottom-end"}}>
     <Icon icon={MenuDots} />
-  </Button>
-  {#if showMenu}
-    <Popover hideOnClick onClose={closeMenu}>
-      <ul
-        transition:fly
-        class="menu bg-surface absolute right-0 z-popover w-48 gap-1 rounded-2xl p-2">
-        <li>
-          <Button onclick={showShare}>
-            <Icon icon={ShareCircle} />
-            Share
-          </Button>
-        </li>
-        {#if $profile}
-          <li>
-            <Button onclick={showInfo}>
-              <Icon icon={Code2} />
-              Profile Info
-            </Button>
-          </li>
-        {/if}
-        {@render customActions?.()}
-      </ul>
-    </Popover>
-  {/if}
-</div>
+  </Tippy>
+</Button>
