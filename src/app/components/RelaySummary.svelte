@@ -17,6 +17,7 @@
   const {url, hideFavorites}: Props = $props()
   const rooms = deriveUserRooms(url)
   const favorited = deriveGroupListPubkeys(url)
+  const favoritedPubkeys = $derived(remove($pubkey!, Array.from($favorited)))
 </script>
 
 <div class="flex flex-col gap-4 text-left">
@@ -46,10 +47,10 @@
       <RelayDescription {url} />
     </div>
   </div>
-  {#if !hideFavorites && $favorited.size > 0}
+  {#if !hideFavorites && favoritedPubkeys.length > 0}
     <div class="flex gap-2 card card-sm">
       Favorited By:
-      <ProfileCircles pubkeys={remove($pubkey!, Array.from($favorited))} />
+      <ProfileCircles pubkeys={favoritedPubkeys} />
     </div>
   {/if}
 </div>
