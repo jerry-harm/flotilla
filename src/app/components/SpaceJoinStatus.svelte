@@ -7,23 +7,11 @@
   type Props = {
     url: string
     error?: string
-    notifications: boolean
   }
 
-  let {url, error, notifications = $bindable()}: Props = $props()
+  const {url, error}: Props = $props()
 </script>
 
-<div class="card card-sm">
-  <div class="flex justify-between gap-12">
-    <div class="flex flex-col gap-1">
-      <strong>Enable notifications for this space</strong>
-      <p class="text-xs opacity-75">
-        Get notified about new activity in this space. You can change this later in settings.
-      </p>
-    </div>
-    <input type="checkbox" class="toggle" bind:checked={notifications} />
-  </div>
-</div>
 <div class="card card-sm flex flex-col gap-2">
   <div class="flex justify-between">
     <strong>Connection Status</strong>

@@ -19,7 +19,8 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import RelaySummary from "@app/components/RelaySummary.svelte"
-  import SpaceJoinSettings from "@app/components/SpaceJoinSettings.svelte"
+  import SpaceJoinNotifications from "@app/components/SpaceJoinNotifications.svelte"
+  import SpaceJoinStatus from "@app/components/SpaceJoinStatus.svelte"
   import {pushToast} from "@app/toast"
   import {goToSpace} from "@app/routes"
   import {relaysMostlyRestricted} from "@app/policies"
@@ -126,7 +127,8 @@
           <div class="card flex flex-col gap-4">
             <p class="opacity-75">You're about to join:</p>
             <RelaySummary url={inviteData.url} />
-            <SpaceJoinSettings url={inviteData.url} {error} bind:notifications />
+            <SpaceJoinNotifications bind:notifications />
+            <SpaceJoinStatus url={inviteData.url} {error} />
           </div>
         </div>
       </div>

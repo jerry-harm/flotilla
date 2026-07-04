@@ -12,7 +12,8 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import RelaySummary from "@app/components/RelaySummary.svelte"
   import SpaceAccessRequest from "@app/components/SpaceAccessRequest.svelte"
-  import SpaceJoinSettings from "@app/components/SpaceJoinSettings.svelte"
+  import SpaceJoinNotifications from "@app/components/SpaceJoinNotifications.svelte"
+  import SpaceJoinStatus from "@app/components/SpaceJoinStatus.svelte"
   import {attemptRelayAccess} from "@app/relays"
   import {addSpace} from "@app/groups"
   import {broadcastUserData} from "@app/profiles"
@@ -81,7 +82,8 @@
 <Modal tag="form" onsubmit={preventDefault(join)}>
   <ModalBody>
     <RelaySummary {url} />
-    <SpaceJoinSettings {url} {error} bind:notifications />
+    <SpaceJoinNotifications bind:notifications />
+    <SpaceJoinStatus {url} {error} />
   </ModalBody>
   <ModalFooter>
     <Button class="button button-link" onclick={back} disabled={loading}>
