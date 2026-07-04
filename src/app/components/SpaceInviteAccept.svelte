@@ -128,7 +128,9 @@
             <p class="opacity-75">You're about to join:</p>
             <RelaySummary url={inviteData.url} />
             <SpaceJoinNotifications bind:notifications />
-            <SpaceJoinStatus url={inviteData.url} {error} />
+            {#if error}
+              <SpaceJoinStatus url={inviteData.url} {error} />
+            {/if}
           </div>
         </div>
       </div>
