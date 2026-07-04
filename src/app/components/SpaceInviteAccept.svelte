@@ -33,9 +33,10 @@
   type Props = {
     invite: string
     back?: () => void
+    hideHeader?: boolean
   }
 
-  let {invite = "", back = () => history.back()}: Props = $props()
+  let {invite = "", back = () => history.back(), hideHeader}: Props = $props()
 
   const toggleScanner = () => {
     showScanner = !showScanner
@@ -95,27 +96,29 @@
 
 <Modal tag="form" onsubmit={preventDefault(join)}>
   <ModalBody>
-    <ModalHeader>
-      <ModalTitle>Join a Space</ModalTitle>
-      <ModalSubtitle
-        >Enter a relay URL or invite link below to join an existing space.</ModalSubtitle>
-    </ModalHeader>
-    <Field>
-      {#snippet label()}
-        <p>Invite Link*</p>
-      {/snippet}
-      {#snippet input()}
-        <label class="input flex w-full items-center gap-2">
-          <Icon icon={LinkRound} />
-          <input bind:value={invite} class="grow" type="text" />
-          <Button onclick={toggleScanner} class="flex items-center justify-center">
-            <Icon icon={QrCode} />
-          </Button>
-        </label>
-      {/snippet}
-    </Field>
-    {#if showScanner}
-      <Scanner onscan={onScan} />
+    {#if !hideHeader}
+      <ModalHeader>
+        <ModalTitle>Join a Space</ModalTitle>
+        <ModalSubtitle
+          >Enter a relay URL or invite link below to join an existing space.</ModalSubtitle>
+      </ModalHeader>
+      <Field>
+        {#snippet label()}
+          <p>Invite Link*</p>
+        {/snippet}
+        {#snippet input()}
+          <label class="input flex w-full items-center gap-2">
+            <Icon icon={LinkRound} />
+            <input bind:value={invite} class="grow" type="text" />
+            <Button onclick={toggleScanner} class="flex items-center justify-center">
+              <Icon icon={QrCode} />
+            </Button>
+          </label>
+        {/snippet}
+      </Field>
+      {#if showScanner}
+        <Scanner onscan={onScan} />
+      {/if}
     {/if}
     {#if inviteData}
       <div class="-my-4">

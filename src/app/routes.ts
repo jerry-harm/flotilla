@@ -20,7 +20,7 @@ import {
   getRelaysFromList,
 } from "@welshman/util"
 import {makeChatId} from "@app/chats"
-import {entityLink, PLATFORM_URL} from "@app/env"
+import {entityLink, PLATFORM_URL, PLATFORM_RELAYS} from "@app/env"
 import {encodeRelay, hasNip29} from "@app/relays"
 import {DM_KINDS} from "@app/content"
 import {ROOM} from "@app/groups"
@@ -99,6 +99,14 @@ export const goToSpace = (url: string, hash = "") => {
   }
 
   return goto(makeSpacePath(url) + hash, {replaceState: true})
+}
+
+export const goToHome = () => {
+  if (PLATFORM_RELAYS.length > 0) {
+    goToSpace(PLATFORM_RELAYS[0], get(page).url.hash)
+  } else {
+    goto("/home" + get(page).url.hash)
+  }
 }
 
 // Content types, events
