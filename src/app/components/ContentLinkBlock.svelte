@@ -59,9 +59,7 @@
 </script>
 
 {#if isRoomOrRelay}
-  <div>
-    <ContentLinkUrl {url} class="link-content whitespace-nowrap" />
-  </div>
+  <ContentLinkUrl {url} class="link-content whitespace-nowrap" />
 {:else}
   <Link {external} {href} class="my-2 block">
     <div class="overflow-hidden rounded-2xl">

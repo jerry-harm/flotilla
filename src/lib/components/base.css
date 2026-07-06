@@ -351,7 +351,7 @@ body.keyboard-open .room__compose {
 
 /* link-content (tiptap pill) */
 .link-content {
-  @apply bg-surface text-content max-w-full overflow-hidden px-1 text-ellipsis whitespace-nowrap;
+  @apply bg-surface-more text-content max-w-full overflow-hidden px-1 text-ellipsis whitespace-nowrap;
   border-radius: 3px;
 }
 
