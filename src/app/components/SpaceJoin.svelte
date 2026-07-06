@@ -83,7 +83,9 @@
   <ModalBody>
     <RelaySummary {url} />
     <SpaceJoinNotifications bind:notifications />
-    <SpaceJoinStatus {url} {error} />
+    {#if error}
+      <SpaceJoinStatus {url} {error} />
+    {/if}
   </ModalBody>
   <ModalFooter>
     <Button class="button button-link" onclick={back} disabled={loading}>
