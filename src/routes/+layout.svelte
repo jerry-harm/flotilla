@@ -11,7 +11,7 @@
   import {page} from "$app/stores"
   import {sync, throttled} from "@welshman/store"
   import {always, call} from "@welshman/lib"
-  import {defaultSocketPolicies, netContext} from "@welshman/net"
+  import {defaultSocketPolicies, netContext, Pool} from "@welshman/net"
   import {appContext, pubkey, sessions, signerLog, shouldUnwrap} from "@welshman/app"
   import {routerContext} from "@welshman/router"
   import {verifyEvent} from "@welshman/util"
@@ -247,6 +247,9 @@
 
     // Initialize background notifications
     unsubscribers.push(Push.sync())
+
+    // Any time our pubkey changes, close all connections
+    pubkey.subscribe(() => Pool.get().clear())
 
     // Listen for signer errors, report to user via toast
     unsubscribers.push(
