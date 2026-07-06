@@ -23,6 +23,7 @@
   import SpaceJoinStatus from "@app/components/SpaceJoinStatus.svelte"
   import {pushToast} from "@app/toast"
   import {goToSpace} from "@app/routes"
+  import {resyncApplicationData} from "@app/sync"
   import {relaysMostlyRestricted} from "@app/policies"
   import {notificationSettings, setSpaceNotifications} from "@app/settings"
   import {parseInviteLink} from "@app/invites"
@@ -69,11 +70,13 @@
       }
 
       await addSpace(url)
-      await goToSpace(url)
 
-      broadcastUserData([url])
-      relaysMostlyRestricted.update(dissoc(url))
       pushToast({message: "Welcome to the space!"})
+      relaysMostlyRestricted.update(dissoc(url))
+      resyncApplicationData()
+      broadcastUserData([url])
+
+      await goToSpace(url)
     }
   }
 

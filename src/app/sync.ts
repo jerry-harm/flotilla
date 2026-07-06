@@ -457,8 +457,17 @@ const syncDMs = () => {
 
 // Merge all synchronization functions
 
+let unsubscribe: Unsubscriber
+
 export const syncApplicationData = () => {
   const unsubscribers = [syncRelays(), syncUserData(), syncSpaces(), syncDMs()]
 
-  return () => unsubscribers.forEach(call)
+  unsubscribe = () => unsubscribers.forEach(call)
+
+  return unsubscribe
+}
+
+export const resyncApplicationData = () => {
+  unsubscribe?.()
+  syncApplicationData()
 }

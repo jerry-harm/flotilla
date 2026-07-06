@@ -16,6 +16,7 @@
   import SpaceJoinStatus from "@app/components/SpaceJoinStatus.svelte"
   import {attemptRelayAccess} from "@app/relays"
   import {addSpace} from "@app/groups"
+  import {resyncApplicationData} from "@app/sync"
   import {broadcastUserData} from "@app/profiles"
   import {setSpaceNotifications} from "@app/settings"
   import {relaysMostlyRestricted} from "@app/policies"
@@ -56,11 +57,13 @@
       }
 
       await addSpace(url)
-      await goToSpace(url)
 
-      broadcastUserData([url])
-      relaysMostlyRestricted.update(dissoc(url))
       pushToast({message: "Welcome to the space!"})
+      relaysMostlyRestricted.update(dissoc(url))
+      resyncApplicationData()
+      broadcastUserData([url])
+
+      await goToSpace(url)
     } catch (e) {
       console.error("Failed to join space:", e)
       pushToast({theme: "error", message: "Failed to join space. Please try again."})
