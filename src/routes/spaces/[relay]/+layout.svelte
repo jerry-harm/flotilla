@@ -41,18 +41,20 @@
   // Direct links skip Discover — prompt to join when relay is not in the user's space list.
   $effect(() => {
     if ($modal) return
-    if ($authError) return showAuthError()
-    if ($relaysPendingTrust.includes(url)) return showPendingTrust()
-    if ($userSpaceUrls.includes(url)) return
-    if (joinPrompted.has(url)) return
 
-    if (spacesLoaded) {
-      joinPrompted.add(url)
-      pushModal(SpaceJoin, {url})
-    } else {
-      loadUserGroupList([url]).then(() => {
-        spacesLoaded = true
-      })
+    if (!$userSpaceUrls.includes(url) && !joinPrompted.has(url)) {
+      if (spacesLoaded) {
+        joinPrompted.add(url)
+        pushModal(SpaceJoin, {url})
+      } else {
+        loadUserGroupList([url]).then(() => {
+          spacesLoaded = true
+        })
+      }
+    } else if ($authError) {
+      showAuthError()
+    } else if ($relaysPendingTrust.includes(url)) {
+      showPendingTrust()
     }
   })
 </script>
