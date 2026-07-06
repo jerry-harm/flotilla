@@ -9,7 +9,7 @@
 
   const {url, pin}: Props = $props()
 
-  const submit = async ({title, topics, value}: PinFormValues) => {
+  const submit = async ({title, topics, value, content}: PinFormValues) => {
     const params = referenceToPin(value)
 
     if (!params) return "Please enter a valid URL or nostr link."
@@ -21,6 +21,7 @@
       boards: pin.boards,
       title,
       topics,
+      description: content,
     })
   }
 </script>
@@ -30,5 +31,10 @@
   heading="Edit Link"
   action="Save changes"
   successMessage="Link updated!"
-  values={{title: pin.title, topics: pin.topics, value: pinToReference(pin)}}
+  values={{
+    title: pin.title,
+    topics: pin.topics,
+    value: pinToReference(pin),
+    content: pin.description,
+  }}
   {submit} />

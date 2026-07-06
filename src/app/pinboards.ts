@@ -36,7 +36,7 @@ export type Pin = {
   pubkey: string
   identifier: string
   boards: string[]
-  comment: string
+  description: string
   title: string
   topics: string[]
   // The pin's content reference: the first e/a/i tag found, e.g. ["e", <id>],
@@ -63,7 +63,7 @@ export const readPin = (event: TrustedEvent): Pin => ({
   pubkey: event.pubkey,
   identifier: getTagValue("d", event.tags) ?? "",
   boards: getTagValues("A", event.tags),
-  comment: event.content,
+  description: event.content,
   title: getTagValue("title", event.tags) ?? "",
   topics: getTagValues("t", event.tags),
   value: event.tags.find(tag => ["e", "a", "i"].includes(tag[0])) ?? [],
@@ -118,14 +118,14 @@ const makeBoardTemplate = ({
 const makePinTemplate = ({
   identifier = "",
   boards = [],
-  comment = "",
+  description = "",
   title = "",
   topics = [],
   value = [],
 }: Partial<Pin>) => ({
   kind: PIN,
   created_at: now(),
-  content: comment,
+  content: description,
   tags: [
     // Reuse the identifier when editing so the addressable event is replaced;
     // fall back to a random one for new pins.

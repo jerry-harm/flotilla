@@ -10,12 +10,12 @@
 
   const {url, address, reference}: Props = $props()
 
-  const submit = async ({title, topics, value}: PinFormValues) => {
+  const submit = async ({title, topics, value, content}: PinFormValues) => {
     const params = referenceToPin(value)
 
     if (!params) return "Please enter a valid URL or nostr link."
 
-    return createPin(url, {...params, boards: [address], title, topics})
+    return createPin(url, {...params, boards: [address], title, topics, description: content})
   }
 </script>
 

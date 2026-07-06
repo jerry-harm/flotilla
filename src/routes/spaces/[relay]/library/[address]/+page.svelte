@@ -44,7 +44,7 @@
     if (!value) return $pins
 
     return $pins.filter(pin =>
-      [pin.title, pin.comment, pin.value[0] === "i" ? pin.value[1] : "", ...pin.topics].some(
+      [pin.title, pin.description, pin.value[0] === "i" ? pin.value[1] : "", ...pin.topics].some(
         field => field?.toLowerCase().includes(value),
       ),
     )

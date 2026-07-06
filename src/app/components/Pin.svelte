@@ -49,6 +49,9 @@
       <strong class="truncate min-w-0 pr-8">{pin.title}</strong>
     {/if}
   {/if}
+  {#if pin.description}
+    <Content event={{content: pin.description, tags: []}} {url} />
+  {/if}
   {#if pin.value[0] === "i"}
     <Content event={{content, tags: []}} {url} />
   {:else}
