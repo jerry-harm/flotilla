@@ -228,6 +228,9 @@ importers:
       prettier-plugin-svelte:
         specifier: ^3.4.1
         version: 3.5.2(prettier@3.8.3)(svelte@5.55.9(@typescript-eslint/types@8.60.0))
+      sharp:
+        specifier: 0.35.0-rc.0
+        version: 0.35.0-rc.0
       svelte:
         specifier: ^5.55.9
         version: 5.55.9(@typescript-eslint/types@8.60.0)

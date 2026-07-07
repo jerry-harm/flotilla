@@ -40,3 +40,6 @@ npx @capacitor/assets generate \
   --iconBackgroundColorDark '#222222' \
   --splashBackgroundColor '#ffffff' \
   --splashBackgroundColorDark '#191E24'
+
+# @capacitor/assets doesn't generate Android notification icons
+node scripts/generate-notification-icon.mjs

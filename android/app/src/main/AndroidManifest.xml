@@ -36,6 +36,17 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- FCM uses these when it renders a notification-payload message itself
+             (app backgrounded/killed). Without an explicit monochrome small icon
+             it falls back to the full-color adaptive launcher icon, which many
+             Android builds render as a blank square or drop entirely. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notify" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="@string/default_notification_channel_id" />
     </application>
 
     <!-- Permissions -->
