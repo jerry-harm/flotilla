@@ -10,13 +10,14 @@
   import {notifications} from "@app/notifications"
   import {makeRoomPath} from "@app/routes"
 
-  interface Props {
-    url: any
-    h: any
+  type Props = {
+    url: string
+    h: string
     replaceState?: boolean
+    tooltip?: boolean
   }
 
-  const {url, h, replaceState = false}: Props = $props()
+  const {url, h, replaceState = false, tooltip = true}: Props = $props()
 
   const room = deriveRoom(url, h)
   const roomType = $derived(getRoomType($room))
@@ -31,7 +32,7 @@
 {#if roomType === RoomType.Voice}
   <VoiceRoomItem {url} {h} {replaceState} {notification} />
 {:else}
-  <SecondaryNavItem href={path} title={roomName} {replaceState} {notification}>
+  <SecondaryNavItem href={path} title={tooltip ? roomName : ""} {replaceState} {notification}>
     <RoomNameWithImage {url} {h} />
     {#if showDifferenceIcon}
       <Icon icon={$shouldNotifyForRoom ? Bell : BellOff} size={4} class="ml-auto opacity-50" />

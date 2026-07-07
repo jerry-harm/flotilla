@@ -1,5 +1,6 @@
 <script lang="ts">
   import {derived} from "svelte/store"
+  import cx from "classnames"
   import {displayRelayUrl, EVENT_TIME, ZAP_GOAL, THREAD, CLASSIFIED, POLL} from "@welshman/util"
   import {deriveRelay, createSearch, pubkey} from "@welshman/app"
   import {fly} from "@lib/transition"
@@ -59,7 +60,12 @@
   import {makeSpacePath, goToChat} from "@app/routes"
   import {notifications} from "@app/notifications"
 
-  const {url} = $props()
+  type Props = {
+    url: string
+    mobile?: boolean
+  }
+
+  const {url, mobile = false}: Props = $props()
 
   const relay = deriveRelay(url)
   const chatPath = makeSpacePath(url, "chat")
@@ -136,187 +142,239 @@
   let element: Element | undefined = $state()
 </script>
 
-<div bind:this={element} class="flex min-h-0 flex-1 flex-col">
-  <SecondaryNavSection class="min-h-0 flex-1 flex flex-col pb-0">
-    <div class="shrink-0">
-      <Button
-        class="relative flex w-full flex-col rounded-xl p-3 transition-all hover:bg-surface"
-        onclick={openMenu}>
-        <div class="flex items-center justify-between">
-          <strong class="flex items-center gap-1 relative">
-            <RelayName {url} class="truncate min-w-0" />
-            <div
-              class="absolute -right-3 top-0 h-2 w-2 rounded-full bg-primary text-primary-content transition-all opacity-0"
-              class:opacity-100={$userIsAdmin && $actionItems.length > 0}>
-            </div>
-            {#if $notificationSettings.push && !$shouldNotify}
-              <Icon icon={BellOff} size={3} class="opacity-50" />
-            {/if}
-          </strong>
-          <Icon icon={AltArrowDown} />
+{#snippet spaceHeader()}
+  <Button
+    class={cx(
+      mobile
+        ? "space-menu__header-button text-content"
+        : "relative flex w-full flex-col rounded-xl p-3 transition-all hover:bg-surface",
+    )}
+    onclick={openMenu}>
+    <div class="flex items-center justify-between">
+      <strong class="flex items-center gap-1 relative">
+        <RelayName {url} class="truncate min-w-0" />
+        <div
+          class="absolute -right-3 top-0 h-2 w-2 rounded-full bg-primary text-primary-content transition-all opacity-0"
+          class:opacity-100={$userIsAdmin && $actionItems.length > 0}>
         </div>
-        <span class="text-xs text-primary">{displayRelayUrl(url)}</span>
-      </Button>
-      {#if showMenu}
-        <Popover hideOnClick onClose={toggleMenu}>
-          <ul
-            transition:fly
-            class="menu absolute z-popover mt-2 w-full gap-1 rounded-2xl bg-surface p-2">
-            <li>
-              <Button onclick={createInvite}>
-                <Icon icon={LinkRound} />
-                Create Invite
-              </Button>
-            </li>
-            {#if $userIsAdmin}
-              <li>
-                <Button onclick={showActionItems}>
-                  <Icon icon={Danger} />
-                  Action Items ({$actionItems.length})
-                  {#if $actionItems.length > 0}
-                    <div class="h-2 w-2 rounded-full bg-primary text-primary-content"></div>
-                  {/if}
-                </Button>
-              </li>
-            {/if}
-            {#if $relay?.pubkey && $relay.pubkey !== $pubkey}
-              <li>
-                <Button onclick={contactOwner}>
-                  <Icon icon={Letter} />
-                  Contact Owner
-                </Button>
-              </li>
-            {/if}
-            <li>
-              {#if $notificationSettings.push}
-                <Button onclick={toggleSpaceNotifications}>
-                  <Icon icon={$shouldNotify ? Bell : BellOff} />
-                  {$shouldNotify ? "Turn off" : "Turn on"} notifications
-                </Button>
-              {:else}
-                <Link href="/settings/alerts">
-                  <Icon icon={Bell} />
-                  Enable notifications
-                </Link>
-              {/if}
-            </li>
-            <li>
-              {#if $userSpaceUrls.includes(url)}
-                <Button onclick={leaveSpace} class="text-error">
-                  <Icon icon={Exit} />
-                  Leave Space
-                </Button>
-              {:else}
-                <Button
-                  onclick={joinSpace}
-                  class="bg-primary text-primary-content"
-                  style="color: var(--primary-content)">
-                  <Icon icon={Login} />
-                  Join Space
-                </Button>
-              {/if}
-            </li>
-          </ul>
-        </Popover>
-      {/if}
+        {#if $notificationSettings.push && !$shouldNotify}
+          <Icon icon={BellOff} size={3} class="opacity-50" />
+        {/if}
+      </strong>
+      <Icon icon={AltArrowDown} />
     </div>
-    <div class="flex min-h-0 flex-1 flex-col gap-1 py-1 overflow-auto">
-      <SecondaryNavItem href={makeSpacePath(url, "about")}>
-        <Icon icon={Home} /> Space Details
-      </SecondaryNavItem>
-      {#if hasNip29($relay)}
-        <SecondaryNavItem href={makeSpacePath(url, "recent")}>
-          <Icon icon={History} /> Recent Activity
-        </SecondaryNavItem>
-      {:else}
-        <SecondaryNavItem href={chatPath} notification={$notifications.has(chatPath)}>
-          <Icon icon={ChatRound} /> Chat
-        </SecondaryNavItem>
+    <span class="text-xs text-primary">{displayRelayUrl(url)}</span>
+  </Button>
+  {#if showMenu}
+    <Popover hideOnClick onClose={toggleMenu}>
+      <ul
+        transition:fly
+        class="menu absolute z-popover mt-2 w-full gap-1 rounded-2xl bg-surface p-2">
+        <li>
+          <Button onclick={createInvite}>
+            <Icon icon={LinkRound} />
+            Create Invite
+          </Button>
+        </li>
+        {#if $userIsAdmin}
+          <li>
+            <Button onclick={showActionItems}>
+              <Icon icon={Danger} />
+              Action Items ({$actionItems.length})
+              {#if $actionItems.length > 0}
+                <div class="h-2 w-2 rounded-full bg-primary text-primary-content"></div>
+              {/if}
+            </Button>
+          </li>
+        {/if}
+        {#if $relay?.pubkey && $relay.pubkey !== $pubkey}
+          <li>
+            <Button onclick={contactOwner}>
+              <Icon icon={Letter} />
+              Contact Owner
+            </Button>
+          </li>
+        {/if}
+        <li>
+          {#if $notificationSettings.push}
+            <Button onclick={toggleSpaceNotifications}>
+              <Icon icon={$shouldNotify ? Bell : BellOff} />
+              {$shouldNotify ? "Turn off" : "Turn on"} notifications
+            </Button>
+          {:else}
+            <Link href="/settings/alerts">
+              <Icon icon={Bell} />
+              Enable notifications
+            </Link>
+          {/if}
+        </li>
+        <li>
+          {#if $userSpaceUrls.includes(url)}
+            <Button onclick={leaveSpace} class="text-error">
+              <Icon icon={Exit} />
+              Leave Space
+            </Button>
+          {:else}
+            <Button
+              onclick={joinSpace}
+              class="bg-primary text-primary-content"
+              style="color: var(--primary-content)">
+              <Icon icon={Login} />
+              Join Space
+            </Button>
+          {/if}
+        </li>
+      </ul>
+    </Popover>
+  {/if}
+{/snippet}
+
+{#snippet spaceNavItems()}
+  <SecondaryNavItem href={makeSpacePath(url, "about")}>
+    <Icon icon={Home} /> Space Details
+  </SecondaryNavItem>
+  {#if hasNip29($relay)}
+    <SecondaryNavItem href={makeSpacePath(url, "recent")}>
+      <Icon icon={History} /> Recent Activity
+    </SecondaryNavItem>
+  {:else}
+    <SecondaryNavItem href={chatPath} notification={$notifications.has(chatPath)}>
+      <Icon icon={ChatRound} /> Chat
+    </SecondaryNavItem>
+  {/if}
+  <SecondaryNavItem href={makeSpacePath(url, "directory")}>
+    <Icon icon={UsersGroup} /> Directory
+  </SecondaryNavItem>
+  {#if showLibrary}
+    <SecondaryNavItem href={makeSpacePath(url, "library")}>
+      <Icon icon={GalleryWide} /> Library
+    </SecondaryNavItem>
+  {/if}
+  {#if ENABLE_ZAPS && $spaceKinds.has(ZAP_GOAL)}
+    <SecondaryNavItem href={goalsPath}>
+      <Icon icon={StarFallMinimalistic} /> Goals
+    </SecondaryNavItem>
+  {/if}
+  {#if $spaceKinds.has(THREAD)}
+    <SecondaryNavItem href={threadsPath}>
+      <Icon icon={NotesMinimalistic} /> Threads
+    </SecondaryNavItem>
+  {/if}
+  {#if $spaceKinds.has(CLASSIFIED)}
+    <SecondaryNavItem href={classifiedsPath}>
+      <Icon icon={CaseMinimalistic} /> Classifieds
+    </SecondaryNavItem>
+  {/if}
+  {#if $spaceKinds.has(EVENT_TIME)}
+    <SecondaryNavItem href={calendarPath}>
+      <Icon icon={CalendarMinimalistic} /> Calendar
+    </SecondaryNavItem>
+  {/if}
+  {#if $spaceKinds.has(POLL)}
+    <SecondaryNavItem href={pollsPath}>
+      <Icon icon={Revote} /> Polls
+    </SecondaryNavItem>
+  {/if}
+  {#if hasNip29($relay)}
+    <SecondaryNavItem onclick={openSearch}>
+      <Icon icon={Magnifier} /> Search
+    </SecondaryNavItem>
+  {/if}
+{/snippet}
+
+{#snippet spaceRooms()}
+  {#if hasNip29($relay)}
+    {#if $userRooms.length > 0}
+      {#if !mobile}
+        <div class="h-2 shrink-0"></div>
       {/if}
-      <SecondaryNavItem href={makeSpacePath(url, "directory")}>
-        <Icon icon={UsersGroup} /> Directory
-      </SecondaryNavItem>
-      {#if showLibrary}
-        <SecondaryNavItem href={makeSpacePath(url, "library")}>
-          <Icon icon={GalleryWide} /> Library
-        </SecondaryNavItem>
+      <SecondaryNavHeader>Your Rooms</SecondaryNavHeader>
+    {/if}
+    {#each $userRooms as h (h)}
+      <SpaceMenuRoomItem {url} {h} tooltip={!mobile} />
+    {/each}
+    {#if $otherRooms.length > 0}
+      {#if !mobile}
+        <div class="h-2 shrink-0"></div>
       {/if}
-      {#if ENABLE_ZAPS && $spaceKinds.has(ZAP_GOAL)}
-        <SecondaryNavItem href={goalsPath}>
-          <Icon icon={StarFallMinimalistic} /> Goals
-        </SecondaryNavItem>
-      {/if}
-      {#if $spaceKinds.has(THREAD)}
-        <SecondaryNavItem href={threadsPath}>
-          <Icon icon={NotesMinimalistic} /> Threads
-        </SecondaryNavItem>
-      {/if}
-      {#if $spaceKinds.has(CLASSIFIED)}
-        <SecondaryNavItem href={classifiedsPath}>
-          <Icon icon={CaseMinimalistic} /> Classifieds
-        </SecondaryNavItem>
-      {/if}
-      {#if $spaceKinds.has(EVENT_TIME)}
-        <SecondaryNavItem href={calendarPath}>
-          <Icon icon={CalendarMinimalistic} /> Calendar
-        </SecondaryNavItem>
-      {/if}
-      {#if $spaceKinds.has(POLL)}
-        <SecondaryNavItem href={pollsPath}>
-          <Icon icon={Revote} /> Polls
-        </SecondaryNavItem>
-      {/if}
-      {#if hasNip29($relay)}
-        <SecondaryNavItem onclick={openSearch}>
-          <Icon icon={Magnifier} /> Search
-        </SecondaryNavItem>
+      <SecondaryNavHeader>
         {#if $userRooms.length > 0}
-          <div class="h-2 shrink-0"></div>
-          <SecondaryNavHeader>Your Rooms</SecondaryNavHeader>
+          Other Rooms
+        {:else}
+          Rooms
         {/if}
-        {#each $userRooms as h (h)}
-          <SpaceMenuRoomItem {url} {h} />
-        {/each}
-        {#if $otherRooms.length > 0}
-          <div class="h-2 shrink-0"></div>
-          <SecondaryNavHeader>
-            {#if $userRooms.length > 0}
-              Other Rooms
-            {:else}
-              Rooms
-            {/if}
-          </SecondaryNavHeader>
-        {/if}
-        {#if $otherRooms.length > 20}
-          <label class="input input-sm flex items-center gap-2">
-            <Icon icon={Magnifier} />
-            <input bind:value={term} onblur={clearTerm} class="grow" />
-          </label>
-        {/if}
-        {#each $roomSearch.searchValues(term) as h (h)}
-          <SpaceMenuRoomItem {url} {h} />
-        {/each}
-        {#if $otherVoiceRooms.length > 0}
-          <div class="h-2 shrink-0"></div>
-          <SecondaryNavHeader>Voice Rooms</SecondaryNavHeader>
-          {#each $otherVoiceRooms as h (h)}
-            <SpaceMenuRoomItem {url} {h} />
-          {/each}
-        {/if}
-        {#if $canCreateRoom}
-          <SecondaryNavItem onclick={addRoom}>
-            <Icon icon={AddCircle} />
-            Create room
-          </SecondaryNavItem>
-        {/if}
+      </SecondaryNavHeader>
+    {/if}
+    {#if $otherRooms.length > 20}
+      <label class="input input-sm flex items-center gap-2">
+        <Icon icon={Magnifier} />
+        <input bind:value={term} onblur={clearTerm} class="grow" />
+      </label>
+    {/if}
+    {#each $roomSearch.searchValues(term) as h (h)}
+      <SpaceMenuRoomItem {url} {h} tooltip={!mobile} />
+    {/each}
+    {#if $otherVoiceRooms.length > 0}
+      {#if !mobile}
+        <div class="h-2 shrink-0"></div>
       {/if}
-      <div class="h-5 shrink-0"></div>
+      <SecondaryNavHeader>Voice Rooms</SecondaryNavHeader>
+      {#each $otherVoiceRooms as h (h)}
+        <SpaceMenuRoomItem {url} {h} tooltip={!mobile} />
+      {/each}
+    {/if}
+    {#if $canCreateRoom}
+      <SecondaryNavItem onclick={addRoom}>
+        <Icon icon={AddCircle} />
+        Create room
+      </SecondaryNavItem>
+    {/if}
+  {/if}
+{/snippet}
+
+{#snippet spaceFooter()}
+  <VoiceWidget />
+  <Link
+    href={makeSpacePath(url, "about")}
+    class={cx(mobile ? "space-menu__status-link" : "button button-neutral button-sm h-10")}>
+    <SocketStatusIndicator {url} />
+  </Link>
+{/snippet}
+
+<div bind:this={element} class="flex min-h-0 flex-1 flex-col">
+  {#if mobile}
+    <SecondaryNavSection class="space-menu min-h-0 flex-1 flex flex-col gap-3 p-0">
+      <div class="card space-menu__card space-menu__header shrink-0">
+        {@render spaceHeader()}
+      </div>
+      <div class="space-menu__scroll flex flex-col">
+        <div class="card space-menu__card flex flex-col gap-1">
+          <SecondaryNavHeader>Space</SecondaryNavHeader>
+          {@render spaceNavItems()}
+        </div>
+        {#if hasNip29($relay) && ($userRooms.length > 0 || $otherRooms.length > 0 || $otherVoiceRooms.length > 0 || $canCreateRoom)}
+          <div class="card space-menu__card flex flex-col gap-1">
+            {@render spaceRooms()}
+          </div>
+        {/if}
+      </div>
+      <div class="card space-menu__card space-menu__status shrink-0">
+        {@render spaceFooter()}
+      </div>
+    </SecondaryNavSection>
+  {:else}
+    <SecondaryNavSection class="min-h-0 flex-1 flex flex-col pb-0">
+      <div class="shrink-0">
+        {@render spaceHeader()}
+      </div>
+      <div class="flex min-h-0 flex-1 flex-col gap-1 py-1 overflow-auto">
+        {@render spaceNavItems()}
+        {@render spaceRooms()}
+        <div class="h-5 shrink-0"></div>
+      </div>
+    </SecondaryNavSection>
+    <div class="flex shrink-0 flex-col gap-2 p-2 pt-0 -mt-4 pb-1 md:pb-2 z-nav">
+      {@render spaceFooter()}
     </div>
-  </SecondaryNavSection>
-  <div class="flex shrink-0 flex-col gap-2 p-2 pt-0 -mt-4 pb-1 md:pb-2 z-nav">
-    <VoiceWidget />
-    <Link href={makeSpacePath(url, "about")} class="button button-neutral button-sm h-10">
-      <SocketStatusIndicator {url} />
-    </Link>
-  </div>
+  {/if}
 </div>

@@ -36,6 +36,7 @@
 @import "./room.css";
 @import "./spinner.css";
 @import "./secondary-nav.css";
+@import "./space-menu.css";
 @import "./tooltip.css";
 
 @config "../../../tailwind.config.js";

@@ -4,7 +4,6 @@
   import SecondaryNav from "@lib/components/SecondaryNav.svelte"
   import {decodeRelay} from "@app/relays"
   import {goToSpace} from "@app/routes"
-  import PrimaryNavSpaces from "@app/components/PrimaryNavSpaces.svelte"
   import SpaceMenu from "@app/components/SpaceMenu.svelte"
 
   const url = decodeRelay($page.params.relay!)
@@ -22,10 +21,7 @@
 <svelte:window bind:innerWidth={width} />
 
 {#if width <= md}
-  <div class="primary-nav">
-    <PrimaryNavSpaces />
-  </div>
-  <SecondaryNav visible class="w-auto grow pb-16">
-    <SpaceMenu {url} />
+  <SecondaryNav visible class="secondary-nav--mobile-space w-auto grow pb-16">
+    <SpaceMenu {url} mobile />
   </SecondaryNav>
 {/if}
