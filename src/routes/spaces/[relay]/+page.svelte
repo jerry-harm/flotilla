@@ -21,7 +21,7 @@
 <svelte:window bind:innerWidth={width} />
 
 {#if width <= md}
-  <SecondaryNav visible class="secondary-nav--mobile-space w-auto grow pb-16">
+  <SecondaryNav visible class="secondary-nav--mobile-space w-auto grow">
     <SpaceMenu {url} mobile />
   </SecondaryNav>
 {/if}

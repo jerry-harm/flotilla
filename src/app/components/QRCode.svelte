@@ -1,27 +1,33 @@
 <script lang="ts">
   import QRCode from "qrcode"
-  import {onMount} from "svelte"
   import Button from "@lib/components/Button.svelte"
   import {clip} from "@app/toast"
 
   const {code, ...props} = $props()
 
-  let canvas: Element | undefined = $state()
+  let canvas: HTMLCanvasElement | undefined = $state()
   let wrapper: Element | undefined = $state()
   let scale = $state(0.1)
   let height = $state(0)
 
   const copy = () => clip(code)
 
-  onMount(() => {
-    if (canvas && wrapper) {
+  $effect(() => {
+    if (canvas && code) {
       QRCode.toCanvas(canvas, code)
+    }
+  })
 
+  $effect(() => {
+    // Draw first so canvas.width/height reflect the current code, then fit the
+    // intrinsic canvas size to the wrapper. Measure the intrinsic size (not
+    // getBoundingClientRect, which includes the transform below) so this stays
+    // idempotent — otherwise scale feeds back into its own measurement and loops.
+    if (canvas && wrapper && code) {
       const wrapperRect = wrapper.getBoundingClientRect()
-      const canvasRect = canvas.getBoundingClientRect()
 
-      scale = wrapperRect.width / (canvasRect.width * 10)
-      height = canvasRect.height * 10 * scale
+      scale = wrapperRect.width / canvas.width
+      height = canvas.height * scale
     }
   })
 </script>
