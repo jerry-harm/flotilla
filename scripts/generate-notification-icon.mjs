@@ -22,8 +22,13 @@ const generate = async (size, out) => {
   const pad = Math.round(size * 0.14)
   const inner = size - pad * 2
 
-  // The logo's alpha channel is the shape we want to render.
+  // The logo's alpha channel is the shape we want to render. Trim the source's
+  // own transparent margin first — logo.png carries ~15% baked-in padding, and
+  // without trimming that stacks on top of `pad` below, leaving the glyph at
+  // only ~half the icon's width. Trimming lets `pad` be the single source of
+  // padding so the shape actually fills the status-bar icon.
   const alpha = await sharp(source)
+    .trim({threshold: 1})
     .resize(inner, inner, {fit: "contain", background: {r: 0, g: 0, b: 0, alpha: 0}})
     .ensureAlpha()
     .extractChannel(3)
