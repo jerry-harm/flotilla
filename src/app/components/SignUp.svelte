@@ -48,6 +48,9 @@
   const login = () => pushModal(LogIn)
 
   const completeSignup = async () => {
+    // Join default spaces so the relay is warmed up before we publish below
+    await Promise.all(DEFAULT_SPACES.map(url => attemptRelayAccess(url)))
+
     // Add default outbox/inbox/messaging relays, profile, spaces
     const thunks = await Promise.all([
       publishThunk({
