@@ -344,10 +344,10 @@
 <div bind:this={element} class="flex min-h-0 flex-1 flex-col">
   {#if mobile}
     <SecondaryNavSection class="space-menu min-h-0 flex-1 flex flex-col gap-3 p-0">
-      <div class="card space-menu__card space-menu__header shrink-0">
+      <div class="card space-menu__card space-menu__header shrink-0 z-nav-item">
         {@render spaceHeader()}
       </div>
-      <div class="space-menu__scroll flex flex-col">
+      <div class="space-menu__scroll flex flex-col -mt-12 pt-12 -mb-8 pb-8">
         <div class="card space-menu__card flex flex-col gap-1">
           <SecondaryNavHeader>Space</SecondaryNavHeader>
           {@render spaceNavItems()}
@@ -358,7 +358,7 @@
           </div>
         {/if}
       </div>
-      <div class="card space-menu__card space-menu__status shrink-0">
+      <div class="card space-menu__card space-menu__status shrink-0 z-nav-item">
         {@render spaceFooter()}
       </div>
     </SecondaryNavSection>

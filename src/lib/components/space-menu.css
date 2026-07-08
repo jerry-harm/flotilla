@@ -56,7 +56,7 @@
     }
 
     .space-menu__card .secondary-nav__header:not(:first-child) {
-      @apply border-line-less mt-2 border-t pt-3;
+      @apply mt-2 pt-3;
     }
 
     .space-menu__header {
