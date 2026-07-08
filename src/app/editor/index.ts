@@ -2,7 +2,7 @@ import {mount} from "svelte"
 import type {Writable} from "svelte/store"
 import {get, derived} from "svelte/store"
 import {Router} from "@welshman/router"
-import {dec, inc} from "@welshman/lib"
+import {dec, inc, uniq} from "@welshman/lib"
 import {throttled} from "@welshman/store"
 import type {PublishedProfile, RoomMeta} from "@welshman/util"
 import {
@@ -30,6 +30,7 @@ import {NativeClipboardPasteExtension} from "@app/editor/clipboard"
 import {compressFileForUpload, uploadFile} from "@app/uploads"
 import {deriveSpaceMembers} from "@app/members"
 import {makeRoomId, splitRoomId, userSpaceUrls, roomsByUrl} from "@app/groups"
+import {PLATFORM_RELAYS} from "@app/env"
 import {pushToast} from "@app/toast"
 
 export const makeEditor = async ({
@@ -98,7 +99,14 @@ export const makeEditor = async ({
       const roomIdByMeta = new WeakMap<RoomMeta, string>()
       const options: RoomMeta[] = []
 
-      for (const roomUrl of $userSpaceUrls) {
+      // When platform relays are configured, restrict suggestions to those spaces.
+      // Otherwise suggest rooms from the user's joined spaces plus the current one.
+      const spaceUrls =
+        PLATFORM_RELAYS.length > 0
+          ? PLATFORM_RELAYS
+          : uniq(url ? [url, ...$userSpaceUrls] : $userSpaceUrls)
+
+      for (const roomUrl of spaceUrls) {
         for (const room of $roomsByUrl.get(roomUrl) || []) {
           roomIdByMeta.set(room, makeRoomId(roomUrl, room.h))
           options.push(room)
