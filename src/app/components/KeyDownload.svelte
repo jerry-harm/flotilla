@@ -39,7 +39,7 @@
       .replace(/NEWLINE/g, "\n\n")
       .trim()
 
-  const downloadKey = () => {
+  const downloadKey = async () => {
     const sharedCopy = `
     Most online services keep track of users by giving them a username and password. This gives the
     service total control over their users, allowing them to ban them at any time, or sell their activity.
@@ -52,6 +52,8 @@
     account.
     `
 
+    let instructions: string
+
     if (usePassword) {
       if (password.length < 12) {
         return pushToast({
@@ -61,7 +63,7 @@
       }
 
       const ncryptsec = encrypt(hexToBytes(secret), password)
-      const instructions = `
+      instructions = `
       This file contains a backup of your Nostr secret key, downloaded from ${PLATFORM_NAME} and encrypted using
       a password you chose when you signed up.
 
@@ -74,11 +76,9 @@
       To use it to log in to other Nostr apps, find a Nostr Signer app (https://nostrapps.com/#signers is a good
       place to look), and import your key.
       `
-
-      downloadText("Nostr Secret Key.txt", cleanupCopy(instructions))
     } else {
       const nsec = nsecEncode(hexToBytes(secret))
-      const instructions = `
+      instructions = `
       This file contains a backup of your Nostr secret key, downloaded from ${PLATFORM_NAME}.
 
       ${sharedCopy}
@@ -90,11 +90,23 @@
       To use it to log in to other Nostr apps, find a Nostr Signer app (https://nostrapps.com/#signers is a good
       place to look), and import your key.
       `
-
-      downloadText("Nostr Secret Key.txt", cleanupCopy(instructions))
     }
 
-    didDownload = true
+    try {
+      await downloadText("Nostr Secret Key.txt", cleanupCopy(instructions))
+
+      didDownload = true
+    } catch (e) {
+      // Dismissing the native share sheet rejects with "Share canceled" — leave
+      // the flow gated so the user can try again rather than showing an error.
+      if (
+        !String((e as any)?.message || e)
+          .toLowerCase()
+          .includes("cancel")
+      ) {
+        pushToast({theme: "error", message: "We couldn't save your key. Please try again."})
+      }
+    }
   }
 
   const onPasswordChange = () => {

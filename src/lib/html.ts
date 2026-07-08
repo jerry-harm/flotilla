@@ -1,4 +1,5 @@
 import {sleep, randomId} from "@welshman/lib"
+import {Capacitor} from "@capacitor/core"
 export {preventDefault, stopPropagation} from "svelte/legacy"
 
 // Anchors an @svelte-plugins/datepicker popup with fixed positioning so it
@@ -127,7 +128,28 @@ export const createScroller = ({
 
 export const isMobile = "ontouchstart" in document.documentElement
 
-export const downloadText = (filename: string, text: string) => {
+export const downloadText = async (filename: string, text: string) => {
+  // The <a download> blob trick is a no-op in native WebViews (Android in
+  // particular never triggers a download), so on device we write the file and
+  // hand it to the native share sheet, letting the user save it to Files,
+  // Drive, a password manager, etc. Cache is the directory our FileProvider
+  // (android/app/src/main/res/xml/file_paths.xml) is configured to serve.
+  if (Capacitor.isNativePlatform()) {
+    const {Filesystem, Directory, Encoding} = await import("@capacitor/filesystem")
+    const {Share} = await import("@capacitor/share")
+
+    const {uri} = await Filesystem.writeFile({
+      path: filename,
+      data: text,
+      directory: Directory.Cache,
+      encoding: Encoding.UTF8,
+    })
+
+    await Share.share({title: filename, files: [uri]})
+
+    return
+  }
+
   const blob = new Blob([text], {type: "text/plain"})
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
