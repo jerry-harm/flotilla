@@ -48,30 +48,21 @@
   const login = () => pushModal(LogIn)
 
   const completeSignup = async () => {
-    // Join all default spaces first
-    const defaultSpaceUrls = await Promise.all(
-      DEFAULT_SPACES.map(async ([url, claim]) => {
-        await attemptRelayAccess(url, claim)
-
-        return url
-      }),
-    )
-
     // Add default outbox/inbox/messaging relays, profile, spaces
     const thunks = await Promise.all([
       publishThunk({
         event: makeEvent(RELAYS, {tags: DEFAULT_RELAYS.map(url => ["r", url])}),
-        relays: [...INDEXER_RELAYS, ...DEFAULT_RELAYS, ...defaultSpaceUrls],
+        relays: [...INDEXER_RELAYS, ...DEFAULT_RELAYS, ...DEFAULT_SPACES],
       }),
       publishThunk({
         event: makeEvent(MESSAGING_RELAYS, {tags: DEFAULT_MESSAGING_RELAYS.map(url => ["r", url])}),
-        relays: [...DEFAULT_RELAYS, ...defaultSpaceUrls],
+        relays: [...DEFAULT_RELAYS, ...DEFAULT_SPACES],
       }),
       publishThunk({
         event: makeEvent(PROFILE, createProfile(getKey<Profile>("signup.profile")!)),
-        relays: [...DEFAULT_RELAYS, ...defaultSpaceUrls],
+        relays: [...DEFAULT_RELAYS, ...DEFAULT_SPACES],
       }),
-      setSpaces(defaultSpaceUrls),
+      setSpaces(DEFAULT_SPACES),
     ])
 
     // Wait for all the thunks to complete

@@ -135,9 +135,12 @@
   netContext.isEventValid = (event: TrustedEvent, url: string) =>
     getSetting<string[]>("trusted_relays").includes(url) || verifyEvent(event)
 
-  // Listen for deep link events
-  App.addListener("appUrlOpen", async (event: URLOpenListenerEvent) => {
-    const url = new URL(event.url)
+  // Handle a deep link (universal/app link or custom scheme). Used for both
+  // warm-start links (via the appUrlOpen event) and cold-start links (via
+  // getLaunchUrl below) so the invite relay/claim query params are preserved
+  // in either case.
+  const handleDeepLink = (rawUrl: string) => {
+    const url = new URL(rawUrl)
     const relay = url.searchParams.get("relay")
     const id = url.searchParams.get("id")
 
@@ -163,7 +166,12 @@
 
     const target = `${url.pathname}${url.search}${url.hash}`
     goto(target, {replaceState: false, noScroll: false})
-  })
+  }
+
+  // Listen for deep link events. Capacitor only emits this from onNewIntent, so
+  // it fires when the app is already running (warm start). Cold-start links are
+  // handled by getLaunchUrl in the setup block below.
+  App.addListener("appUrlOpen", (event: URLOpenListenerEvent) => handleDeepLink(event.url))
 
   // Handle back button on mobile
   App.addListener("backButton", () => {
@@ -220,6 +228,17 @@
 
     // Wait for critical storage data only
     await storageSync.ready
+
+    // Handle cold-start deep links. When a link launches the app from a killed
+    // state the intent arrives via onCreate, so Capacitor never emits
+    // appUrlOpen for it — the URL is only reachable through getLaunchUrl.
+    // Without this, invite links opened while the app is closed lose their
+    // relay/claim params and the space is never joined.
+    const launch = await App.getLaunchUrl()
+
+    if (launch?.url) {
+      handleDeepLink(launch.url)
+    }
 
     // Close the database connection on reload
     unsubscribers.push(() => db.close())

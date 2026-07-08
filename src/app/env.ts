@@ -51,11 +51,7 @@ export const POMADE_SIGNERS = fromCsv(import.meta.env.VITE_POMADE_SIGNERS)
 
 export const DEFAULT_BLOSSOM_SERVERS = fromCsv(import.meta.env.VITE_DEFAULT_BLOSSOM_SERVERS)
 
-export const DEFAULT_SPACES = fromCsv(import.meta.env.VITE_DEFAULT_SPACES).map(item => {
-  const [url, claim = ""] = item.split("|")
-
-  return [normalizeRelayUrl(url), claim]
-})
+export const DEFAULT_SPACES = fromCsv(import.meta.env.VITE_DEFAULT_SPACES).map(normalizeRelayUrl)
 
 export const DEFAULT_PUBKEYS = import.meta.env.VITE_DEFAULT_PUBKEYS
 
