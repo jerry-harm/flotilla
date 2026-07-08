@@ -44,7 +44,7 @@
 
   const {event, trimParent = false, singleLine = false, url}: Props = $props()
 
-  const fullContent = parse(event)
+  const fullContent = $derived(parse(event))
 
   const isBoundary = (i: number) => {
     const parsed = fullContent[i]
