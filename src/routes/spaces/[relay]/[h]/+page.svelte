@@ -230,7 +230,12 @@
   }
 
   const manageScrollPosition = () => {
-    showScrollButton = !isNaN(at) || Math.abs(element?.scrollTop || 0) > 1500
+    // Only treat an `at` jump as "scrolled up" when it targets an event below the
+    // newest one; jumping to the most recent message already lands us at the bottom.
+    const newestEvent = $events[$events.length - 1]
+    const atIsBelowNewest = !isNaN(at) && newestEvent !== undefined && at < newestEvent.created_at
+
+    showScrollButton = atIsBelowNewest || Math.abs(element?.scrollTop || 0) > 1500
 
     const newMessages = document.getElementById("new-messages")
 
@@ -316,7 +321,7 @@
     let newMessagesSeen = false
 
     if (events) {
-      const lastUserEvent = $events.find(e => e.pubkey === $pubkey)
+      const lastUserEvent = $events.findLast(e => e.pubkey === $pubkey)
 
       // Adjust last checked to account for messages that came from a different device
       const adjustedLastChecked =
