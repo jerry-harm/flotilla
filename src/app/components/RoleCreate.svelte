@@ -24,7 +24,7 @@
     loading = true
 
     try {
-      const error = await createRole(url, randomId(), label, description, color, 0)
+      const error = await createRole(url, randomId(), label, description, color, 1)
 
       if (error) {
         pushToast({theme: "error", message: error})

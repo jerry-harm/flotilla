@@ -1,5 +1,5 @@
 <script module lang="ts">
-  import type {SpaceRole, SpaceRoleColor} from "@app/members"
+  import type {SpaceRole} from "@app/members"
 
   export type Values = Pick<SpaceRole, "label" | "description" | "color">
 </script>
@@ -26,29 +26,11 @@
     description: initialValues.description ?? "",
   })
 
-  // Preserve any unedited components from the existing color; the form edits hue and lightness.
-  const baseColor: SpaceRoleColor = {
-    hue: "",
-    saturation: "",
-    lightness: "",
-    ...initialValues.color,
-  }
-
-  const initialHue = parseInt(baseColor.hue, 10)
-  const initialLightness = parseFloat(baseColor.lightness)
-
-  let hue = $state(isNaN(initialHue) ? Math.floor(Math.random() * 360) : initialHue)
-  let lightness = $state(isNaN(initialLightness) ? 0.5 : initialLightness)
-
-  const color = $derived<SpaceRoleColor>({
-    ...baseColor,
-    hue: String(hue),
-    lightness: String(lightness),
-  })
+  let hue = $state(initialValues.color ?? Math.floor(Math.random() * 360))
 
   const back = () => history.back()
 
-  const submit = () => onSubmit({...values, color})
+  const submit = () => onSubmit({...values, color: hue})
 </script>
 
 <div class="flex flex-col gap-4">
@@ -76,25 +58,15 @@
       <div class="flex items-center gap-3">
         <div
           class="h-8 w-8 shrink-0 rounded-full border-2"
-          style="background-color: {roleColor(color)}; border-color: var(--line)">
+          style="background-color: {roleColor(hue)}; border-color: var(--line)">
         </div>
-        <div class="flex grow flex-col gap-2">
-          <input
-            type="range"
-            min="0"
-            max="360"
-            bind:value={hue}
-            class="range"
-            style="color: {roleColor(color)}; --range-shdw: {roleColor(color)}" />
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            bind:value={lightness}
-            class="range"
-            style="color: {roleColor(color)}; --range-shdw: {roleColor(color)}" />
-        </div>
+        <input
+          type="range"
+          min="0"
+          max="360"
+          bind:value={hue}
+          class="range grow"
+          style="color: {roleColor(hue)}; --range-shdw: {roleColor(hue)}" />
       </div>
     {/snippet}
   </Field>
