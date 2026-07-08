@@ -13,7 +13,7 @@
   import {goto} from "$app/navigation"
   import RelayName from "@app/components/RelayName.svelte"
   import {editBoard, type Board} from "@app/pinboards"
-  import {makeSpacePath} from "@app/routes"
+  import {makeLibraryPath} from "@app/routes"
   import {pushToast} from "@app/toast"
 
   type Props = {
@@ -43,7 +43,7 @@
 
         // Navigate to a freshly created board; otherwise just close the modal.
         if (isNew) {
-          goto(makeSpacePath(url, "library", board.address))
+          goto(makeLibraryPath(url, board.address))
         } else {
           back()
         }

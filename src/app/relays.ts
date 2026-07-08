@@ -6,6 +6,7 @@ import {
   getRelaysFromList,
   getTagValue,
   isShareableRelayUrl,
+  isSignedEvent,
   makeEvent,
   normalizeRelayUrl,
 } from "@welshman/util"
@@ -29,7 +30,9 @@ import {
   loadRelay,
   manageRelay,
   publishThunk,
+  repository,
   sign,
+  tracker,
   waitForThunkError,
 } from "@welshman/app"
 import {checkRelayHasLivekit} from "$lib/livekit"
@@ -115,6 +118,20 @@ export const deriveSocketStatus = (url: string) =>
       return {theme: "success", title: "Connected"}
     }),
   )
+
+export const signAsRelay = async (url: string, template: object): Promise<string | undefined> => {
+  const {result, error} = await manageRelay(url, {
+    method: "signevent" as ManagementMethod,
+    params: [template as unknown as string],
+  })
+
+  if (!error && isSignedEvent(result)) {
+    repository.publish(result)
+    tracker.track(result.id, url)
+  }
+
+  return error
+}
 
 export const deriveSupportedMethods = simpleCache(([url]: [string]) => {
   return readable<ManagementMethod[]>([], set => {

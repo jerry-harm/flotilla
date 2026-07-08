@@ -10,7 +10,7 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import RelayName from "@app/components/RelayName.svelte"
   import PinAdd from "@app/components/PinAdd.svelte"
-  import {deriveBoards, addressToReference, type Board} from "@app/pinboards"
+  import {deriveBoards, addressToReference, type PublishedBoard} from "@app/pinboards"
   import {makeSpacePath} from "@app/routes"
   import {pushModal} from "@app/modal"
 
@@ -24,7 +24,8 @@
   const boards = deriveBoards(url)
   const reference = addressToReference(address)
 
-  const selectBoard = (board: Board) => pushModal(PinAdd, {url, address: board.address, reference})
+  const selectBoard = (board: PublishedBoard) =>
+    pushModal(PinAdd, {url, address: board.address, reference})
 </script>
 
 <Modal class="flex flex-col gap-2">

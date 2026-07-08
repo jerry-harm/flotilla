@@ -9,16 +9,18 @@
 
   const props: ComponentProps<typeof NoteContent> = $props()
   const path = getRoomItemPath(props.url!, props.event)
+
   const minLength = 5000
   const maxLength = 5500
+  const className = cx("text-sm block", {"card card-sm shadow-none": props.event.kind !== MESSAGE})
 </script>
 
-<div class={cx("text-sm", {"card card-sm shadow-none": props.event.kind !== MESSAGE})}>
-  {#if path && !isMobile}
-    <Link href={path}>
-      <NoteContent {...props} {minLength} {maxLength} />
-    </Link>
-  {:else}
+{#if path && !isMobile}
+  <Link href={path} class={className}>
     <NoteContent {...props} {minLength} {maxLength} />
-  {/if}
-</div>
+  </Link>
+{:else}
+  <div class={className}>
+    <NoteContent {...props} {minLength} {maxLength} />
+  </div>
+{/if}

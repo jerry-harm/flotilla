@@ -1,10 +1,10 @@
 <script lang="ts">
   import PinForm, {type PinFormValues} from "@app/components/PinForm.svelte"
-  import {createPin, referenceToPin, pinToReference, type Pin} from "@app/pinboards"
+  import {createPin, referenceToPin, pinToReference, type PublishedPin} from "@app/pinboards"
 
   type Props = {
     url: string
-    pin: Pin
+    pin: PublishedPin
   }
 
   const {url, pin}: Props = $props()

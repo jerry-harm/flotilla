@@ -13,15 +13,16 @@ import {
   readList,
   sortEventsDesc,
 } from "@welshman/util"
-import type {ManagementMethod, TrustedEvent} from "@welshman/util"
-import {manageRelay} from "@welshman/app"
+import type {TrustedEvent} from "@welshman/util"
 import {deriveEventsForUrl, deriveRelaySignedEvents} from "@app/repository"
+import {signAsRelay} from "@app/relays"
 
 export const BOARD = 30067
 
 export const PIN = 39067
 
 export type Board = {
+  event?: TrustedEvent
   address: string
   identifier: string
   title: string
@@ -31,7 +32,12 @@ export type Board = {
   collaborative: boolean
 }
 
+export type PublishedBoard = Board & {
+  event: TrustedEvent
+}
+
 export type Pin = {
+  event?: TrustedEvent
   id: string
   pubkey: string
   identifier: string
@@ -44,10 +50,15 @@ export type Pin = {
   value: string[]
 }
 
-export const readBoard = (event: TrustedEvent): Board => {
+export type PublishedPin = Pin & {
+  event: TrustedEvent
+}
+
+export const readBoard = (event: TrustedEvent): PublishedBoard => {
   const tags = getListTags(readList(asDecryptedEvent(event)))
 
   return {
+    event,
     address: getAddress(event),
     identifier: getTagValue("d", tags) ?? "",
     title: getTagValue("title", tags) ?? "",
@@ -58,7 +69,8 @@ export const readBoard = (event: TrustedEvent): Board => {
   }
 }
 
-export const readPin = (event: TrustedEvent): Pin => ({
+export const readPin = (event: TrustedEvent): PublishedPin => ({
+  event,
   id: event.id,
   pubkey: event.pubkey,
   identifier: getTagValue("d", event.tags) ?? "",
@@ -84,15 +96,6 @@ export const derivePins = (url: string, address: string) =>
   derived(deriveRelaySignedEvents(url, [{kinds: [PIN], "#A": [address]}]), $events =>
     sortEventsDesc($events).map(readPin),
   )
-
-const signAsRelay = async (url: string, template: object): Promise<string | undefined> => {
-  const {error} = await manageRelay(url, {
-    method: "signevent" as ManagementMethod,
-    params: [template as unknown as string],
-  })
-
-  return error
-}
 
 const makeBoardTemplate = ({
   identifier,

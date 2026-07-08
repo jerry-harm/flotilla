@@ -6,7 +6,7 @@
   import {goToEvent} from "@app/routes"
 
   type Props = {
-    url: string
+    url?: string
     value: string
     relays: string[]
   }

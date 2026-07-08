@@ -1,29 +1,25 @@
 <script lang="ts">
   import {onMount} from "svelte"
   import type {Snippet} from "svelte"
-  import {goto} from "$app/navigation"
   import type {TrustedEvent} from "@welshman/util"
   import {COMMENT, getAddress, ManagementMethod} from "@welshman/util"
-  import {pubkey, repository, relaysByUrl, manageRelay} from "@welshman/app"
+  import {pubkey, repository, manageRelay} from "@welshman/app"
   import GalleryWide from "@assets/icons/gallery-wide.svg?dataurl"
   import ShareCircle from "@assets/icons/share-circle.svg?dataurl"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
   import Danger from "@assets/icons/danger.svg?dataurl"
-  import {setKey} from "@lib/implicit"
   import Button from "@lib/components/Button.svelte"
   import Confirm from "@lib/components/Confirm.svelte"
   import Icon from "@lib/components/Icon.svelte"
   import EventInfo from "@app/components/EventInfo.svelte"
   import Report from "@app/components/Report.svelte"
-  import EventShare from "@app/components/EventShare.svelte"
   import EventDeleteConfirm from "@app/components/EventDeleteConfirm.svelte"
   import PinboardSelect from "@app/components/PinboardSelect.svelte"
-  import {hasNip29} from "@app/relays"
+  import {shareEventToChat} from "@app/share"
   import {deriveUserIsSpaceAdmin} from "@app/members"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
-  import {makeSpaceChatPath} from "@app/routes"
 
   type Props = {
     url: string
@@ -44,14 +40,7 @@
 
   const addToLibrary = () => pushModal(PinboardSelect, {url, address: getAddress(event)})
 
-  const share = async () => {
-    if (hasNip29($relaysByUrl.get(url))) {
-      pushModal(EventShare, {url, event})
-    } else {
-      setKey("share", event)
-      goto(makeSpaceChatPath(url))
-    }
-  }
+  const share = () => shareEventToChat(url, noun, event)
 
   const showDelete = () => pushModal(EventDeleteConfirm, {url, event})
 

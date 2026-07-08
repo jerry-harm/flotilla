@@ -6,7 +6,10 @@
   import NoteContentClassified from "@app/components/NoteContentClassified.svelte"
   import NoteContentGoal from "@app/components/NoteContentGoal.svelte"
   import NoteContentPoll from "@app/components/NoteContentPoll.svelte"
+  import NoteContentPin from "@app/components/NoteContentPin.svelte"
+  import NoteContentBoard from "@app/components/NoteContentBoard.svelte"
   import Content from "@app/components/Content.svelte"
+  import {PIN, BOARD} from "@app/pinboards"
 
   const props: ComponentProps<typeof Content> = $props()
 </script>
@@ -22,6 +25,10 @@
     <NoteContentGoal {...props} />
   {:else if props.event.kind === POLL}
     <NoteContentPoll {...props} />
+  {:else if props.event.kind === PIN}
+    <NoteContentPin {...props} />
+  {:else if props.event.kind === BOARD}
+    <NoteContentBoard {...props} />
   {:else}
     <Content {...props} />
   {/if}

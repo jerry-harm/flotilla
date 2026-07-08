@@ -11,6 +11,8 @@
   import AddCircle from "@assets/icons/add-circle.svg?dataurl"
   import Pen from "@assets/icons/pen.svg?dataurl"
   import TrashBin from "@assets/icons/trash-bin-2.svg?dataurl"
+  import ShareCircle from "@assets/icons/share-circle.svg?dataurl"
+  import Code2 from "@assets/icons/code-2.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import Popover from "@lib/components/Popover.svelte"
@@ -19,11 +21,13 @@
   import Masonry from "@lib/components/Masonry.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import SpaceBar from "@app/components/SpaceBar.svelte"
-  import Pin from "@app/components/Pin.svelte"
+  import PinItem from "@app/components/PinItem.svelte"
+  import EventInfo from "@app/components/EventInfo.svelte"
   import PinboardEdit from "@app/components/PinboardEdit.svelte"
   import PinAdd from "@app/components/PinAdd.svelte"
   import {decodeRelay, deriveSupportedMethods} from "@app/relays"
   import {deriveBoardByAddress, derivePins, deleteBoard, PIN} from "@app/pinboards"
+  import {shareEventToChat} from "@app/share"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
 
@@ -51,6 +55,22 @@
   })
 
   const back = () => history.back()
+
+  const showInfo = () => {
+    menuOpen = false
+
+    if ($board) {
+      pushModal(EventInfo, {url, event: $board.event})
+    }
+  }
+
+  const share = () => {
+    menuOpen = false
+
+    if ($board) {
+      shareEventToChat(url, "Shelf", $board.event)
+    }
+  }
 
   const addLink = () => {
     menuOpen = false
@@ -98,19 +118,31 @@
     <h1 class="truncate text-xl">{$board?.title || "Shelf"}</h1>
   {/snippet}
   {#snippet action()}
-    {#if canManage}
-      <div class="relative">
-        <Button
-          class="button button-neutral button-sm button-square"
-          aria-label="More options"
-          onclick={() => (menuOpen = !menuOpen)}>
-          <Icon size={4} icon={MenuDots} />
-        </Button>
-        {#if menuOpen}
-          <Popover hideOnClick onClose={() => (menuOpen = false)}>
-            <ul
-              transition:fly
-              class="menu bg-surface absolute right-0 z-popover mt-2 w-48 gap-1 rounded-2xl p-2">
+    <div class="relative">
+      <Button
+        class="button button-neutral button-sm button-square"
+        aria-label="More options"
+        onclick={() => (menuOpen = !menuOpen)}>
+        <Icon size={4} icon={MenuDots} />
+      </Button>
+      {#if menuOpen}
+        <Popover hideOnClick onClose={() => (menuOpen = false)}>
+          <ul
+            transition:fly
+            class="menu bg-surface absolute right-0 z-popover mt-2 w-48 gap-1 rounded-2xl p-2">
+            <li>
+              <Button onclick={showInfo}>
+                <Icon icon={Code2} />
+                Event details
+              </Button>
+            </li>
+            <li>
+              <Button onclick={share}>
+                <Icon icon={ShareCircle} />
+                Share to chat
+              </Button>
+            </li>
+            {#if canManage}
               <li>
                 <Button onclick={addLink}>
                   <Icon icon={AddCircle} />
@@ -129,11 +161,11 @@
                   Delete shelf
                 </Button>
               </li>
-            </ul>
-          </Popover>
-        {/if}
-      </div>
-    {/if}
+            {/if}
+          </ul>
+        </Popover>
+      {/if}
+    </div>
   {/snippet}
 </SpaceBar>
 
@@ -159,7 +191,7 @@
       {:else}
         <Masonry items={filtered} getKey={pin => pin.id} columnWidth={60} gap={3}>
           {#snippet child(pin)}
-            <Pin {url} {pin} showMenu={canManage} class="card" />
+            <PinItem {url} {pin} />
           {/snippet}
         </Masonry>
       {/if}

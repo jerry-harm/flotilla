@@ -24,6 +24,7 @@ import {entityLink, PLATFORM_URL, PLATFORM_RELAYS} from "@app/env"
 import {encodeRelay, hasNip29} from "@app/relays"
 import {DM_KINDS} from "@app/content"
 import {ROOM} from "@app/groups"
+import {BOARD} from "@app/pinboards"
 import {pushModal} from "@app/modal"
 import ChatEnable from "@app/components/ChatEnable.svelte"
 
@@ -131,6 +132,9 @@ export const makeCalendarPath = (url: string, address?: string) =>
 
 export const makePollPath = (url: string, id?: string) => makeSpacePath(url, "polls", id)
 
+export const makeLibraryPath = (url: string, address?: string) =>
+  makeSpacePath(url, "library", address)
+
 export const scrollToEvent = (id: string) => {
   const element = document.querySelector(`[data-event="${id}"]`) as any
 
@@ -185,6 +189,10 @@ export const getEventPath = (event: TrustedEvent, urls: string[]) => {
 
     if (event.kind === EVENT_TIME) {
       return makeCalendarPath(url, getAddress(event))
+    }
+
+    if (event.kind === BOARD) {
+      return makeLibraryPath(url, getAddress(event))
     }
 
     if (event.kind === POLL) {
@@ -248,6 +256,8 @@ export const getRoomItemPath = (url: string, event: TrustedEvent) => {
       return makeGoalPath(url, event.id)
     case EVENT_TIME:
       return makeCalendarPath(url, getAddress(event))
+    case BOARD:
+      return makeLibraryPath(url, getAddress(event))
     case POLL:
       return makePollPath(url, event.id)
   }
