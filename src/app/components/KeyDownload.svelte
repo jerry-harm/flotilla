@@ -95,8 +95,6 @@
 
     try {
       await downloadText("Nostr Secret Key.txt", cleanupCopy(instructions))
-
-      didDownload = true
     } catch (e) {
       // Dismissing the native share sheet rejects with "Share canceled" — leave
       // the flow gated so the user can try again rather than showing an error.
@@ -104,6 +102,8 @@
         pushToast({theme: "error", message: "We couldn't save your key. Please try again."})
       }
     }
+
+    didDownload = true
   }
 
   const onPasswordChange = () => {

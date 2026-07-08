@@ -13,7 +13,7 @@
   const copy = () => clip(code)
 
   $effect(() => {
-    if (canvas && code) {
+    if (canvas && wrapper && code) {
       QRCode.toCanvas(canvas, code)
     }
   })
