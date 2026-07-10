@@ -30,9 +30,7 @@ import {
   loadRelay,
   manageRelay,
   publishThunk,
-  repository,
   sign,
-  tracker,
   waitForThunkError,
 } from "@welshman/app"
 import {checkRelayHasLivekit} from "$lib/livekit"
@@ -125,12 +123,11 @@ export const signAsRelay = async (url: string, template: object): Promise<string
     params: [template as unknown as string],
   })
 
-  if (!error && isSignedEvent(result)) {
-    repository.publish(result)
-    tracker.track(result.id, url)
-  }
+  if (error) return error
 
-  return error
+  if (!isSignedEvent(result)) return "Relay returned an invalid event"
+
+  return stripPrefix(await waitForThunkError(publishThunk({event: result, relays: [url]})))
 }
 
 export const deriveSupportedMethods = simpleCache(([url]: [string]) => {
