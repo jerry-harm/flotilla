@@ -1,17 +1,18 @@
 <script lang="ts">
-  import {roleColor, roleColorSoft, type SpaceRole} from "@app/members"
+  import cx from "classnames"
+  import {roleColor, type SpaceRole} from "@app/members"
 
-  interface Props {
+  type Props = {
     role: SpaceRole
+    size?: "sm" | "md"
   }
 
-  const {role}: Props = $props()
+  const {role, size = "sm"}: Props = $props()
 </script>
 
-<div
-  class="badge badge-sm w-fit min-w-0"
-  style="background-color: {roleColorSoft(role.color)}; border-color: {roleColor(
-    role.color,
-  )}; color: {roleColor(role.color)};">
-  <strong>{role.label || "Untitled Role"}</strong>
-</div>
+<span
+  class={cx("role-badge", size === "md" && "role-badge--md")}
+  style="--role-color: {roleColor(role.color)}">
+  <span class="role-badge__dot" aria-hidden="true"></span>
+  {role.label || "Untitled Role"}
+</span>

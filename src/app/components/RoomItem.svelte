@@ -156,7 +156,7 @@
   </div>
   {#if !isMobile}
     <button
-      class="join absolute right-2 top-0.5 opacity-0 transition-all"
+      class="room__item-actions join absolute right-2 top-0.5 opacity-0 transition-all"
       class:group-hover:opacity-100={!isMobile}>
       {#if ENABLE_ZAPS}
         <RoomItemZapButton {url} {event} />

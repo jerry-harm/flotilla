@@ -49,6 +49,7 @@ import type {Unsubscriber} from "svelte/store"
 import {SecureStorage} from "@aparajita/capacitor-secure-storage"
 import {Preferences} from "@capacitor/preferences"
 import {IDB} from "@lib/indexeddb"
+import {ROOM_PINS} from "@app/pins"
 
 export const kv = call(() => {
   let p = Promise.resolve()
@@ -155,6 +156,7 @@ const kinds = {
     ROOM_ADD_MEMBER,
     ROOM_REMOVE_MEMBER,
     ROOM_CREATE_PERMISSION,
+    ROOM_PINS,
   ],
 }
 

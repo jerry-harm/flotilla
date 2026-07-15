@@ -29,6 +29,7 @@
   import RoomItem from "@app/components/RoomItem.svelte"
   import RoomName from "@app/components/RoomName.svelte"
   import RoomSearch from "@app/components/RoomSearch.svelte"
+  import RoomPinnedMessages from "@app/components/RoomPinnedMessages.svelte"
   import ThunkToast from "@app/components/ThunkToast.svelte"
   import RoomItemAddMember from "@src/app/components/RoomItemAddMember.svelte"
   import RoomComposeEdit from "@src/app/components/RoomComposeEdit.svelte"
@@ -463,6 +464,8 @@
       "room flex min-h-0 min-w-0 flex-1 flex-col",
       voiceConnectedHere && $videoCallLayout === VideoCallLayout.Video && "md:hidden",
     )}>
+    <RoomPinnedMessages {url} {h} />
+
     {#if isVoiceRoom && $callState === CallState.Connected}
       <VideoCallContent layout={$videoCallLayout} mobile {url} {h} class="md:hidden" />
     {/if}

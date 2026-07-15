@@ -25,6 +25,8 @@
   import Button from "@lib/components/Button.svelte"
   import Reaction from "@app/components/Reaction.svelte"
   import ReportDetails from "@app/components/ReportDetails.svelte"
+  import ProfileList from "@app/components/ProfileList.svelte"
+  import ZapModal from "@app/components/Zap.svelte"
   import {REACTION_KINDS} from "@app/content"
   import {deriveUserIsSpaceAdmin} from "@app/members"
   import {pushModal} from "@app/modal"
@@ -80,7 +82,7 @@
     }),
   )
 
-  const onReactionClick = (events: TrustedEvent[]) => {
+  const toggleReaction = (events: TrustedEvent[]) => {
     const reaction = events.find(e => e.pubkey === $pubkey)
 
     if (reaction) {
@@ -92,6 +94,26 @@
         content: event.content,
         tags: getEmojiTags(event.content.replace(/:/g, ""), event.tags),
       })
+    }
+  }
+
+  const showReactors = (pubkeys: string[], title: string, subtitle: string) =>
+    pushModal(ProfileList, {title, subtitle, pubkeys, url})
+
+  const onReactionClick = (events: TrustedEvent[], pubkeys: string[], info: string) => {
+    if (isMobile) {
+      showReactors(pubkeys, info.replace(" reacted", ""), "Reacted to this message")
+      return
+    }
+
+    toggleReaction(events)
+  }
+
+  const onZapClick = (pubkeys: string[], info: string) => {
+    if (isMobile) {
+      showReactors(pubkeys, info.replace(" zapped", ""), "Zapped this message")
+    } else {
+      pushModal(ZapModal, {url, pubkey: event.pubkey, eventId: event.id})
     }
   }
 
@@ -158,6 +180,7 @@
       {@const isOwn = $pubkey && pubkeys.includes($pubkey)}
       {@const info = displayList(pubkeys.map(pubkey => displayProfileByPubkey(pubkey)))}
       {@const tooltip = `${info} zapped`}
+      {@const onZapClickHandler = () => onZapClick(pubkeys, tooltip)}
       <Button
         data-tip={tooltip}
         class={cx(
@@ -168,7 +191,8 @@
             "button-primary": isOwn,
             "button-neutral": !isOwn,
           },
-        )}>
+        )}
+        onclick={stopPropagation(onZapClickHandler)}>
         <Reaction event={zaps[0].request} />
         <span>{amount}</span>
       </Button>
@@ -178,7 +202,7 @@
       {@const isOwn = $pubkey && pubkeys.includes($pubkey)}
       {@const info = displayList(pubkeys.map(pubkey => displayProfileByPubkey(pubkey)))}
       {@const tooltip = `${info} reacted`}
-      {@const onClick = () => onReactionClick(events)}
+      {@const onClick = () => onReactionClick(events, pubkeys, info)}
       <Button
         data-tip={tooltip}
         class={cx(reactionClass, "button button-xs flex-inline gap-1 rounded-full font-normal", {

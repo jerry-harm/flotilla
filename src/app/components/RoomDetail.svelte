@@ -115,11 +115,12 @@
     </div>
     {#if $members !== undefined && $members.length > 0}
       <div class="card card-sm flex items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <span>Members:</span>
-          <ProfileCircles pubkeys={$members} />
+        <div class="flex min-w-0 items-center gap-4">
+          <span class="shrink-0">Members:</span>
+          <ProfileCircles pubkeys={$members} class="min-w-0 overflow-hidden" />
         </div>
-        <Button class="button button-neutral button-sm" onclick={showMembers}>View All</Button>
+        <Button class="button button-neutral button-sm shrink-0" onclick={showMembers}
+          >View All</Button>
       </div>
     {:else if $members === undefined}
       <div class="card card-sm bg-surface flex items-center gap-4">

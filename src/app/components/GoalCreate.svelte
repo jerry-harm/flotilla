@@ -185,7 +185,7 @@
           {/if}
         </Button>
       </div>
-      <div class="flex flex-col gap-1">
+      <div class="flex flex-col gap-3">
         <FieldInline>
           {#snippet label()}
             Goal Amount (sats)*
@@ -201,7 +201,7 @@
           {/snippet}
         </FieldInline>
         <input
-          class="range -mt-2 w-full"
+          class="range w-full"
           type="range"
           min="1000"
           max="100000"

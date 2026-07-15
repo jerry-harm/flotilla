@@ -177,6 +177,34 @@ export const requestRelayClaims = async (urls: string[]) =>
 
 export const canEnforceNip70 = (url: string) => hasNip70(getRelay(url))
 
+const authTerminalStatuses = [
+  AuthStatus.None,
+  AuthStatus.Ok,
+  AuthStatus.Forbidden,
+  AuthStatus.DeniedSignature,
+]
+
+const waitForAuth = async (socket: ReturnType<ReturnType<typeof Pool.get>["get"]>) => {
+  await poll({
+    signal: AbortSignal.timeout(10_000),
+    condition: () => authTerminalStatuses.includes(socket.auth.status),
+  }).catch(() => {})
+}
+
+const formatAuthError = (status: AuthStatus, details?: string) => {
+  if (status === AuthStatus.DeniedSignature) {
+    return "Failed to authenticate — check your signer"
+  }
+
+  if (status === AuthStatus.PendingSignature) {
+    return "Failed to authenticate — approve the signing request from your extension or signer"
+  }
+
+  const message = details || last(status.split(":"))
+
+  return `Failed to authenticate (${message})`
+}
+
 export const attemptRelayAccess = async (url: string, claim = "") => {
   const socket = Pool.get().get(url)
 
@@ -191,24 +219,18 @@ export const attemptRelayAccess = async (url: string, claim = "") => {
     return `Failed to connect`
   }
 
-  // Some relays are extra slow, remove this when welshman is updated
   await poll({
     signal: AbortSignal.timeout(3000),
     condition: () => socket.auth.status === AuthStatus.Requested,
   })
 
-  await socket.auth.attemptAuth(sign)
-
-  // Some relays are extra slow, remove this when welshman is updated
-  await poll({
-    signal: AbortSignal.timeout(3000),
-    condition: () => socket.auth.status !== AuthStatus.PendingResponse,
-  })
+  for (let i = 0; i < 3 && ![AuthStatus.None, AuthStatus.Ok].includes(socket.auth.status); i++) {
+    await socket.auth.retryAuth(sign)
+    await waitForAuth(socket)
+  }
 
   if (![AuthStatus.None, AuthStatus.Ok].includes(socket.auth.status)) {
-    const message = socket.auth.details || last(socket.auth.status.split(":"))
-
-    return `Failed to authenticate (${message})`
+    return formatAuthError(socket.auth.status, socket.auth.details)
   }
 
   const error = await waitForThunkError(publishJoinRequest({url, claim}))

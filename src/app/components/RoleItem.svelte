@@ -10,7 +10,7 @@
 </script>
 
 <div class="flex min-w-0 flex-col gap-2 justify-between">
-  <RoleBadge {role} />
+  <RoleBadge {role} size="md" />
   {#if role.description}
     <p class="text-sm opacity-70">{role.description}</p>
   {/if}

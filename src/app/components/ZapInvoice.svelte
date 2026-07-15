@@ -1,8 +1,6 @@
 <script lang="ts">
-  import cx from "classnames"
   import {onDestroy} from "svelte"
   import {first} from "@welshman/lib"
-  import type {NativeEmoji} from "emoji-picker-element/shared"
   import {signer, deriveZapperForPubkey} from "@welshman/app"
   import {request} from "@welshman/net"
   import {Router} from "@welshman/router"
@@ -13,18 +11,17 @@
   import Icon from "@lib/components/Icon.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import Button from "@lib/components/Button.svelte"
-  import FieldInline from "@lib/components/FieldInline.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
-  import EmojiButton from "@lib/components/EmojiButton.svelte"
   import {errorMessage} from "@lib/util"
   import ProfileLink from "@app/components/ProfileLink.svelte"
   import QRCode from "@app/components/QRCode.svelte"
   import WalletConnect from "@app/components/WalletConnect.svelte"
+  import ZapForm from "@app/components/ZapForm.svelte"
   import {pushModal} from "@app/modal"
   import {zapAmounts} from "@app/settings"
   import {clip, pushToast} from "@app/toast"
@@ -40,14 +37,6 @@
   const zapperStore = deriveZapperForPubkey(pubkey)
 
   const back = () => history.back()
-
-  const selectAmount = (preset: number) => {
-    amount = preset
-  }
-
-  const onEmoji = (emoji: NativeEmoji) => {
-    content = emoji.unicode
-  }
 
   const createInvoice = async () => {
     loading = true
@@ -125,61 +114,35 @@
     </ModalHeader>
 
     {#if invoice}
-      <div class="flex flex-col items-center gap-6 pt-4">
-        <QRCode code={invoice} class="w-full max-w-64" />
-        <p class="text-center text-sm opacity-75">
-          Scan with your wallet, or copy the invoice manually.
-        </p>
-      </div>
-      <label class="input flex w-full items-center justify-between gap-2">
-        <input readonly class="truncate min-w-0 grow" value={invoice} />
-        <Button class="flex items-center" onclick={copyInvoice}>
-          <Icon icon={Copy} />
-        </Button>
-      </label>
-    {:else}
-      <FieldInline class="grid-cols-3!">
-        {#snippet label()}
-          Emoji Reaction
-        {/snippet}
-        {#snippet input()}
-          <div class="flex grow items-center justify-end gap-4">
-            <EmojiButton {onEmoji} class="button button-neutral">
-              {content}
-            </EmojiButton>
-          </div>
-        {/snippet}
-      </FieldInline>
-      <FieldInline class="grid-cols-3!">
-        {#snippet label()}
-          Amount
-        {/snippet}
-        {#snippet input()}
-          <div class="flex grow justify-end">
-            <label class="input flex items-center gap-2">
-              <Icon icon={Bolt} />
-              <input bind:value={amount} type="number" class="w-24" />
-            </label>
-          </div>
-        {/snippet}
-      </FieldInline>
-      <div class="flex flex-wrap justify-end gap-2">
-        {#each $zapAmounts as preset}
+      <div class="flex flex-col gap-6">
+        <div class="flex flex-col items-center gap-4">
+          <QRCode code={invoice} class="w-full max-w-56" />
+          <p class="text-content-muted text-center text-sm">
+            Scan with your lightning wallet, or copy the invoice below.
+          </p>
+        </div>
+        <label class="input flex w-full items-center gap-2">
+          <input readonly class="min-w-0 grow truncate" value={invoice} />
           <Button
-            class={cx(
-              `button button-${preset === amount ? "primary" : "neutral"} button-sm button-pill`,
-            )}
-            onclick={() => selectAmount(preset)}>
-            {preset}
+            class="button button-neutral button-sm button-square shrink-0"
+            onclick={copyInvoice}>
+            <Icon icon={Copy} size={4} />
           </Button>
-        {/each}
+        </label>
       </div>
-      <p class="card card-sm text-center flex justify-between items-center">
-        Want to zap directly?
-        <Button class="button button-neutral button-sm" onclick={connectWallet}>
-          Connect a lightning wallet
-        </Button>
-      </p>
+    {:else}
+      <ZapForm bind:amount bind:content>
+        {#snippet children()}
+          <div class="card card-sm card-flat flex flex-col items-center gap-3 p-4 text-center">
+            <p class="text-content-muted text-sm">
+              Connect a wallet to pay instantly without scanning a QR code.
+            </p>
+            <Button class="button button-neutral" onclick={connectWallet}>
+              Connect a lightning wallet
+            </Button>
+          </div>
+        {/snippet}
+      </ZapForm>
     {/if}
   </ModalBody>
   <ModalFooter>

@@ -1,7 +1,5 @@
 <script lang="ts">
-  import cx from "classnames"
   import {first} from "@welshman/lib"
-  import type {NativeEmoji} from "emoji-picker-element/shared"
   import {signer, deriveZapperForPubkey} from "@welshman/app"
   import {load} from "@welshman/net"
   import {Router} from "@welshman/router"
@@ -11,16 +9,15 @@
   import Icon from "@lib/components/Icon.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import Button from "@lib/components/Button.svelte"
-  import FieldInline from "@lib/components/FieldInline.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
-  import EmojiButton from "@lib/components/EmojiButton.svelte"
   import {errorMessage} from "@lib/util"
   import ProfileLink from "@app/components/ProfileLink.svelte"
+  import ZapForm from "@app/components/ZapForm.svelte"
   import {payInvoice} from "@app/lightning"
   import {zapAmounts} from "@app/settings"
   import {pushToast} from "@app/toast"
@@ -36,14 +33,6 @@
   const zapperStore = deriveZapperForPubkey(pubkey)
 
   const back = () => history.back()
-
-  const selectAmount = (preset: number) => {
-    amount = preset
-  }
-
-  const onEmoji = (emoji: NativeEmoji) => {
-    content = emoji.unicode
-  }
 
   const sendZap = async () => {
     loading = true
@@ -94,42 +83,7 @@
       <ModalTitle>Send a Zap</ModalTitle>
       <ModalSubtitle>To <ProfileLink {pubkey} class="text-primary!" /></ModalSubtitle>
     </ModalHeader>
-    <FieldInline class="grid-cols-3!">
-      {#snippet label()}
-        Emoji Reaction
-      {/snippet}
-      {#snippet input()}
-        <div class="flex grow items-center justify-end gap-4">
-          <EmojiButton {onEmoji}>
-            {content}
-          </EmojiButton>
-        </div>
-      {/snippet}
-    </FieldInline>
-    <FieldInline class="grid-cols-3!">
-      {#snippet label()}
-        Amount
-      {/snippet}
-      {#snippet input()}
-        <div class="flex grow justify-end">
-          <label class="input input-group flex items-center gap-2">
-            <Icon icon={Bolt} />
-            <input bind:value={amount} type="number" class="w-24" />
-          </label>
-        </div>
-      {/snippet}
-    </FieldInline>
-    <div class="flex flex-wrap justify-end gap-2">
-      {#each $zapAmounts as preset}
-        <Button
-          class={cx(
-            `button button-${preset === amount ? "primary" : "neutral"} button-sm button-pill`,
-          )}
-          onclick={() => selectAmount(preset)}>
-          {preset}
-        </Button>
-      {/each}
-    </div>
+    <ZapForm bind:amount bind:content />
   </ModalBody>
   <ModalFooter>
     <Button class="button button-link" onclick={back}>

@@ -39,7 +39,7 @@
     <div class="flex min-w-0 flex-1 flex-col gap-1">
       <Profile {pubkey} {url} inert />
       {#if roles.length > 0}
-        <div class="flex flex-wrap gap-1">
+        <div class="flex flex-wrap gap-x-3 gap-y-1">
           {#each roles as role (role.id)}
             <RoleBadge {role} />
           {/each}

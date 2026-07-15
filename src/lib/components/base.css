@@ -408,6 +408,17 @@ emoji-picker {
   --input-border-color: var(--line);
   --input-font-color: var(--content);
   --outline-color: var(--primary);
+  width: min(352px, calc(100vw - 2rem));
+  max-width: 100%;
+}
+
+[data-tippy-root]:has(emoji-picker) {
+  max-width: min(352px, calc(100vw - 2rem));
+}
+
+.tippy-box:has(emoji-picker) {
+  overflow: visible;
+  max-width: none;
 }
 
 /* content width for fixed elements (sidebar offsets) */

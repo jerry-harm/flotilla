@@ -1,11 +1,12 @@
 <script lang="ts">
   import type {TrustedEvent} from "@welshman/util"
-  import {ManagementMethod, getAddress} from "@welshman/util"
+  import {ManagementMethod, getAddress, getTagValue} from "@welshman/util"
   import {pubkey, manageRelay, repository} from "@welshman/app"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
   import GalleryWide from "@assets/icons/gallery-wide.svg?dataurl"
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
   import Danger from "@assets/icons/danger.svg?dataurl"
+  import Pin from "@assets/icons/pin.svg?dataurl"
   import Button from "@lib/components/Button.svelte"
   import Icon from "@lib/components/Icon.svelte"
   import Confirm from "@lib/components/Confirm.svelte"
@@ -13,9 +14,11 @@
   import Report from "@app/components/Report.svelte"
   import PinboardSelect from "@app/components/PinboardSelect.svelte"
   import EventDeleteConfirm from "@app/components/EventDeleteConfirm.svelte"
+  import {ROOM} from "@app/groups"
+  import {deriveUserIsRoomAdmin, deriveUserIsSpaceAdmin} from "@app/members"
+  import {deriveRoomPinIds, pinRoomMessage, unpinRoomMessage} from "@app/pins"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
-  import {deriveUserIsSpaceAdmin} from "@app/members"
 
   type Props = {
     url: string
@@ -25,7 +28,11 @@
 
   const {url, event, onClick}: Props = $props()
 
+  const h = getTagValue(ROOM, event.tags) ?? ""
+  const pinIds = deriveRoomPinIds(url, h)
   const userIsAdmin = deriveUserIsSpaceAdmin(url)
+  const userIsRoomAdmin = deriveUserIsRoomAdmin(url, h)
+  const isPinned = $derived($pinIds.includes(event.id))
 
   const addToLibrary = () => {
     onClick()
@@ -66,6 +73,22 @@
         }
       },
     })
+
+  const togglePin = async () => {
+    onClick()
+
+    if (!h) return
+
+    const error = isPinned
+      ? await unpinRoomMessage(url, h, event.id, $pinIds)
+      : await pinRoomMessage(url, h, event.id, $pinIds)
+
+    if (error) {
+      pushToast({theme: "error", message: error})
+    } else {
+      pushToast({message: isPinned ? "Message unpinned" : "Message pinned"})
+    }
+  }
 </script>
 
 <ul class="menu bg-surface whitespace-nowrap rounded-2xl p-2">
@@ -81,6 +104,14 @@
       Add to Library
     </Button>
   </li>
+  {#if h && $userIsRoomAdmin}
+    <li>
+      <Button onclick={togglePin}>
+        <Icon size={4} icon={Pin} />
+        {isPinned ? "Unpin Message" : "Pin Message"}
+      </Button>
+    </li>
+  {/if}
   {#if event.pubkey === $pubkey}
     <li>
       <Button onclick={showDelete} class="text-error">

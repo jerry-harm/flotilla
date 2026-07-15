@@ -75,6 +75,27 @@ export function slideAndFade(
   }
 }
 
+export type ScaleParams = {
+  delay?: number
+  duration?: number
+  easing?: (t: number) => number
+  start?: number
+}
+
+export const scale = (
+  node: Element,
+  {delay = 0, duration = 200, easing = cubicOut, start = 0.96}: ScaleParams = {},
+) => ({
+  delay,
+  duration,
+  easing,
+  css: (t: number) => {
+    const s = start + (1 - start) * t
+
+    return `transform: scale(${s}); opacity: ${t}`
+  },
+})
+
 export const conditionalTransition =
   (condition: any, transition: any) => (node: any, args?: any) =>
     condition ? transition(node, args) : null

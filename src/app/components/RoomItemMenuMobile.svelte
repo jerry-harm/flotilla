@@ -1,6 +1,7 @@
 <script lang="ts">
   import type {NativeEmoji} from "emoji-picker-element/shared"
   import type {TrustedEvent} from "@welshman/util"
+  import {getTagValue} from "@welshman/util"
   import {pubkey} from "@welshman/app"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
@@ -8,6 +9,7 @@
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
   import SmileCircle from "@assets/icons/smile-circle.svg?dataurl"
   import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
+  import Pin from "@assets/icons/pin.svg?dataurl"
   import Button from "@lib/components/Button.svelte"
   import Link from "@lib/components/Link.svelte"
   import Icon from "@lib/components/Icon.svelte"
@@ -17,11 +19,15 @@
   import ZapButton from "@app/components/ZapButton.svelte"
   import EventInfo from "@app/components/EventInfo.svelte"
   import EventDeleteConfirm from "@app/components/EventDeleteConfirm.svelte"
+  import {ROOM} from "@app/groups"
+  import {deriveUserIsRoomAdmin} from "@app/members"
+  import {deriveRoomPinIds, pinRoomMessage, unpinRoomMessage} from "@app/pins"
   import {ENABLE_ZAPS} from "@app/env"
   import {publishReaction} from "@app/reactions"
   import {canEnforceNip70} from "@app/relays"
   import {getRoomItemPath} from "@app/routes"
   import {pushModal} from "@app/modal"
+  import {pushToast} from "@app/toast"
 
   type Props = {
     url: string
@@ -31,7 +37,11 @@
 
   const {url, event, reply}: Props = $props()
 
+  const h = getTagValue(ROOM, event.tags) ?? ""
   const path = getRoomItemPath(url, event)
+  const pinIds = deriveRoomPinIds(url, h)
+  const userIsRoomAdmin = deriveUserIsRoomAdmin(url, h)
+  const isPinned = $derived($pinIds.includes(event.id))
 
   const shouldProtect = canEnforceNip70(url)
 
@@ -55,6 +65,22 @@
   const showInfo = () => pushModal(EventInfo, {url, event}, {replaceState: true})
 
   const showDelete = () => pushModal(EventDeleteConfirm, {url, event})
+
+  const togglePin = async () => {
+    if (!h) return
+
+    history.back()
+
+    const error = isPinned
+      ? await unpinRoomMessage(url, h, event.id, $pinIds)
+      : await pinRoomMessage(url, h, event.id, $pinIds)
+
+    if (error) {
+      pushToast({theme: "error", message: error})
+    } else {
+      pushToast({message: isPinned ? "Message unpinned" : "Message pinned"})
+    }
+  }
 </script>
 
 <Modal>
@@ -75,6 +101,12 @@
           <Icon size={4} icon={MenuDots} />
           View Details
         </Link>
+      {/if}
+      {#if h && $userIsRoomAdmin}
+        <Button class="button button-neutral w-full" onclick={togglePin}>
+          <Icon size={4} icon={Pin} />
+          {isPinned ? "Unpin Message" : "Pin Message"}
+        </Button>
       {/if}
       {#if ENABLE_ZAPS}
         <ZapButton replaceState {url} {event} class="button button-neutral w-full">

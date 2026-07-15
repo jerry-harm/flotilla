@@ -62,6 +62,7 @@ import {FEATURED_CONTENT_D} from "@app/featured"
 import {BOARD, PIN} from "@app/pinboards"
 import {hasBlossomSupport} from "@app/uploads"
 import {LIVEKIT_PARTICIPANTS} from "@app/call"
+import {ROOM_PINS} from "@app/pins"
 
 // Utils
 
@@ -308,7 +309,17 @@ const syncSpace = (url: string) => {
     url,
     signal: controller.signal,
     filters: [
-      {kinds: [ROOM_META, ROOM_ADMINS, ROOM_MEMBERS, ROOM_DELETE, LIVEKIT_PARTICIPANTS, BOARD]},
+      {
+        kinds: [
+          ROOM_META,
+          ROOM_ADMINS,
+          ROOM_MEMBERS,
+          ROOM_DELETE,
+          LIVEKIT_PARTICIPANTS,
+          BOARD,
+          ROOM_PINS,
+        ],
+      },
     ],
   })
 

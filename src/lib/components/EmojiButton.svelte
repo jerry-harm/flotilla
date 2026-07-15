@@ -15,7 +15,7 @@
     popover?.hide()
   }
 
-  const onMouseMove = throttle(300, ({clientX, clientY}: any) => {
+  const onMouseMove = throttle(300, ({clientX, clientY}: MouseEvent) => {
     if (popover) {
       const {x, y, width, height} = popover.popper.getBoundingClientRect()
 

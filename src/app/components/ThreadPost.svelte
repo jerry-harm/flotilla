@@ -59,7 +59,7 @@
           <span class="truncate min-w-0 text-xs opacity-75">{displayHandle($handle)}</span>
         {/if}
         {#if isOp}
-          <Badge variant="primary">OP</Badge>
+          <Badge variant="primary" class="w-fit self-start md:self-center">OP</Badge>
         {/if}
       </div>
     </aside>
