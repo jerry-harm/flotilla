@@ -64,7 +64,7 @@
   const isQuote = (p: Parsed) => isEvent(p) || isAddress(p)
 
   const ignoreWarning = () => {
-    warning = null
+    warning = undefined
   }
 
   let warning = $state(

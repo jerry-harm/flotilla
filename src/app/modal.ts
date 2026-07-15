@@ -4,12 +4,14 @@ import {randomId, always, assoc, Emitter} from "@welshman/lib"
 import {deriveDeduplicated} from "@welshman/store"
 import {goto} from "$app/navigation"
 import {page} from "$app/stores"
+import type {DialogSize} from "@lib/components/Dialog.svelte"
 
 export type ModalOptions = {
   drawer?: boolean
   nested?: boolean
   noEscape?: boolean
   fullscreen?: boolean
+  size?: DialogSize
   replaceState?: boolean
   path?: string
 }

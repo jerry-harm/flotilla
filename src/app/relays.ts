@@ -8,6 +8,7 @@ import {
 import type {List, RelayProfile} from "@welshman/util"
 import {AuthStateEvent, AuthStatus, Pool, SocketEvent, SocketStatus} from "@welshman/net"
 import {derived, readable} from "svelte/store"
+import type {Maybe} from "@welshman/lib"
 import {call, on, simpleCache, uniq} from "@welshman/lib"
 import {throttled} from "@welshman/store"
 import {getRelay, loadRelay, manageRelay, publishThunk, waitForThunkError} from "@welshman/app"
@@ -32,6 +33,25 @@ export const encodeRelay = (url: string) =>
   )
 
 export const decodeRelay = (url: string) => normalizeRelayUrl(decodeURIComponent(url))
+
+// A hosted relay whose custom domain changed keeps 301-ing its old host to the
+// new one; the NIP-11 fetch surfaces that (the socket can't). Returns the new
+// wss:// url, or undefined when there's no redirect or the fetch fails.
+export const fetchRelayRedirect = async (url: string): Promise<Maybe<string>> => {
+  try {
+    const response = await fetch(url.replace(/^ws/, "http"), {
+      headers: {Accept: "application/nostr+json"},
+    })
+
+    if (!response.redirected) return undefined
+
+    const next = normalizeRelayUrl(response.url.replace(/^http/, "ws"))
+
+    return next === normalizeRelayUrl(url) ? undefined : next
+  } catch {
+    return undefined
+  }
+}
 
 export const deriveSocket = (url: string) => {
   const socket = Pool.get().get(url)

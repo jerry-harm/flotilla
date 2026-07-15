@@ -15,6 +15,7 @@
   import {preventDefault} from "@lib/html"
   import Field from "@lib/components/Field.svelte"
   import FieldInline from "@lib/components/FieldInline.svelte"
+  import ToggleInput from "@lib/components/ToggleInput.svelte"
   import InputList from "@lib/components/InputList.svelte"
   import Icon from "@lib/components/Icon.svelte"
   import Card from "@lib/components/Card.svelte"
@@ -68,7 +69,7 @@
           <p>Hide sensitive content?</p>
         {/snippet}
         {#snippet input()}
-          <input type="checkbox" class="toggle" bind:checked={settings.hide_sensitive} />
+          <ToggleInput bind:checked={settings.hide_sensitive} />
         {/snippet}
         {#snippet info()}
           <p>
@@ -81,7 +82,7 @@
           <p>Show media?</p>
         {/snippet}
         {#snippet input()}
-          <input type="checkbox" class="toggle" bind:checked={settings.show_media} />
+          <ToggleInput bind:checked={settings.show_media} />
         {/snippet}
         {#snippet info()}
           <p>Use this to disable link previews and image rendering.</p>

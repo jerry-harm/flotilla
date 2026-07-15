@@ -6,6 +6,7 @@
   import Bell from "@assets/icons/bell.svg?dataurl"
   import {preventDefault} from "@lib/html"
   import FieldInline from "@lib/components/FieldInline.svelte"
+  import ToggleInput from "@lib/components/ToggleInput.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -72,7 +73,7 @@
               <p>Show badge for unread alerts</p>
             {/snippet}
             {#snippet input()}
-              <input type="checkbox" class="toggle" bind:checked={settings.badge} />
+              <ToggleInput bind:checked={settings.badge} />
             {/snippet}
           </FieldInline>
         {/if}
@@ -83,7 +84,7 @@
             <p>Play sound for new activity</p>
           {/snippet}
           {#snippet input()}
-            <input type="checkbox" class="toggle" bind:checked={settings.sound} />
+            <ToggleInput bind:checked={settings.sound} />
           {/snippet}
         </FieldInline>
       {/if}
@@ -92,7 +93,7 @@
           <p>Enable push notifications</p>
         {/snippet}
         {#snippet input()}
-          <input type="checkbox" class="toggle" bind:checked={settings.push} />
+          <ToggleInput bind:checked={settings.push} />
         {/snippet}
       </FieldInline>
     </div>
@@ -106,7 +107,7 @@
           <p>Notify me about new activity</p>
         {/snippet}
         {#snippet input()}
-          <input type="checkbox" class="toggle" bind:checked={settings.spaces} />
+          <ToggleInput bind:checked={settings.spaces} />
         {/snippet}
       </FieldInline>
       <FieldInline>
@@ -114,7 +115,7 @@
           <p>Always notify me when mentioned</p>
         {/snippet}
         {#snippet input()}
-          <input type="checkbox" class="toggle" checked={settings.mentions} />
+          <ToggleInput checked={settings.mentions} />
         {/snippet}
       </FieldInline>
       <FieldInline>
@@ -122,7 +123,7 @@
           <p>Notify me about new messages</p>
         {/snippet}
         {#snippet input()}
-          <input type="checkbox" class="toggle" bind:checked={settings.messages} />
+          <ToggleInput bind:checked={settings.messages} />
         {/snippet}
       </FieldInline>
     </div>

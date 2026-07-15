@@ -95,7 +95,3 @@ export const scale = (
     return `transform: scale(${s}); opacity: ${t}`
   },
 })
-
-export const conditionalTransition =
-  (condition: any, transition: any) => (node: any, args?: any) =>
-    condition ? transition(node, args) : null

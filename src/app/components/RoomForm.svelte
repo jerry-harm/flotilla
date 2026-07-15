@@ -3,15 +3,13 @@
   import type {RoomMeta} from "@welshman/util"
   import {makeRoomMeta} from "@welshman/util"
   import {waitForThunkError, createRoom, editRoom, joinRoom} from "@welshman/app"
-  import StickerSmileSquare from "@assets/icons/sticker-smile-square.svg?dataurl"
   import Hashtag from "@assets/icons/hashtag.svg?dataurl"
   import Volume from "@assets/icons/volume.svg?dataurl"
-  import UploadMinimalistic from "@assets/icons/upload-minimalistic.svg?dataurl"
   import {preventDefault} from "@lib/html"
   import FieldInline from "@lib/components/FieldInline.svelte"
   import Icon from "@lib/components/Icon.svelte"
   import ImageIcon from "@lib/components/ImageIcon.svelte"
-  import IconPickerButton from "@lib/components/IconPickerButton.svelte"
+  import IconInput from "@lib/components/IconInput.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import {pushToast} from "@app/toast"
@@ -90,35 +88,6 @@
   let imageFile = $state<File | undefined>()
   let imagePreview = $state(initialValues.picture)
   let roomType = $state(getRoomType(initialValues))
-
-  const handleImageUpload = async (event: Event) => {
-    const file = (event.target as HTMLInputElement).files?.[0]
-
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader()
-
-      reader.onload = e => {
-        imageFile = file
-        imagePreview = e.target?.result as string
-      }
-
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const handleIconSelect = (iconUrl: string) => {
-    imagePreview = iconUrl
-
-    const parts = iconUrl.split(",")
-    const imageData = atob(parts[1])
-    const result = new Uint8Array(imageData.length)
-
-    for (let n = 0; n < imageData.length; n++) {
-      result[n] = imageData.charCodeAt(n)
-    }
-
-    imageFile = new File([result], `icon.svg`, {type: "image/svg+xml"})
-  }
 </script>
 
 <Modal tag="form" onsubmit={preventDefault(trySubmit)}>
@@ -129,25 +98,7 @@
         <p>Icon</p>
       {/snippet}
       {#snippet input()}
-        <div class="flex grow items-center justify-between gap-4">
-          {#if imagePreview}
-            <div class="flex items-center gap-2">
-              <span class="text-sm opacity-75">Selected:</span>
-              <ImageIcon src={imagePreview} alt="" class="rounded-lg" />
-            </div>
-          {:else}
-            <span class="text-sm opacity-75">No icon selected</span>
-          {/if}
-          <div class="flex gap-2">
-            <IconPickerButton onSelect={handleIconSelect} class="button button-primary button-sm">
-              <Icon icon={StickerSmileSquare} size={4} />
-            </IconPickerButton>
-            <label class="button button-neutral button-sm">
-              <Icon icon={UploadMinimalistic} size={4} />
-              <input type="file" accept="image/*" class="hidden" onchange={handleImageUpload} />
-            </label>
-          </div>
-        </div>
+        <IconInput bind:file={imageFile} bind:preview={imagePreview} previewClass="rounded-xl" />
       {/snippet}
     </FieldInline>
     <FieldInline>
@@ -157,7 +108,7 @@
       {#snippet input()}
         <label class="input input-group flex w-full items-center gap-2">
           {#if imagePreview}
-            <ImageIcon src={imagePreview} alt="" class="rounded-lg" />
+            <ImageIcon src={imagePreview} alt="" class="rounded-xl" />
           {:else}
             <Icon icon={roomType === RoomType.Voice ? Volume : Hashtag} />
           {/if}

@@ -40,6 +40,15 @@ export default [
       "no-extra-semi": "off",
       "no-async-promise-executor": "off",
       "prefer-const": ["error", {destructuring: "all"}],
+      "no-eq-null": "error",
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "Literal[raw='null']:not(CallExpression[callee.property.name='stringify'] > Literal)",
+          message: "Use undefined instead of null.",
+        },
+      ],
       "svelte/valid-compile": "off",
       "svelte/no-at-html-tags": "off",
       "@typescript-eslint/no-explicit-any": "off",

@@ -23,11 +23,11 @@
     <Icon size={size + 1} icon={Volume} />
     {#if $room.picture}
       <span class="text-base">/</span>
-      <ImageIcon src={$room.picture} {size} alt="" class="rounded-lg" />
+      <ImageIcon src={$room.picture} {size} alt="" class="rounded-xl" />
     {/if}
   </div>
 {:else if $room.picture}
-  <ImageIcon src={$room.picture} {size} alt="" class="rounded-lg" />
+  <ImageIcon src={$room.picture} {size} alt="" class="rounded-xl" />
 {:else}
   <Icon icon={fallbackIcon} {size} />
 {/if}

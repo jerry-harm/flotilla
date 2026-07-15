@@ -180,7 +180,7 @@
               {/if}
             </div>
             <Button
-              class="button button-sm rounded-lg border-0 bg-primary-content font-medium text-primary"
+              class="button button-sm border-0 bg-primary-content font-medium text-primary"
               onclick={jumpToMessage}>
               Jump to message
             </Button>

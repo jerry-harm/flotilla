@@ -3,7 +3,8 @@
   import {Capacitor} from "@capacitor/core"
   import UserCircle from "@assets/icons/user-circle.svg?dataurl"
   import Wallet from "@assets/icons/wallet.svg?dataurl"
-  import Server from "@assets/icons/server.svg?dataurl"
+  import ServerPath from "@assets/icons/server-path.svg?dataurl"
+  import RemoteControlMinimalistic from "@assets/icons/remote-controller-minimalistic.svg?dataurl"
   import Moon from "@assets/icons/moon.svg?dataurl"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
   import Exit from "@assets/icons/logout-3.svg?dataurl"
@@ -16,6 +17,7 @@
   import SecondaryNavItem from "@lib/components/SecondaryNavItem.svelte"
   import SecondaryNavSection from "@lib/components/SecondaryNavSection.svelte"
   import LogOut from "@app/components/LogOut.svelte"
+  import {HOSTING_ENABLED} from "@app/hosting"
   import {pushModal} from "@app/modal"
   import {theme} from "@app/theme"
 
@@ -47,8 +49,13 @@
       </SecondaryNavItem>
     {/if}
     <SecondaryNavItem href="/settings/relays">
-      <Icon icon={Server} /> Relays
+      <Icon icon={RemoteControlMinimalistic} /> Relays
     </SecondaryNavItem>
+    {#if HOSTING_ENABLED}
+      <SecondaryNavItem href="/settings/hosting">
+        <Icon icon={ServerPath} /> Hosting
+      </SecondaryNavItem>
+    {/if}
     <SecondaryNavItem href="/settings/content">
       <Icon icon={GalleryMinimalistic} /> Content
     </SecondaryNavItem>

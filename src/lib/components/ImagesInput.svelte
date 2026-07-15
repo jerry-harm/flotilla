@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type {Maybe} from "@welshman/lib"
   import {randomId} from "@welshman/lib"
   import {removeAt, insertAt} from "@welshman/lib"
   import {preventDefault, stopPropagation} from "@lib/html"
@@ -58,7 +59,7 @@
     dropActive = false
   }
 
-  let draggedIndex: number | null = $state(null)
+  let draggedIndex: Maybe<number> = $state()
   let dropActive = $state(false)
 
   const handleDragStart = (e: DragEvent, index: number) => {
@@ -72,14 +73,14 @@
   const handleDragOver = (e: DragEvent, index: number) => {
     e.preventDefault()
 
-    if (draggedIndex !== null && draggedIndex !== index) {
+    if (draggedIndex !== undefined && draggedIndex !== index) {
       value = insertAt(index, value[draggedIndex], removeAt(draggedIndex, value))
       draggedIndex = index
     }
   }
 
   const handleDragEnd = () => {
-    draggedIndex = null
+    draggedIndex = undefined
   }
 </script>
 

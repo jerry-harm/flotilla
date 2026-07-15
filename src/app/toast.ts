@@ -1,5 +1,6 @@
 import type {Component} from "svelte"
 import {writable} from "svelte/store"
+import type {Maybe} from "@welshman/lib"
 import {randomId} from "@welshman/lib"
 import {copyToClipboard} from "@lib/html"
 
@@ -21,7 +22,7 @@ export type Toast = ToastParams & {
   id: string
 }
 
-export const toast = writable<Toast | null>(null)
+export const toast = writable<Maybe<Toast>>()
 
 export const pushToast = (params: ToastParams) => {
   const id = randomId()
@@ -33,7 +34,7 @@ export const pushToast = (params: ToastParams) => {
   return id
 }
 
-export const popToast = (id: string) => toast.update($t => ($t?.id === id ? null : $t))
+export const popToast = (id: string) => toast.update($t => ($t?.id === id ? undefined : $t))
 
 export const clip = (value: string) => {
   copyToClipboard(value)

@@ -17,7 +17,7 @@
   // selected via its time input; we expose unix seconds
   let element: HTMLElement
   let isOpen = $state(false)
-  let startDate: number | null = $state(value ? value * 1000 : null)
+  let startDate: number | undefined = $state(value ? value * 1000 : undefined)
   let startDateTime = $state("")
 
   // When no date is provided the library initializes its time input from the
@@ -31,7 +31,7 @@
   }
 
   const clear = () => {
-    startDate = null
+    startDate = undefined
     isOpen = false
   }
 

@@ -10,7 +10,9 @@
   import Home from "@assets/icons/home.svg?dataurl"
   import GalleryWide from "@assets/icons/gallery-wide.svg?dataurl"
   import Danger from "@assets/icons/danger.svg?dataurl"
+  import ServerPath from "@assets/icons/server-path.svg?dataurl"
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
+  import Pen from "@assets/icons/pen.svg?dataurl"
   import Exit from "@assets/icons/logout-3.svg?dataurl"
   import Letter from "@assets/icons/letter.svg?dataurl"
   import Login from "@assets/icons/login-3.svg?dataurl"
@@ -33,6 +35,7 @@
   import SecondaryNavSection from "@lib/components/SecondaryNavSection.svelte"
   import SpaceInvite from "@app/components/SpaceInvite.svelte"
   import SpaceExit from "@app/components/SpaceExit.svelte"
+  import SpaceEdit from "@app/components/SpaceEdit.svelte"
   import SpaceJoin from "@app/components/SpaceJoin.svelte"
   import RelayName from "@app/components/RelayName.svelte"
   import SpaceActionItems from "@app/components/SpaceActionItems.svelte"
@@ -43,6 +46,7 @@
   import SocketStatusIndicator from "@app/components/SocketStatusIndicator.svelte"
   import {ENABLE_ZAPS} from "@app/env"
   import {CONTENT_KINDS} from "@app/content"
+  import {deriveHostedRelay, HOSTING_ENABLED} from "@app/hosting"
   import {deriveUserCanCreateRoom, deriveUserIsSpaceAdmin} from "@app/members"
   import {
     deriveUserRooms,
@@ -78,6 +82,7 @@
   const otherRooms = deriveOtherRooms(url)
   const otherVoiceRooms = deriveOtherVoiceRooms(url)
   const userIsAdmin = deriveUserIsSpaceAdmin(url)
+  const hostedRelay = deriveHostedRelay(url)
   const actionItems = deriveSpaceActionItems(url)
 
   const spaceKinds = derived(
@@ -108,6 +113,8 @@
   const toggleMenu = () => {
     showMenu = !showMenu
   }
+
+  const startEdit = () => pushModal(SpaceEdit, {url, initialValues: $relay || {url}})
 
   const showActionItems = () => pushModal(SpaceActionItems, {url})
 
@@ -208,6 +215,21 @@
             </Link>
           {/if}
         </li>
+        {#if HOSTING_ENABLED && $hostedRelay.relay}
+          <li>
+            <Link href={makeSpacePath(url, "admin")}>
+              <Icon icon={ServerPath} />
+              Hosting settings
+            </Link>
+          </li>
+        {:else if $userIsAdmin}
+          <li>
+            <Button onclick={startEdit}>
+              <Icon icon={Pen} />
+              Edit Space
+            </Button>
+          </li>
+        {/if}
         <li>
           {#if $userSpaceUrls.includes(url)}
             <Button onclick={leaveSpace} class="text-error">

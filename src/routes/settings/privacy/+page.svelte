@@ -2,6 +2,7 @@
   import ShieldMinimalistic from "@assets/icons/shield-minimalistic.svg?dataurl"
   import {preventDefault} from "@lib/html"
   import FieldInline from "@lib/components/FieldInline.svelte"
+  import ToggleInput from "@lib/components/ToggleInput.svelte"
   import Icon from "@lib/components/Icon.svelte"
   import Card from "@lib/components/Card.svelte"
   import PageContent from "@lib/components/PageContent.svelte"
@@ -14,10 +15,8 @@
     settings = {...$userSettingsValues}
   }
 
-  const onAuthModeChange = (e: Event) => {
-    const target = e.currentTarget as HTMLInputElement
-
-    settings.relay_auth = target.checked ? RelayAuthMode.Aggressive : RelayAuthMode.Conservative
+  const onAuthModeChange = (checked: boolean) => {
+    settings.relay_auth = checked ? RelayAuthMode.Aggressive : RelayAuthMode.Conservative
   }
 
   const onsubmit = preventDefault(async () => {
@@ -41,11 +40,9 @@
           <p>Authenticate with unknown relays?</p>
         {/snippet}
         {#snippet input()}
-          <input
-            type="checkbox"
-            class="toggle"
-            onchange={onAuthModeChange}
-            checked={settings.relay_auth === RelayAuthMode.Aggressive} />
+          <ToggleInput
+            checked={settings.relay_auth === RelayAuthMode.Aggressive}
+            onchange={onAuthModeChange} />
         {/snippet}
         {#snippet info()}
           <p>Controls whether {PLATFORM_NAME} will identify you to relays not in your lists.</p>
@@ -56,7 +53,7 @@
           <p>Report errors?</p>
         {/snippet}
         {#snippet input()}
-          <input type="checkbox" class="toggle" bind:checked={settings.report_errors} />
+          <ToggleInput bind:checked={settings.report_errors} />
         {/snippet}
         {#snippet info()}
           <p>Allow {PLATFORM_NAME} to send error reports to help improve the app.</p>
@@ -67,7 +64,7 @@
           <p>Report usage?</p>
         {/snippet}
         {#snippet input()}
-          <input type="checkbox" class="toggle" bind:checked={settings.report_usage} />
+          <ToggleInput bind:checked={settings.report_usage} />
         {/snippet}
         {#snippet info()}
           <p>Allow {PLATFORM_NAME} to collect anonymous usage data.</p>

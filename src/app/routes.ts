@@ -102,6 +102,9 @@ export const goToSpace = (url: string, hash = "") => {
   return goto(makeSpacePath(url) + hash, {replaceState: true})
 }
 
+export const goToMovedSpace = (oldUrl: string, newUrl: string) =>
+  goto(get(page).url.pathname.replace(encodeRelay(oldUrl), encodeRelay(newUrl)))
+
 export const goToHome = () => {
   if (PLATFORM_RELAYS.length > 0) {
     goToSpace(PLATFORM_RELAYS[0], get(page).url.hash)

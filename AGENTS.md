@@ -26,7 +26,7 @@ routes/                    (top layer - can depend on anything)
   ↓
 app/components/            (can depend on app/* and lib/*)
   ↓
-app/core/ & app/util/      (can only depend on lib/*)
+app/*                      (can only depend on lib/*)
   ↓
 lib/                       (can only depend on external libraries)
   ↓
@@ -49,63 +49,18 @@ import {Dialog} from "$lib/components"
 import {repository} from "$app/core/state"
 ```
 
-## File Structure
+## Cleanup Pass
 
-```
-src/
-├── lib/                          # Generic reusable code
-│   ├── components/               # 38 UI components (Button, Dialog, etc.)
-│   ├── html.ts                   # DOM utilities
-│   ├── indexeddb.ts              # IndexedDB helpers
-│   └── util.ts                   # Generic utilities
-│
-├── app/
-│   ├── core/
-│   │   ├── state.ts              # State management, stores, constants (687 lines)
-│   │   ├── commands.ts           # Publishing events and other write operations (440+ lines)
-│   │   ├── requests.ts           # Loading data from network (191 lines)
-│   │   ├── sync.ts               # Data synchronization (296 lines)
-│   │   └── storage.ts            # IndexedDB setup
-│   │
-│   ├── util/
-│   │   ├── notifications.ts      # Push notifications (731 lines)
-│   │   ├── policies.ts           # Relay policies
-│   │   ├── routes.ts             # Routing helpers
-│   │   ├── modal.ts              # Modal management
-│   │   ├── toast.ts              # Toast notifications
-│   │   ├── theme.ts              # Theme switching
-│   │   └── keyboard.ts           # Keyboard handling
-│   │
-│   ├── editor/                   # Rich text editor config
-│   │   ├── index.ts              # TipTap setup with Nostr integration
-│   │   ├── EditorContent.svelte
-│   │   └── MentionNodeView.ts
-│   │
-│   └── components/               # 188 app-specific components
-│       ├── Space*.svelte         # Space/relay management
-│       ├── Room*.svelte          # Room/channel management
-│       ├── Chat*.svelte          # Direct messaging
-│       ├── Profile*.svelte       # User profiles
-│       ├── Thread*.svelte        # Threaded posts
-│       └── ...
-│
-├── routes/                       # SvelteKit file-based routing
-│   ├── +layout.svelte            # Root layout (sync logic here)
-│   ├── spaces/                   # Space management
-│   │   └── [relay]/              # Specific space
-│   │       ├── chat/             # Space chat
-│   │       ├── threads/          # Thread posts
-│   │       ├── calendar/         # Events
-│   │       └── [h]/              # Specific room (h = room id)
-│   ├── chat/                     # Direct messages
-│   ├── settings/                 # User settings
-│   └── [bech32]/                 # Bech32 entity viewer
-│
-├── assets/icons/                 # ~1,277 SVG icons
-├── app.html                      # HTML template
-├── app.css                       # Global styles
-└── types.d.ts                    # Type definitions
-```
+These are the things that most often get fixed by hand after the fact. Go through
+them before handing work back. The full style reference is under Development
+Conventions below.
+
+- **Comments** — only for genuinely surprising things: a workaround, a constraint imposed by a backend or platform, an invariant that isn't visible from the code in front of you. Never comment props, never restate what the next line does, never justify an ordinary decision. If a small refactor would make the comment stale, don't write it.
+- **Used once, inlined** — a derived value, helper, type, or named constant with a single use is indirection. Write `setTimeout(pollOnce, 3500)`, not a `POLL_INTERVAL` referenced twice in one file. Name something only when the name is what makes the code readable.
+- **Positive conditionals** — prefer `if (ready) { ... }` over `if (!ready) return`. Nesting is fine; when it gets deep that's the signal the function is doing too much, so split it. Many early returns belong in validation or pipeline functions, not everywhere else.
+- **Truthiness** — test values directly (`if (invoice.paid_at)`) instead of comparing against `null`/`undefined`, and put the truthy branch first in a ternary.
+- **Standard names** — `loading` for in-flight state, `on*` for handlers bound to an event, a plain verb (`submit`, `save`) for the action itself. Use `{prop}` shorthand when the names match.
+- **Errors** — toast a human-readable message and `console.error` anything unexpected (e.g. a non-`HostingError`). Never swallow an error you didn't anticipate.
 
 ## State Management
 
@@ -161,24 +116,27 @@ src/
 
 - **No `null`** - only use `undefined`
 - Svelte 5 runes (`$state`, `$derived`, `$effect`) only in UI components
-- TailwindCSS and DaisyUI styling
-- Only add comments for really weird stuff
-- Do not call functions in components unless a parameter is reactive. Instead, use a svelte store or rune to make it reactive.
+- TailwindCSS styling with css components customized by theme. See lib/components for examples.
+- Comments, naming, conditionals and single-use indirection are covered by the Cleanup Pass above.
 - Do not use `any`. If there are type errors related to `unknown`, they are likely because the upstream definition of the data is incorrect.
 - When dynamically building classes, use `cx` from `classnames` rather than embedded ternaries or svelte 4's old `class:` syntax.
 - When creating forms, use `FieldInline` or `Field` instead of custom elements/tailwindcss
 - Do not define svelte event handlers inline, instead name them and put them in the script section of templates
+- Write a `{#if}`/`{:else if}` chain rather than hoisting display strings into a lookup `Record` in the script section.
 - Avoid using `as`, except where necessary. Instead, annotate function parameters, and ensure upstream values are typed correctly.
 - Instead of `getTag(tagName, event.tags)?.[1] || ""`, use `getTagValue(tagName, event.tags)`
 - Do not render a profile's `about` directly (e.g. `profile.about`); use the `ProfileAbout` component instead.
 - Use `type Props` instead of interface when defining props for svelte components.
 - When a component's value/prop shape mirrors a subset of an existing type, derive it with `Pick`/`Partial` and `export` that type from the component's `<script module>` (e.g. a `Values` type) for callers to import, instead of re-enumerating its sub-properties.
+- Avoid pass-through functions except when the wrapper is part of an abstraction. `x => y()` is not ok, but `x => this.impl.y()` is ok, for example.
+- When declaring variables in a svelte component, the order should generally be: props, constants derived from props/state, functions declared with `const`, mutable variables declared with `let`, effects, onMount. This order may vary due to dependencies, but should generally be adhered to.
 
-**Human-First Simplicity (Jon Staab Style):**
+**Human-First Simplicity:**
 
 - Prefer direct, readable code over layered abstractions.
 - Do not add indirection (extra helpers, wrappers, stores, or derived state) unless it removes real repeated complexity.
-- Reuse existing Welshman and Flotilla primitives before introducing new utilities or dependencies.
+- Abstractions must be either: elegant and self-explanatory (bottom-up design), or used in at least 3 locations (ugly glue code).
+- Reuse existing Welshman and Flotilla primitives before introducing new utilities or dependencies. See /welshman-* skills for details.
 - Favor linear control flow and explicit naming over clever patterns.
 - Remove defensive checks that do not apply in this runtime model.
 - When two approaches work, pick the one that feels more human and easier to maintain.
@@ -243,15 +201,6 @@ pnpm run check            # Type check
 ## Environment Variables
 
 See `.env.template` for all options.
-
-## Important Files to Reference
-
-- **src/app/core/state.ts** - All stores and constants
-- **src/app/core/sync.ts** - Data synchronization
-- **src/app/core/requests.ts** - Utilities for requesting data
-- **src/app/core/commands.ts** - Publishing patterns
-- **src/app/util/notifications.ts** - Notification badges and push notifications
-- **src/routes/+layout.svelte** - Top-level sync logic
 
 ## Mobile Development
 

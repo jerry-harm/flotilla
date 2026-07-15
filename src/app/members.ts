@@ -1,4 +1,4 @@
-import {derived, writable} from "svelte/store"
+import {derived, readable, writable} from "svelte/store"
 import {
   ManagementMethod,
   RELAY_ADD_MEMBER,
@@ -20,7 +20,7 @@ import {
   sortEventsAsc,
 } from "@welshman/util"
 import type {Filter, PublishedRoomMeta, TrustedEvent} from "@welshman/util"
-import {first, memoize, sortBy, spec, uniq} from "@welshman/lib"
+import {first, sortBy, spec, uniq} from "@welshman/lib"
 import {addRoomMember, manageRelay, pubkey, waitForThunkError} from "@welshman/app"
 import {load} from "@welshman/net"
 import {get} from "svelte/store"
@@ -266,17 +266,14 @@ export enum MembershipStatus {
   Granted,
 }
 
-export const deriveUserIsSpaceAdmin = memoize((url?: string) => {
-  const store = writable(false)
-
-  if (url) {
-    manageRelay(url, {method: ManagementMethod.SupportedMethods, params: []}).then(res =>
-      store.set(Boolean(res.result?.length)),
-    )
-  }
-
-  return store
-})
+export const deriveUserIsSpaceAdmin = (url?: string) =>
+  readable(false, set => {
+    if (url) {
+      manageRelay(url, {method: ManagementMethod.SupportedMethods, params: []}).then(res =>
+        set(Boolean(res.result?.length)),
+      )
+    }
+  })
 
 export const deriveUserSpaceMembershipStatus = (url: string) => {
   // Fetch member list and user add/remove events directly in this derivation.

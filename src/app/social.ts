@@ -33,7 +33,7 @@ export const isEventMuted = withGetter(
     const regex =
       mutedWords.length > 0
         ? new RegExp(`\\b(${mutedWords.map(w => w.toLowerCase().trim()).join("|")})\\b`)
-        : null
+        : undefined
 
     return (e: TrustedEvent) => {
       if (!pubkey) return false

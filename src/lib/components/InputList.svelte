@@ -1,5 +1,6 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
+  import type {Maybe} from "@welshman/lib"
   import {append, removeAt, replaceAt, insertAt} from "@welshman/lib"
   import Button from "@lib/components/Button.svelte"
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
@@ -19,7 +20,7 @@
     placeholder = "Enter text...",
     allowAdd = true,
   }: Props & {allowAdd?: boolean} = $props()
-  let draggedIndex: number | null = $state(null)
+  let draggedIndex: Maybe<number> = $state()
 
   const onChange = (newValue: string[]) => {
     value = newValue
@@ -42,14 +43,14 @@
   const handleDragOver = (e: DragEvent, index: number) => {
     e.preventDefault()
 
-    if (draggedIndex !== null && draggedIndex !== index) {
+    if (draggedIndex !== undefined && draggedIndex !== index) {
       onChange(insertAt(index, value[draggedIndex], removeAt(draggedIndex, value)))
       draggedIndex = index
     }
   }
 
   const handleDragEnd = () => {
-    draggedIndex = null
+    draggedIndex = undefined
   }
 </script>
 

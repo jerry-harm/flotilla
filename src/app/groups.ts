@@ -325,6 +325,41 @@ export const setSpaces = async (urls: string[]) => {
   return publishThunk({event, relays})
 }
 
+export const moveSpace = async (oldUrl: string, newUrl: string) => {
+  const from = normalizeRelayUrl(oldUrl)
+  const to = normalizeRelayUrl(newUrl)
+  const list = get(userGroupList)
+
+  if (!list || from === to) return
+
+  const rewrite = (tags: string[][]) =>
+    tags.map(t => {
+      if (t[0] === "r" && normalizeRelayUrl(t[1]) === from) return ["r", to]
+      if (t[0] === "group" && normalizeRelayUrl(t[2] || "") === from) return ["group", t[1], to]
+      return t
+    })
+
+  const publicTags = rewrite(list.publicTags)
+  const privateTags = rewrite(list.privateTags)
+  const publicChanged = !equals(publicTags, list.publicTags)
+  const privateChanged = !equals(privateTags, list.privateTags)
+
+  if (!publicChanged && !privateChanged) return
+
+  const event = await updateList(list, {
+    publicTags: publicChanged ? publicTags : undefined,
+    privateTags: privateChanged ? privateTags : undefined,
+  }).reconcile(nip44EncryptToSelf)
+  const relays = uniq([
+    oldUrl,
+    newUrl,
+    ...Router.get().FromUser().getUrls(),
+    ...getRelayTagValues(event.tags),
+  ])
+
+  return publishThunk({event, relays})
+}
+
 export const addRoom = async (url: string, h: string) => {
   const list = get(userGroupList) || makeList({kind: ROOMS})
   const newTags = [

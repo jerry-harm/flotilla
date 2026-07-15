@@ -3,7 +3,6 @@
   import {goto} from "$app/navigation"
   import {displayRelayUrl} from "@welshman/util"
   import {deriveRelay} from "@welshman/app"
-  import Pen from "@assets/icons/pen.svg?dataurl"
   import ArrowLeft from "@assets/icons/arrow-left.svg?dataurl"
   import ShieldUser from "@assets/icons/shield-user.svg?dataurl"
   import BillList from "@assets/icons/bill-list.svg?dataurl"
@@ -15,20 +14,13 @@
   import RelayName from "@app/components/RelayName.svelte"
   import RelayDescription from "@app/components/RelayDescription.svelte"
   import ProfileLink from "@app/components/ProfileLink.svelte"
-  import SpaceEdit from "@app/components/SpaceEdit.svelte"
   import SpaceMembersSummary from "@app/components/SpaceMembersSummary.svelte"
   import SpaceFeaturedContent from "@app/components/SpaceFeaturedContent.svelte"
-  import {deriveUserIsSpaceAdmin} from "@app/members"
   import {makeSpacePath} from "@app/routes"
   import {decodeRelay} from "@app/relays"
-  import {pushModal} from "@app/modal"
 
   const url = decodeRelay($page.params.relay!)
   const relay = deriveRelay(url)
-  const userIsAdmin = deriveUserIsSpaceAdmin(url)
-
-  const startEdit = () => pushModal(SpaceEdit, {url, initialValues: $relay || {url}})
-
   const showMenu = () => goto(makeSpacePath(url))
 </script>
 
@@ -104,12 +96,6 @@
           </p>
         {/if}
       </div>
-    {/if}
-    {#if $userIsAdmin}
-      <Button class="button button-primary" onclick={startEdit}>
-        <Icon icon={Pen} />
-        Edit Space
-      </Button>
     {/if}
   </div>
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">

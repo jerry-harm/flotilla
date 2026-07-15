@@ -55,6 +55,10 @@ export const DEFAULT_SPACES = fromCsv(import.meta.env.VITE_DEFAULT_SPACES).map(n
 
 export const DEFAULT_PUBKEYS = import.meta.env.VITE_DEFAULT_PUBKEYS
 
+export const HOSTING_BACKEND_URL = import.meta.env.VITE_HOSTING_BACKEND_URL
+
+export const HOSTING_RELAY_DOMAIN = import.meta.env.VITE_HOSTING_RELAY_DOMAIN
+
 export const DUFFLEPUD_URL = "https://dufflepud.coracle.social"
 
 export const THUMBNAIL_URL = import.meta.env.VITE_THUMBNAIL_URL

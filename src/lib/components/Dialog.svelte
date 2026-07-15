@@ -1,3 +1,7 @@
+<script module lang="ts">
+  export type DialogSize = "default" | "large"
+</script>
+
 <script lang="ts">
   import type {Component} from "svelte"
   import cx from "classnames"
@@ -11,18 +15,27 @@
     onClose?: any
     noEscape?: boolean
     fullscreen?: boolean
+    size?: DialogSize
     children: {
       component: Component<any>
       props: Record<string, any>
     }
   }
 
-  const {onClose = noop, noEscape = false, fullscreen = false, children}: Props = $props()
+  const {
+    onClose = noop,
+    noEscape = false,
+    fullscreen = false,
+    size = "default",
+    children,
+  }: Props = $props()
 
   const wrapperClass = $derived(
     cx("absolute inset-0 flex sm:relative pointer-events-none", {
       "items-center justify-center": fullscreen,
-      "items-end sm:w-[520px] sm:items-center": !fullscreen,
+      "items-end sm:items-center": !fullscreen,
+      "sm:w-[520px]": !fullscreen && size === "default",
+      "sm:w-[90%]": !fullscreen && size === "large",
     }),
   )
 

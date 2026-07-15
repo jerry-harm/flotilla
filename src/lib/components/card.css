@@ -2,8 +2,6 @@
   .card {
     @apply text-content bg-surface border-line rounded-3xl border-solid p-6;
     border-width: var(--border-thick);
-    /* clip fill to the padding box so the opaque border owns the rounded
-       corners — otherwise the bg bleeds past the arc and specks white */
     background-clip: padding-box;
     box-shadow: var(--shadow-lg);
     transition:
@@ -12,7 +10,7 @@
       border-color 0.2s ease;
 
     &.card-sm {
-      @apply rounded-2xl p-4;
+      @apply p-4;
       box-shadow: var(--shadow);
     }
 
@@ -26,6 +24,20 @@
 
     &.card-flat {
       box-shadow: none;
+    }
+
+    &.card-primary {
+      --accent: var(--primary);
+    }
+
+    &.card-secondary {
+      --accent: var(--secondary);
+    }
+
+    &.card-primary,
+    &.card-secondary {
+      background-color: color-mix(in srgb, var(--accent) 10%, var(--surface));
+      border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
     }
   }
 
@@ -44,8 +56,22 @@
   box-shadow: var(--shadow), var(--shadow-inset);
 }
 
+[data-fl-theme="clay"] .card-primary,
+[data-fl-theme="clay"] .card-secondary {
+  box-shadow:
+    8px 8px 0 color-mix(in srgb, var(--accent) 28%, transparent),
+    var(--shadow-inset);
+}
+
+[data-fl-theme="clay"] .card-sm.card-primary,
+[data-fl-theme="clay"] .card-sm.card-secondary {
+  box-shadow:
+    6px 6px 0 color-mix(in srgb, var(--accent) 28%, transparent),
+    var(--shadow-inset);
+}
+
 /* cards nested in another card (or a dialog) drop the raised clay treatment and
-   read flat — no offset shadow / inset, hairline border */
+   read flat — no offset shadow / inset, hairline border. */
 [data-fl-theme="clay"] .card .card,
 [data-fl-theme="clay"] .dialog .card {
   box-shadow: none;

@@ -16,8 +16,8 @@
   // selected via its time inputs; we expose unix seconds
   let element: HTMLElement
   let isOpen = $state(false)
-  let startDate: number | null = $state(start ? start * 1000 : null)
-  let endDate: number | null = $state(end ? end * 1000 : null)
+  let startDate: number | undefined = $state(start ? start * 1000 : undefined)
+  let endDate: number | undefined = $state(end ? end * 1000 : undefined)
   let startDateTime = $state("")
   let endDateTime = $state("")
 
