@@ -131,7 +131,7 @@ export const videoCallLayout = writable<VideoCallLayout>(VideoCallLayout.Split)
 export const videoPrimaryTileKey = writable<string | undefined>(undefined)
 
 export const videoTileCount = derived(
-  [currentCallSession, callState, videoTrackRevision],
+  [currentCallSession, callState, videoTrackRevision, participantMediaState],
   ([$session, $state]) => {
     if ($state !== CallState.Connected || !$session) return 0
     return countLiveVisualFeeds($session)
@@ -478,7 +478,7 @@ const countLiveVisualFeeds = (session: CallSession): number => {
   for (const rp of livekit.remoteParticipants.values()) {
     for (const source of VISUAL_SOURCES) {
       const pub = rp.getTrackPublication(source)
-      if (pub?.isSubscribed && pub.track) n += 1
+      if (pub?.isSubscribed && pub.track && !pub.isMuted) n += 1
     }
   }
   return n

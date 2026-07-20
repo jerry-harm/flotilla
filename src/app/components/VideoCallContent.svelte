@@ -21,7 +21,9 @@
     currentCallSession,
     callTargetRoom,
     mediaStateByIdentity,
+    participantMediaState,
     pubkeyFromLiveKitIdentity,
+    videoTrackRevision,
   } from "@app/call"
 
   type Props = {
@@ -74,6 +76,10 @@
 
   const videoTiles = $derived.by(() => {
     const session = $currentCallSession
+    // LiveKit mutates remoteParticipants/tracks in place; these stores are what
+    // actually change on join/leave and track subscribe/unsubscribe.
+    void $participantMediaState
+    void $videoTrackRevision
     if (!session || $callTargetRoom?.url !== url || $callTargetRoom?.h !== h) {
       return []
     }
@@ -106,7 +112,8 @@
 
     for (const rp of livekit.remoteParticipants.values()) {
       const camPub = rp.getTrackPublication(Track.Source.Camera)
-      if (camPub?.isSubscribed && camPub.track) {
+      // Camera off mutes the publication rather than unsubscribing; still render avatar.
+      if (camPub?.isSubscribed && camPub.track && !camPub.isMuted) {
         videoTiles.push({
           liveKitIdentity: rp.identity,
           isLocal: false,
@@ -116,7 +123,7 @@
         })
       }
       const screenPub = rp.getTrackPublication(Track.Source.ScreenShare)
-      if (screenPub?.isSubscribed && screenPub.track) {
+      if (screenPub?.isSubscribed && screenPub.track && !screenPub.isMuted) {
         videoTiles.push({
           liveKitIdentity: rp.identity,
           isLocal: false,
@@ -290,10 +297,7 @@
   {:else}
     <div
       class="flex min-h-[12rem] flex-1 flex-col items-center justify-center gap-2 rounded-2xl bg-surface p-4 text-center text-sm opacity-80">
-      <p>No one is sharing video yet.</p>
-      <p class="text-xs">
-        Participants appear here when they turn on their camera or share their screen.
-      </p>
+      <p>Waiting for participants…</p>
     </div>
   {/if}
 {/snippet}
