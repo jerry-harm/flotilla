@@ -15,8 +15,7 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import {pushToast} from "@app/toast"
-  import {attemptRelayAccess} from "@app/relays"
-  import {parseInviteLink} from "@app/invites"
+  import {Access, parseInviteLink} from "@app/access"
 
   type Props = {
     url: string
@@ -25,6 +24,8 @@
 
   const {url, callback}: Props = $props()
 
+  const access = new Access(url)
+
   const back = () => history.back()
 
   const join = async () => {
@@ -32,7 +33,7 @@
 
     try {
       const claim = parseInviteLink(value)?.claim || value
-      const message = await attemptRelayAccess(url, claim)
+      const message = await access.attempt(claim)
 
       if (message) {
         return pushToast({theme: "error", message, timeout: 30_000})

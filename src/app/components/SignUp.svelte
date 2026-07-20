@@ -24,7 +24,7 @@
   import SignUpEmail from "@app/components/SignUpEmail.svelte"
   import SignUpProfile from "@app/components/SignUpProfile.svelte"
   import SignUpComplete from "@app/components/SignUpComplete.svelte"
-  import {attemptRelayAccess} from "@app/relays"
+  import {attemptRelayAccess} from "@app/access"
   import {
     POMADE_SIGNERS,
     PLATFORM_NAME,

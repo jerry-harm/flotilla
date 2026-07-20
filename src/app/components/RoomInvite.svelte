@@ -1,36 +1,36 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import {displayRelayUrl, ManagementMethod} from "@welshman/util"
+  import {displayRelayUrl} from "@welshman/util"
   import {Share} from "@capacitor/share"
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import Upload from "@assets/icons/upload.svg?dataurl"
   import Copy from "@assets/icons/copy.svg?dataurl"
-  import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import Spinner from "@lib/components/Spinner.svelte"
   import Field from "@lib/components/Field.svelte"
   import Button from "@lib/components/Button.svelte"
   import Icon from "@lib/components/Icon.svelte"
-  import Divider from "@lib/components/Divider.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
-  import ProfileMultiSelect from "@app/components/ProfileMultiSelect.svelte"
   import QRCode from "@app/components/QRCode.svelte"
-  import {clip, pushToast} from "@app/toast"
-  import {deriveSupportedMethods} from "@app/relays"
-  import {addSpaceMembers} from "@app/members"
+  import RoomName from "@app/components/RoomName.svelte"
   import {Access, makeInviteLink} from "@app/access"
+  import {PLATFORM_NAME} from "@app/env"
+  import {clip} from "@app/toast"
 
-  const {url} = $props()
+  type Props = {
+    url: string
+    h: string
+  }
+
+  const {url, h}: Props = $props()
 
   const access = new Access(url)
-  const {claim, loading} = access
-  const inviteStatus = access.createInviteStatus(false)
-  const supportedMethods = deriveSupportedMethods(url)
-  const canAddMembers = $derived($supportedMethods.includes(ManagementMethod.AllowPubkey))
+  const {claim, loading, roomCode} = access
+  const inviteStatus = access.createInviteStatus(true)
 
   const back = () => history.back()
   const copyInvite = () => clip(invite)
@@ -48,30 +48,8 @@
   let canShare = $state(false)
   let invite = $state("")
 
-  let adding = $state(false)
-  let pubkeys: string[] = $state([])
-
-  const addMembers = async () => {
-    if (pubkeys.length === 0) return
-
-    adding = true
-
-    try {
-      const error = await addSpaceMembers(url, pubkeys)
-
-      if (error) {
-        pushToast({theme: "error", message: error})
-      } else {
-        pushToast({message: "Members have successfully been added!"})
-        back()
-      }
-    } finally {
-      adding = false
-    }
-  }
-
   $effect(() => {
-    invite = makeInviteLink({url, claim: $claim})
+    invite = makeInviteLink({url, claim: $claim, h, code: $roomCode})
   })
 
   onMount(async () => {
@@ -82,17 +60,18 @@
       canShare = false
     }
 
-    await access.prepareInvite()
+    await access.prepareInvite(h)
   })
 </script>
 
 <Modal>
   <ModalBody>
     <ModalHeader>
-      <ModalTitle>Create an Invite</ModalTitle>
+      <ModalTitle>Create a Room Invite</ModalTitle>
       <ModalSubtitle>
-        Get a link that you can use to invite people to
-        <span class="text-primary">{displayRelayUrl(url)}</span>
+        Get a link to invite people to
+        <RoomName {url} {h} class="text-primary" />
+        in <span class="text-primary">{displayRelayUrl(url)}</span>
       </ModalSubtitle>
     </ModalHeader>
     <div>
@@ -106,8 +85,10 @@
         </p>
       {:else if $inviteStatus === "auth"}
         <p class="flex justify-center items-center">
-          Oops! It looks like you're not a member of this space.
+          Oops! It looks like you're not allowed to create invites for this room.
         </p>
+      {:else if $inviteStatus === "failed"}
+        <p class="flex justify-center items-center">Unable to create a room invite code.</p>
       {:else}
         <div class="flex flex-col items-center gap-6">
           <div class="w-48">
@@ -135,7 +116,8 @@
             {/snippet}
             {#snippet info()}
               <p>
-                This invite link can be used by clicking "Add Space" and pasting it there.
+                This invite link includes access to the space and room. Anyone with the link can
+                join by opening it in {PLATFORM_NAME}.
                 {#if !$claim}
                   This space did not issue a claim for this link, so additional steps might be
                   required.
@@ -146,32 +128,8 @@
         </div>
       {/if}
     </div>
-    {#if canAddMembers}
-      <Divider>or</Divider>
-      <Field>
-        {#snippet label()}
-          <p>Add members directly</p>
-        {/snippet}
-        {#snippet input()}
-          <ProfileMultiSelect bind:value={pubkeys} />
-        {/snippet}
-      </Field>
-    {/if}
   </ModalBody>
   <ModalFooter>
-    {#if canAddMembers}
-      <Button class="button button-link" onclick={back}>
-        <Icon icon={AltArrowLeft} />
-        Go back
-      </Button>
-      <Button
-        class="button button-primary"
-        onclick={addMembers}
-        disabled={adding || pubkeys.length === 0}>
-        <Spinner loading={adding}>Save</Spinner>
-      </Button>
-    {:else}
-      <Button class="button button-primary grow" onclick={back}>Done</Button>
-    {/if}
+    <Button class="button button-primary grow" onclick={back}>Done</Button>
   </ModalFooter>
 </Modal>

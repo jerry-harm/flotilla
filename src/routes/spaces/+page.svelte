@@ -29,7 +29,7 @@
   import {userSpaceUrls, loadUserGroupList, groupListPubkeysByUrl, setSpaces} from "@app/groups"
   import {PLATFORM_RELAYS, DEFAULT_RELAYS} from "@app/env"
   import {bootstrapPubkeys} from "@app/social"
-  import {parseInviteLink} from "@app/invites"
+  import {parseInviteLink} from "@app/access"
   import {pushModal} from "@app/modal"
   import {goToSpace, makeSpacePath} from "@app/routes"
   import {notifications} from "@app/notifications"

@@ -1,6 +1,6 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import {dissoc, maybe} from "@welshman/lib"
+  import {maybe} from "@welshman/lib"
   import {preventDefault} from "@lib/html"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
@@ -14,23 +14,18 @@
   import SpaceAccessRequest from "@app/components/SpaceAccessRequest.svelte"
   import SpaceJoinNotifications from "@app/components/SpaceJoinNotifications.svelte"
   import SpaceJoinStatus from "@app/components/SpaceJoinStatus.svelte"
-  import {attemptRelayAccess} from "@app/relays"
-  import {addSpace} from "@app/groups"
-  import {resyncApplicationData} from "@app/sync"
-  import {broadcastUserData} from "@app/profiles"
-  import {setSpaceNotifications} from "@app/settings"
-  import {relaysMostlyRestricted} from "@app/policies"
-  import {notificationSettings} from "@app/settings"
+  import {Access} from "@app/access"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
   import {goToSpace} from "@app/routes"
-  import {Push} from "@app/push"
 
   type Props = {
     url: string
   }
 
   const {url}: Props = $props()
+
+  const access = new Access(url)
 
   const back = () => history.back()
 
@@ -42,27 +37,9 @@
     loading = true
 
     try {
-      if (notifications) {
-        if (!notificationSettings.get().push) {
-          await setSpaceNotifications(url, true)
-        } else {
-          const permissions = await Push.request()
-
-          if (permissions.startsWith("granted")) {
-            await setSpaceNotifications(url, true)
-          }
-        }
-      } else {
-        await setSpaceNotifications(url, false)
-      }
-
-      await addSpace(url)
+      await access.completeJoin(notifications)
 
       pushToast({message: "Welcome to the space!"})
-      relaysMostlyRestricted.update(dissoc(url))
-      resyncApplicationData()
-      broadcastUserData([url])
-
       await goToSpace(url)
     } catch (e) {
       console.error("Failed to join space:", e)
@@ -77,7 +54,7 @@
   let notifications = $state(true)
 
   onMount(async () => {
-    error = await attemptRelayAccess(url)
+    error = await access.attempt()
     loading = false
   })
 </script>

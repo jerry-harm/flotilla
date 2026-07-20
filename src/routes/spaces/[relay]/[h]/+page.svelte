@@ -33,11 +33,11 @@
   import ThunkToast from "@app/components/ThunkToast.svelte"
   import RoomItemAddMember from "@src/app/components/RoomItemAddMember.svelte"
   import RoomComposeEdit from "@src/app/components/RoomComposeEdit.svelte"
-  import {canEnforceNip70} from "@app/relays"
-  import {prependParent, deriveRoom, getRoomType, PROTECTED, RoomType} from "@app/groups"
+  import {publishRoomJoinRequest} from "@app/access"
   import {publishDelete} from "@app/deletes"
-  import {decodeRelay} from "@app/relays"
+  import {prependParent, deriveRoom, getRoomType, PROTECTED, RoomType} from "@app/groups"
   import {deriveUserRoomMembershipStatus, MembershipStatus} from "@app/members"
+  import {canEnforceNip70, decodeRelay} from "@app/relays"
   import {userSettingsValues} from "@app/settings"
   import VoiceWidget from "@app/components/VoiceWidget.svelte"
   import VideoCallContent from "@app/components/VideoCallContent.svelte"
@@ -121,6 +121,7 @@
   const shouldProtect = canEnforceNip70(url)
   const membershipStatus = deriveUserRoomMembershipStatus(url, h)
   const at = $derived(parseInt($page.url.searchParams.get("at")!))
+  const inviteCode = $derived($page.url.searchParams.get("code") || "")
 
   const showRoomDetail = () => pushModal(RoomDetail, {url, h})
 
@@ -128,7 +129,9 @@
     joining = true
 
     try {
-      const message = await waitForThunkError(joinRoom(url, makeRoomMeta({h})))
+      const message = await waitForThunkError(
+        inviteCode ? publishRoomJoinRequest(url, h, inviteCode) : joinRoom(url, makeRoomMeta({h})),
+      )
 
       if (message && !message.startsWith("duplicate:")) {
         return pushToast({theme: "error", message})

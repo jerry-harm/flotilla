@@ -12,11 +12,12 @@
   import SpaceAuthError from "@app/components/SpaceAuthError.svelte"
   import SpaceTrustRelay from "@app/components/SpaceTrustRelay.svelte"
   import SpaceJoin from "@app/components/SpaceJoin.svelte"
-  import {modal, pushModal} from "@app/modal"
-  import {makeSpacePath} from "@app/routes"
-  import {decodeRelay, deriveRelayAuthError} from "@app/relays"
+  import {deriveRelayAuthError} from "@app/access"
   import {loadUserGroupList, userSpaceUrls} from "@app/groups"
+  import {modal, pushModal} from "@app/modal"
   import {relaysPendingTrust} from "@app/policies"
+  import {decodeRelay} from "@app/relays"
+  import {makeSpacePath} from "@app/routes"
 
   type Props = {
     children?: Snippet

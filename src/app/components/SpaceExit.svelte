@@ -11,8 +11,8 @@
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
+  import {publishLeaveRequest} from "@app/access"
   import {removeSpace} from "@app/groups"
-  import {publishLeaveRequest} from "@app/relays"
   import {removeTrustedRelay} from "@app/settings"
 
   const {url} = $props()

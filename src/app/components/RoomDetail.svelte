@@ -1,6 +1,7 @@
 <script lang="ts">
   import {displayRelayUrl} from "@welshman/util"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
+  import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import EyeClosed from "@assets/icons/eye-closed.svg?dataurl"
   import Eye from "@assets/icons/eye.svg?dataurl"
   import MinusCircle from "@assets/icons/minus-circle.svg?dataurl"
@@ -18,10 +19,11 @@
   import ProfileCircles from "@app/components/ProfileCircles.svelte"
   import RoomMembers from "@app/components/RoomMembers.svelte"
   import RoomDetailMenu from "@app/components/RoomDetailMenu.svelte"
+  import RoomInvite from "@app/components/RoomInvite.svelte"
   import RoomName from "@app/components/RoomName.svelte"
   import RoomImage from "@app/components/RoomImage.svelte"
   import {deriveRoom, deriveUserRooms, addRoom, removeRoom} from "@app/groups"
-  import {deriveRoomMembers} from "@app/members"
+  import {deriveRoomMembers, deriveUserIsRoomAdmin} from "@app/members"
   import {deriveShouldNotify, toggleRoomNotifications} from "@app/settings"
   import {pushModal} from "@app/modal"
 
@@ -35,6 +37,7 @@
   const room = deriveRoom(url, h)
   const members = deriveRoomMembers(url, h)
   const userRooms = deriveUserRooms(url)
+  const userIsAdmin = deriveUserIsRoomAdmin(url, h)
 
   const isFavorite = $derived($userRooms.includes(h))
   const shouldNotify = deriveShouldNotify(url, h)
@@ -42,6 +45,8 @@
   const back = () => history.back()
 
   const showMembers = () => pushModal(RoomMembers, {url, h})
+
+  const createInvite = () => pushModal(RoomInvite, {url, h})
 
   const toggleFavorite = () => {
     if (isFavorite) {
@@ -114,13 +119,21 @@
       </div>
     </div>
     {#if $members !== undefined && $members.length > 0}
-      <div class="card card-sm flex items-center justify-between gap-4">
-        <div class="flex min-w-0 items-center gap-4">
-          <span class="shrink-0">Members:</span>
-          <ProfileCircles pubkeys={$members} class="min-w-0 overflow-hidden" />
+      <div class="card card-sm flex flex-col gap-3">
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex min-w-0 items-center gap-4">
+            <span class="shrink-0">Members:</span>
+            <ProfileCircles pubkeys={$members} class="min-w-0 overflow-hidden" />
+          </div>
+          <Button class="button button-neutral button-sm shrink-0" onclick={showMembers}
+            >View All</Button>
         </div>
-        <Button class="button button-neutral button-sm shrink-0" onclick={showMembers}
-          >View All</Button>
+        {#if $userIsAdmin}
+          <Button class="button button-neutral" onclick={createInvite}>
+            <Icon icon={LinkRound} />
+            Create invite
+          </Button>
+        {/if}
       </div>
     {:else if $members === undefined}
       <div class="card card-sm bg-surface flex items-center gap-4">

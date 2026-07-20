@@ -1,6 +1,7 @@
 <script lang="ts">
   import {debounce} from "throttle-debounce"
-  import {dissoc, maybe} from "@welshman/lib"
+  import {maybe} from "@welshman/lib"
+  import {goto} from "$app/navigation"
   import {preventDefault} from "@lib/html"
   import {slideAndFade} from "@lib/transition"
   import Spinner from "@lib/components/Spinner.svelte"
@@ -22,15 +23,8 @@
   import SpaceJoinNotifications from "@app/components/SpaceJoinNotifications.svelte"
   import SpaceJoinStatus from "@app/components/SpaceJoinStatus.svelte"
   import {pushToast} from "@app/toast"
-  import {goToSpace} from "@app/routes"
-  import {resyncApplicationData} from "@app/sync"
-  import {relaysMostlyRestricted} from "@app/policies"
-  import {notificationSettings, setSpaceNotifications} from "@app/settings"
-  import {parseInviteLink} from "@app/invites"
-  import {Push} from "@app/push"
-  import {attemptRelayAccess} from "@app/relays"
-  import {addSpace} from "@app/groups"
-  import {broadcastUserData} from "@app/profiles"
+  import {goToSpace, makeRoomPath} from "@app/routes"
+  import {Access, parseInviteLink} from "@app/access"
 
   type Props = {
     invite: string
@@ -50,34 +44,26 @@
   })
 
   const joinRelay = async () => {
-    const {url, claim} = inviteData!
+    const data = inviteData!
+    const access = new Access(data.url)
 
-    error = await attemptRelayAccess(url, claim)
+    error = await access.acceptInvite(data, notifications)
 
-    if (!error) {
-      if (notifications) {
-        if (!notificationSettings.get().push) {
-          await setSpaceNotifications(url, true)
-        } else {
-          const permissions = await Push.request()
-
-          if (permissions.startsWith("granted")) {
-            await setSpaceNotifications(url, true)
-          }
-        }
-      } else {
-        await setSpaceNotifications(url, false)
-      }
-
-      await addSpace(url)
-
-      pushToast({message: "Welcome to the space!"})
-      relaysMostlyRestricted.update(dissoc(url))
-      resyncApplicationData()
-      broadcastUserData([url])
-
-      await goToSpace(url)
+    if (error) {
+      return
     }
+
+    if (data.h) {
+      const path = makeRoomPath(data.url, data.h)
+      const qp = data.code ? `?code=${encodeURIComponent(data.code)}` : ""
+
+      pushToast({message: "Welcome to the room!"})
+      await goto(path + qp)
+      return
+    }
+
+    pushToast({message: "Welcome to the space!"})
+    await goToSpace(data.url)
   }
 
   const join = async () => {
@@ -96,15 +82,21 @@
   let notifications = $state(true)
 
   const inviteData = $derived(parseInviteLink(invite))
+  const isRoomInvite = $derived(Boolean(inviteData?.h))
 </script>
 
 <Modal tag="form" onsubmit={preventDefault(join)}>
   <ModalBody>
     {#if !hideHeader}
       <ModalHeader>
-        <ModalTitle>Join a Space</ModalTitle>
-        <ModalSubtitle
-          >Enter a relay URL or invite link below to join an existing space.</ModalSubtitle>
+        <ModalTitle>{isRoomInvite ? "Join a Room" : "Join a Space"}</ModalTitle>
+        <ModalSubtitle>
+          {#if isRoomInvite}
+            Enter a room invite link below to join an existing room.
+          {:else}
+            Enter a relay URL or invite link below to join an existing space.
+          {/if}
+        </ModalSubtitle>
       </ModalHeader>
       <Field>
         {#snippet label()}
@@ -145,7 +137,7 @@
       Go back
     </Button>
     <Button type="submit" class="button button-primary" disabled={!inviteData || loading}>
-      <Spinner {loading}>Join Space</Spinner>
+      <Spinner {loading}>{isRoomInvite ? "Join Room" : "Join Space"}</Spinner>
       <Icon icon={AltArrowRight} />
     </Button>
   </ModalFooter>

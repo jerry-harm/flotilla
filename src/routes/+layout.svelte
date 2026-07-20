@@ -60,7 +60,7 @@
   import * as appDevice from "@app/device"
   import * as actionItems from "@app/actionItems"
   import * as appFeeds from "@app/feeds"
-  import * as invites from "@app/invites"
+  import * as access from "@app/access"
   import * as healthChecks from "@app/healthChecks"
   import {theme} from "@app/theme"
   import {toast, pushToast} from "@app/toast"
@@ -112,7 +112,7 @@
     ...appDevice,
     ...actionItems,
     ...appFeeds,
-    ...invites,
+    ...access,
     ...healthChecks,
     ...comments,
     ...deletes,

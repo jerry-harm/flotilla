@@ -1,38 +1,16 @@
 import {
-  RELAY_INVITE,
-  RELAY_JOIN,
-  RELAY_LEAVE,
   ManagementMethod,
   getRelaysFromList,
-  getTagValue,
   isShareableRelayUrl,
   isSignedEvent,
-  makeEvent,
   normalizeRelayUrl,
 } from "@welshman/util"
 import type {List, RelayProfile} from "@welshman/util"
-import {AuthStateEvent, AuthStatus, Pool, SocketEvent, SocketStatus, load} from "@welshman/net"
+import {AuthStateEvent, AuthStatus, Pool, SocketEvent, SocketStatus} from "@welshman/net"
 import {derived, readable} from "svelte/store"
-import {
-  call,
-  filterVals,
-  fromPairs,
-  isDefined,
-  last,
-  on,
-  poll,
-  simpleCache,
-  uniq,
-} from "@welshman/lib"
+import {call, on, simpleCache, uniq} from "@welshman/lib"
 import {throttled} from "@welshman/store"
-import {
-  getRelay,
-  loadRelay,
-  manageRelay,
-  publishThunk,
-  sign,
-  waitForThunkError,
-} from "@welshman/app"
+import {getRelay, loadRelay, manageRelay, publishThunk, waitForThunkError} from "@welshman/app"
 import {checkRelayHasLivekit} from "$lib/livekit"
 import {stripPrefix} from "@lib/util"
 import {relaysMostlyRestricted} from "@app/policies"
@@ -145,14 +123,6 @@ export const deriveHasLivekit = simpleCache(([url]: [string]) =>
   }),
 )
 
-export const shouldIgnoreError = (error: string) => {
-  const isIgnored = error.startsWith("mute: ")
-  const isAborted = error.includes("Signing was aborted")
-  const isStrictNip29Relay = error.includes("missing group (`h`) tag")
-
-  return isIgnored || isAborted || isStrictNip29Relay
-}
-
 export const discoverRelays = (lists: List[]) =>
   Promise.all(
     uniq(lists.flatMap($l => getRelaysFromList($l)))
@@ -160,125 +130,4 @@ export const discoverRelays = (lists: List[]) =>
       .map(url => loadRelay(url)),
   )
 
-export const requestRelayClaim = async (url: string) => {
-  const filters = [{kinds: [RELAY_INVITE], limit: 1}]
-  const events = await load({filters, relays: [url]})
-
-  if (events.length > 0) {
-    return getTagValue("claim", events[0].tags)
-  }
-}
-
-export const requestRelayClaims = async (urls: string[]) =>
-  filterVals(
-    isDefined,
-    fromPairs(await Promise.all(urls.map(async url => [url, await requestRelayClaim(url)]))),
-  )
-
 export const canEnforceNip70 = (url: string) => hasNip70(getRelay(url))
-
-const authTerminalStatuses = [
-  AuthStatus.None,
-  AuthStatus.Ok,
-  AuthStatus.Forbidden,
-  AuthStatus.DeniedSignature,
-]
-
-const waitForAuth = async (socket: ReturnType<ReturnType<typeof Pool.get>["get"]>) => {
-  await poll({
-    signal: AbortSignal.timeout(10_000),
-    condition: () => authTerminalStatuses.includes(socket.auth.status),
-  }).catch(() => {})
-}
-
-const formatAuthError = (status: AuthStatus, details?: string) => {
-  if (status === AuthStatus.DeniedSignature) {
-    return "Failed to authenticate — check your signer"
-  }
-
-  if (status === AuthStatus.PendingSignature) {
-    return "Failed to authenticate — approve the signing request from your extension or signer"
-  }
-
-  const message = details || last(status.split(":"))
-
-  return `Failed to authenticate (${message})`
-}
-
-export const attemptRelayAccess = async (url: string, claim = "") => {
-  const socket = Pool.get().get(url)
-
-  socket.attemptToOpen()
-
-  await poll({
-    signal: AbortSignal.timeout(3000),
-    condition: () => socket.status === SocketStatus.Open,
-  })
-
-  if (socket.status !== SocketStatus.Open) {
-    return `Failed to connect`
-  }
-
-  await poll({
-    signal: AbortSignal.timeout(3000),
-    condition: () => socket.auth.status === AuthStatus.Requested,
-  })
-
-  for (let i = 0; i < 3 && ![AuthStatus.None, AuthStatus.Ok].includes(socket.auth.status); i++) {
-    await socket.auth.retryAuth(sign)
-    await waitForAuth(socket)
-  }
-
-  if (![AuthStatus.None, AuthStatus.Ok].includes(socket.auth.status)) {
-    return formatAuthError(socket.auth.status, socket.auth.details)
-  }
-
-  const error = await waitForThunkError(publishJoinRequest({url, claim}))
-
-  if (shouldIgnoreError(error)) return
-
-  if (claim) {
-    if (error.includes("invite code")) {
-      return "join request rejected"
-    }
-  } else if (error.includes("invite code")) {
-    return
-  }
-
-  return stripPrefix(error)
-}
-
-export const deriveRelayAuthError = (url: string) => {
-  Pool.get().get(url).auth.attemptAuth(sign)
-
-  return derived(
-    [relaysMostlyRestricted, deriveSocket(url)],
-    ([$relaysMostlyRestricted, $socket]) => {
-      if ($socket.auth.status === AuthStatus.Forbidden && $socket.auth.details) {
-        return stripPrefix($socket.auth.details)
-      }
-
-      if ($relaysMostlyRestricted[url]) {
-        return stripPrefix($relaysMostlyRestricted[url])
-      }
-    },
-  )
-}
-
-export type JoinRequestParams = {
-  url: string
-  claim: string
-}
-
-export const makeJoinRequest = (params: JoinRequestParams) =>
-  makeEvent(RELAY_JOIN, {tags: [["claim", params.claim]]})
-
-export const publishJoinRequest = (params: JoinRequestParams) =>
-  publishThunk({event: makeJoinRequest(params), relays: [params.url]})
-
-export type LeaveRequestParams = {
-  url: string
-}
-
-export const publishLeaveRequest = (params: LeaveRequestParams) =>
-  publishThunk({event: makeEvent(RELAY_LEAVE), relays: [params.url]})
