@@ -1,4 +1,13 @@
 @layer components {
+  .space-menu__scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
   @media (max-width: 768px) {
     .secondary-nav--mobile-space {
       @apply mt-sai bg-backdrop mb-0 w-full max-w-full grow border-0;
@@ -72,7 +81,7 @@
     }
 
     .space-menu__scroll {
-      @apply min-h-0 flex-1 gap-3 overflow-y-auto;
+      @apply min-h-0 flex-1 gap-3 overflow-x-hidden overflow-y-auto;
     }
 
     .space-menu__status {

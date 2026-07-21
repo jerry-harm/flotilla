@@ -367,7 +367,8 @@
       <div class="shrink-0">
         {@render spaceHeader()}
       </div>
-      <div class="flex min-h-0 flex-1 flex-col gap-1 py-1 overflow-auto">
+      <div
+        class="space-menu__scroll flex min-h-0 flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto py-1">
         {@render spaceNavItems()}
         {@render spaceRooms()}
         <div class="h-5 shrink-0"></div>
