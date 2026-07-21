@@ -237,17 +237,24 @@ export const allNotifications = derived(
             const roomPath = makeRoomPath(url, h)
 
             if (hasNotification(roomPath, latestEvent)) {
-              paths.add(spacePath)
               paths.add(roomPath)
+
+              if (hasNotification(spacePath, latestEvent)) {
+                paths.add(spacePath)
+              }
             }
           }
         }
       } else {
         const messagesPath = makeSpaceChatPath(url)
+        const latestEvent = first(events)
 
-        if (hasNotification(messagesPath, first(events))) {
-          paths.add(spacePath)
+        if (hasNotification(messagesPath, latestEvent)) {
           paths.add(messagesPath)
+
+          if (hasNotification(spacePath, latestEvent)) {
+            paths.add(spacePath)
+          }
         }
       }
     }
