@@ -42,7 +42,7 @@ export type InviteData = {
   code?: string
 }
 
-export type InviteCreateStatus = "loading" | "network" | "auth" | "failed" | "ready"
+export type InviteCreateStatus = "loading" | "network" | "auth" | "failed" | "noclaim" | "ready"
 
 export type JoinRequestParams = {
   url: string
@@ -54,9 +54,6 @@ export const isNetworkAuthError = (error: string) => {
 
   return lower.includes("failed") || lower.includes("timeout") || lower.includes("network")
 }
-
-export const isRequestNetworkError = (error: unknown) =>
-  error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")
 
 export const parseInviteLink = (invite: string): InviteData | undefined => {
   if (invite.length < 3 || !invite.includes(".")) {
@@ -108,22 +105,16 @@ export const shouldIgnoreError = (error: string) => {
   return isIgnored || isAborted || isStrictNip29Relay
 }
 
-export const deriveRelayAuthError = (url: string) => {
-  Pool.get().get(url).auth.attemptAuth(sign)
+export const deriveRelayAuthError = (url: string) =>
+  derived([relaysMostlyRestricted, deriveSocket(url)], ([$relaysMostlyRestricted, $socket]) => {
+    if ($socket.auth.status === AuthStatus.Forbidden && $socket.auth.details) {
+      return stripPrefix($socket.auth.details)
+    }
 
-  return derived(
-    [relaysMostlyRestricted, deriveSocket(url)],
-    ([$relaysMostlyRestricted, $socket]) => {
-      if ($socket.auth.status === AuthStatus.Forbidden && $socket.auth.details) {
-        return stripPrefix($socket.auth.details)
-      }
-
-      if ($relaysMostlyRestricted[url]) {
-        return stripPrefix($relaysMostlyRestricted[url])
-      }
-    },
-  )
-}
+    if ($relaysMostlyRestricted[url]) {
+      return stripPrefix($relaysMostlyRestricted[url])
+    }
+  })
 
 export const requestRelayClaim = async (url: string) => {
   const filters = [{kinds: [RELAY_INVITE], limit: 1}]
@@ -229,12 +220,16 @@ export const attemptRelayAccess = async (url: string, claim = "") => {
     return `Failed to connect`
   }
 
+  // Relays send their challenge right after the socket opens, so if none shows up
+  // shortly the relay doesn't use auth and we can go ahead and publish.
   await poll({
-    signal: AbortSignal.timeout(3000),
+    signal: AbortSignal.timeout(800),
     condition: () => socket.auth.status === AuthStatus.Requested,
   })
 
-  for (let i = 0; i < 3 && ![AuthStatus.None, AuthStatus.Ok].includes(socket.auth.status); i++) {
+  // Stop at any terminal status — retrying a denied signature or a forbidden response
+  // just re-prompts the user's signer for an answer we already have.
+  for (let i = 0; i < 3 && !authTerminalStatuses.includes(socket.auth.status); i++) {
     await socket.auth.retryAuth(sign)
     await waitForAuth(socket)
   }
@@ -261,9 +256,9 @@ export const attemptRelayAccess = async (url: string, claim = "") => {
 export class Access {
   url: string
   authError: Readable<string | undefined>
-  networkError = writable(false)
   loading = writable(true)
   claim = writable("")
+  claimFailed = writable(false)
   roomCode = writable<string | undefined>()
   roomInviteError = writable<string | undefined>()
   isExplicitAuthError: Readable<boolean>
@@ -275,10 +270,8 @@ export class Access {
     this.isExplicitAuthError = derived([this.authError], ([$authError]) =>
       Boolean($authError && !isNetworkAuthError($authError)),
     )
-    this.isGenericError = derived(
-      [this.authError, this.networkError, this.isExplicitAuthError],
-      ([$authError, $networkError, $isExplicitAuthError]) =>
-        $networkError || Boolean($authError && !$isExplicitAuthError),
+    this.isGenericError = derived([this.authError], ([$authError]) =>
+      Boolean($authError && isNetworkAuthError($authError)),
     )
   }
 
@@ -290,12 +283,14 @@ export class Access {
         this.isExplicitAuthError,
         this.roomInviteError,
         this.roomCode,
+        this.claimFailed,
       ],
-      ([$loading, $isGeneric, $isExplicit, $roomInviteError, $roomCode]) => {
+      ([$loading, $isGeneric, $isExplicit, $roomInviteError, $roomCode, $claimFailed]) => {
         if ($loading) return "loading" as const
         if ($isGeneric) return "network" as const
         if ($isExplicit || $roomInviteError) return "auth" as const
         if (requireCode && !$roomCode) return "failed" as const
+        if ($claimFailed) return "noclaim" as const
 
         return "ready" as const
       },
@@ -383,35 +378,29 @@ export class Access {
 
   async prepareInvite(h?: string) {
     this.loading.set(true)
-    this.networkError.set(false)
 
-    try {
-      const [[event], roomInviteResult] = await Promise.all([
-        request({
-          relays: [this.url],
-          autoClose: true,
-          signal: AbortSignal.timeout(10000),
-          filters: [{kinds: [RELAY_INVITE]}],
-        }),
-        h ? publishRoomInvite(this.url, h) : Promise.resolve({code: undefined, error: undefined}),
-        sleep(2000),
-      ])
+    // A request that times out or hits a closed socket resolves with no events, so an
+    // empty result is the only signal we get that the relay never answered.
+    const [events, roomInviteResult] = await Promise.all([
+      request({
+        relays: [this.url],
+        autoClose: true,
+        signal: AbortSignal.timeout(10000),
+        filters: [{kinds: [RELAY_INVITE]}],
+      }),
+      h ? publishRoomInvite(this.url, h) : Promise.resolve({code: undefined, error: undefined}),
+      // Keep the spinner up long enough that a fast relay doesn't make it flash
+      sleep(300),
+    ])
 
-      this.claim.set(getTagValue("claim", event?.tags || []) || "")
+    this.claim.set(getTagValue("claim", events[0]?.tags || []) || "")
+    this.claimFailed.set(events.length === 0)
 
-      if (h) {
-        this.roomCode.set(roomInviteResult.code)
-        this.roomInviteError.set(roomInviteResult.error)
-      }
-    } catch (error) {
-      this.claim.set("")
-      this.roomCode.set(undefined)
-
-      if (isRequestNetworkError(error)) {
-        this.networkError.set(true)
-      }
-    } finally {
-      this.loading.set(false)
+    if (h) {
+      this.roomCode.set(roomInviteResult.code)
+      this.roomInviteError.set(roomInviteResult.error)
     }
+
+    this.loading.set(false)
   }
 }

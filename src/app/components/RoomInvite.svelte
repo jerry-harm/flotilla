@@ -118,7 +118,10 @@
               <p>
                 This invite link includes access to the space and room. Anyone with the link can
                 join by opening it in {PLATFORM_NAME}.
-                {#if !$claim}
+                {#if $inviteStatus === "noclaim"}
+                  We weren't able to get an invite code from this space, so additional steps might
+                  be required.
+                {:else if !$claim}
                   This space did not issue a claim for this link, so additional steps might be
                   required.
                 {/if}

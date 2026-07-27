@@ -136,7 +136,10 @@
             {#snippet info()}
               <p>
                 This invite link can be used by clicking "Add Space" and pasting it there.
-                {#if !$claim}
+                {#if $inviteStatus === "noclaim"}
+                  We weren't able to get an invite code from this space, so additional steps might
+                  be required.
+                {:else if !$claim}
                   This space did not issue a claim for this link, so additional steps might be
                   required.
                 {/if}

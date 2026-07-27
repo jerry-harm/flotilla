@@ -20,7 +20,7 @@ import {
   sortEventsAsc,
 } from "@welshman/util"
 import type {Filter, PublishedRoomMeta, TrustedEvent} from "@welshman/util"
-import {first, sortBy, spec, uniq} from "@welshman/lib"
+import {first, simpleCache, sortBy, spec, uniq} from "@welshman/lib"
 import {addRoomMember, manageRelay, pubkey, waitForThunkError} from "@welshman/app"
 import {load} from "@welshman/net"
 import {get} from "svelte/store"
@@ -266,14 +266,24 @@ export enum MembershipStatus {
   Granted,
 }
 
-export const deriveUserIsSpaceAdmin = (url?: string) =>
-  readable(false, set => {
-    if (url) {
-      manageRelay(url, {method: ManagementMethod.SupportedMethods, params: []}).then(res =>
-        set(Boolean(res.result?.length)),
-      )
+// This costs a signature and an http round trip, so share one store per url and only
+// re-check when the answer has had time to go stale (or when a check failed).
+export const deriveUserIsSpaceAdmin = simpleCache(([url]: [string | undefined]) => {
+  let checkedAt = 0
+
+  return readable(false, set => {
+    if (url && checkedAt < Date.now() - 300_000) {
+      checkedAt = Date.now()
+
+      manageRelay(url, {method: ManagementMethod.SupportedMethods, params: []})
+        .then(({result}) => set(Boolean(result?.length)))
+        .catch(error => {
+          checkedAt = 0
+          console.error(error)
+        })
     }
   })
+})
 
 export const deriveUserSpaceMembershipStatus = (url: string) => {
   // Fetch member list and user add/remove events directly in this derivation.
