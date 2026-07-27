@@ -147,9 +147,10 @@ export const makeFeed = ({
         continue
       }
 
+      seen.add(event.id)
+
       if (between([backwardWindow[0], forwardWindow[1]], event.created_at)) {
         visible.push(event)
-        seen.add(event.id)
       } else {
         insertIntoBuffer(event)
       }
@@ -174,6 +175,18 @@ export const makeFeed = ({
         return $events
       })
     }
+  }
+
+  // Buffered events are routed through insertEvents again, so forget we've seen
+  // them to let the window check run a second time
+  const drainBuffer = () => {
+    const drained = buffer.splice(0, 30)
+
+    for (const event of drained) {
+      seen.delete(event.id)
+    }
+
+    insertEvents(drained)
   }
 
   const unsubscribers = [
@@ -239,7 +252,7 @@ export const makeFeed = ({
 
       backwardWindow = [since - interval, since]
 
-      insertEvents(buffer.splice(0, 30))
+      drainBuffer()
 
       if (until > now() - int(2, YEAR)) {
         await loadTimeframe(since, until)
@@ -260,7 +273,7 @@ export const makeFeed = ({
 
       forwardWindow = [until, until + interval]
 
-      insertEvents(buffer.splice(0, 30))
+      drainBuffer()
 
       if (until < now()) {
         await loadTimeframe(since, until)

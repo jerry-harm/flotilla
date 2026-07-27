@@ -38,7 +38,7 @@
   import {getSetting, userSettings, notificationSettings} from "@app/settings"
   import {DUFFLEPUD_URL, DEFAULT_RELAYS, INDEXER_RELAYS, POMADE_SIGNERS} from "@app/env"
   import {pushState} from "@app/push/adapters/common"
-  import {syncApplicationData} from "@app/sync"
+  import {syncApplicationData, resyncApplicationData, stopApplicationDataSync} from "@app/sync"
   import * as groups from "@app/groups"
   import * as comments from "@app/comments"
   import * as deletes from "@app/deletes"
@@ -250,7 +250,9 @@
     unsubscribers.push(() => defaultSocketPolicies.splice(-policies.length))
 
     // History, navigation, application data
-    unsubscribers.push(setupHistory(), setupAnalytics(), syncApplicationData())
+    syncApplicationData()
+
+    unsubscribers.push(setupHistory(), setupAnalytics(), stopApplicationDataSync)
 
     // Initialize keyboard state tracking
     unsubscribers.push(syncKeyboard())
@@ -267,8 +269,18 @@
     // Initialize background notifications
     unsubscribers.push(Push.sync())
 
-    // Any time our pubkey changes, close all connections
-    pubkey.subscribe(() => Pool.get().clear())
+    // When the user logs in, drop connections opened anonymously and sync again
+    let lastPubkey = pubkey.get()
+
+    unsubscribers.push(
+      pubkey.subscribe($pubkey => {
+        if ($pubkey !== lastPubkey) {
+          lastPubkey = $pubkey
+          Pool.get().clear()
+          resyncApplicationData()
+        }
+      }),
+    )
 
     // Listen for signer errors, report to user via toast
     unsubscribers.push(

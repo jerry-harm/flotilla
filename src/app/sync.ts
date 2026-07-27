@@ -1,6 +1,6 @@
 import {page} from "$app/stores"
 import type {Unsubscriber} from "svelte/store"
-import {call, assoc, WEEK, MONTH, ago} from "@welshman/lib"
+import {last, call, assoc, WEEK, MONTH, ago} from "@welshman/lib"
 import {merged} from "@welshman/store"
 import {Router} from "@welshman/router"
 import {
@@ -82,6 +82,7 @@ const pullOneWithFallback = async (
   if (signal.aborted) return
 
   const cachedEvents = repository.query([filter]).filter(isSignedEvent)
+  const since = last(cachedEvents.slice(10))?.created_at || 0
 
   if (onEvent) {
     for (const event of cachedEvents) {
@@ -116,7 +117,7 @@ const pullOneWithFallback = async (
   // }))
 
   if (shouldFallback && !signal.aborted) {
-    request({relays: [url], signal, autoClose: true, filters: [filter], onEvent})
+    request({relays: [url], signal, autoClose: true, filters: [{since, ...filter}], onEvent})
   }
 }
 
@@ -468,17 +469,20 @@ const syncDMs = () => {
 
 // Merge all synchronization functions
 
-let unsubscribe: Unsubscriber
+let unsubscribe: Unsubscriber | undefined
 
 export const syncApplicationData = () => {
   const unsubscribers = [syncRelays(), syncUserData(), syncSpaces(), syncDMs()]
 
   unsubscribe = () => unsubscribers.forEach(call)
+}
 
-  return unsubscribe
+export const stopApplicationDataSync = () => {
+  unsubscribe?.()
+  unsubscribe = undefined
 }
 
 export const resyncApplicationData = () => {
-  unsubscribe?.()
+  stopApplicationDataSync()
   syncApplicationData()
 }
