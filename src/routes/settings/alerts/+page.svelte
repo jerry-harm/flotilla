@@ -115,7 +115,7 @@
           <p>Always notify me when mentioned</p>
         {/snippet}
         {#snippet input()}
-          <ToggleInput checked={settings.mentions} />
+          <ToggleInput bind:checked={settings.mentions} />
         {/snippet}
       </FieldInline>
       <FieldInline>

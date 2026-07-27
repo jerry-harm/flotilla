@@ -4,6 +4,7 @@
   import {encrypt} from "nostr-tools/nip49"
   import {hexToBytes} from "@welshman/lib"
   import {preventDefault, downloadText} from "@lib/html"
+  import {errorMessage} from "@lib/util"
   import Key from "@assets/icons/key-minimalistic.svg?dataurl"
   import ArrowDown from "@assets/icons/arrow-down.svg?dataurl"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
@@ -94,19 +95,15 @@
 
     try {
       await downloadText("Nostr Secret Key.txt", cleanupCopy(instructions))
+
+      didDownload = true
     } catch (e) {
       // Dismissing the native share sheet rejects with "Share canceled" — leave
       // the flow gated so the user can try again rather than showing an error.
-      if (
-        !String((e as any)?.message || e)
-          .toLowerCase()
-          .includes("cancel")
-      ) {
+      if (!errorMessage(e).toLowerCase().includes("cancel")) {
         pushToast({theme: "error", message: "We couldn't save your key. Please try again."})
       }
     }
-
-    didDownload = true
   }
 
   const onPasswordChange = () => {

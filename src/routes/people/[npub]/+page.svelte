@@ -21,6 +21,7 @@
   import PageContent from "@lib/components/PageContent.svelte"
   import ProfilePage from "@app/components/ProfilePage.svelte"
   import {loadGroupList} from "@app/groups"
+  import {pushToast} from "@app/toast"
 
   const {npub} = $page.params as MakeNonOptional<typeof $page.params>
 
@@ -58,8 +59,9 @@
         relays: Router.get().FromPubkeys([pubkey]).getUrls(),
         filters,
       })
-    } catch {
-      goto("/people", {replaceState: true})
+    } catch (e) {
+      console.error(e)
+      pushToast({theme: "error", message: "Some of this profile could not be loaded."})
     }
   })
 </script>

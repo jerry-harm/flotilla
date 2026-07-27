@@ -22,6 +22,7 @@
   import Link from "@lib/components/Link.svelte"
   import Button from "@lib/components/Button.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
+  import ProfileAbout from "@app/components/ProfileAbout.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ProfileTrust from "@app/components/ProfileTrust.svelte"
   import ProfileSharedSpaces from "@app/components/ProfileSharedSpaces.svelte"
@@ -29,7 +30,6 @@
   import ProfileEdit from "@app/components/ProfileEdit.svelte"
   import ProfileMenu from "@app/components/ProfileMenu.svelte"
   import WotScore from "@app/components/WotScore.svelte"
-  import Content from "@app/components/Content.svelte"
   import {updateProfile} from "@app/profiles"
   import {compressFileForUpload, uploadFile} from "@app/uploads"
   import {pushModal} from "@app/modal"
@@ -201,11 +201,7 @@
               {/if}
 
               {#if $profile?.about}
-                <Content
-                  event={{content: $profile.about, tags: []}}
-                  expandMode="block"
-                  minLength={150}
-                  maxLength={250} />
+                <ProfileAbout pubkey={target} />
               {/if}
             </div>
           </div>

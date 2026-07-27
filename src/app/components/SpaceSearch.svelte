@@ -22,6 +22,7 @@
   import {CONTENT_KINDS} from "@app/content"
   import {deriveEventsForUrlDesc} from "@app/repository"
   import {popModal} from "@app/modal"
+  import {pushToast} from "@app/toast"
   import {goToEvent} from "@app/routes"
 
   type Props = {
@@ -59,13 +60,16 @@
 
       results = sortEventsDesc(uniqBy((e: TrustedEvent) => e.id, [...events, ...results]))
     } catch (error) {
-      // Ignore aborts from superseded searches; surface anything else
-      if (!(error instanceof DOMException && error.name === "AbortError")) {
-        throw error
+      // Superseded searches abort; the search that replaced this one owns loading from here
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return
       }
-    } finally {
-      loading = false
+
+      console.error(error)
+      pushToast({theme: "error", message: "Something went wrong while searching."})
     }
+
+    loading = false
   })
 
   const onInput = () => {

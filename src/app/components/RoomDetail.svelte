@@ -118,8 +118,8 @@
         {/if}
       </div>
     </div>
-    {#if $members !== undefined && $members.length > 0}
-      <div class="card card-sm flex flex-col gap-3">
+    <div class="card card-sm flex flex-col gap-3">
+      {#if $members.length > 0}
         <div class="flex items-center justify-between gap-4">
           <div class="flex min-w-0 items-center gap-4">
             <span class="shrink-0">Members:</span>
@@ -128,18 +128,16 @@
           <Button class="button button-neutral button-sm shrink-0" onclick={showMembers}
             >View All</Button>
         </div>
-        {#if $userIsAdmin}
-          <Button class="button button-neutral" onclick={createInvite}>
-            <Icon icon={LinkRound} />
-            Create invite
-          </Button>
-        {/if}
-      </div>
-    {:else if $members === undefined}
-      <div class="card card-sm bg-surface flex items-center gap-4">
-        <span class="text-error">Member list not available from this relay</span>
-      </div>
-    {/if}
+      {:else}
+        <span class="opacity-75">No member list is available for this room.</span>
+      {/if}
+      {#if $userIsAdmin}
+        <Button class="button button-neutral" onclick={createInvite}>
+          <Icon icon={LinkRound} />
+          Create invite
+        </Button>
+      {/if}
+    </div>
     <div class="card card-sm flex flex-col gap-4">
       <strong class="text-lg">Room Settings</strong>
       <div class="flex items-center justify-between">

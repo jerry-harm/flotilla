@@ -63,12 +63,16 @@
 
   const isQuote = (p: Parsed) => isEvent(p) || isAddress(p)
 
+  let warningDismissed = $state(false)
+
   const ignoreWarning = () => {
-    warning = undefined
+    warningDismissed = true
   }
 
-  let warning = $state(
-    $userSettingsValues.hide_sensitive && event.tags.find(nthEq(0, "content-warning"))?.[1],
+  const warning = $derived(
+    warningDismissed
+      ? undefined
+      : $userSettingsValues.hide_sensitive && event.tags.find(nthEq(0, "content-warning"))?.[1],
   )
 
   const dropWhile = <T,>(f: (x: T) => boolean, xs: Iterable<T>) => {
