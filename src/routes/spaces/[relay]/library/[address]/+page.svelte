@@ -56,6 +56,14 @@
 
   const back = () => history.back()
 
+  const toggleMenu = () => {
+    menuOpen = !menuOpen
+  }
+
+  const closeMenu = () => {
+    menuOpen = false
+  }
+
   const showInfo = () => {
     menuOpen = false
 
@@ -122,11 +130,11 @@
       <Button
         class="button button-neutral button-sm button-square"
         aria-label="More options"
-        onclick={() => (menuOpen = !menuOpen)}>
+        onclick={toggleMenu}>
         <Icon size={4} icon={MenuDots} />
       </Button>
       {#if menuOpen}
-        <Popover hideOnClick onClose={() => (menuOpen = false)}>
+        <Popover hideOnClick onClose={closeMenu}>
           <ul
             transition:fly
             class="menu bg-surface absolute right-0 z-popover mt-2 w-48 gap-1 rounded-2xl p-2">

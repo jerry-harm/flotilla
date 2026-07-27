@@ -1,4 +1,5 @@
 <script lang="ts">
+  import cx from "classnames"
   import {parse, renderAsHtml} from "@welshman/content"
   import Close from "@assets/icons/close.svg?dataurl"
   import {fly} from "@lib/transition"
@@ -84,16 +85,16 @@
     {#key $toast.id}
       <div
         role="alert"
-        class="card relative flex justify-center whitespace-normal text-left"
-        class:text-content={theme === "info"}
-        class:text-error={theme === "error"}
-        style={theme === "error" ? "border-color: var(--error)" : ""}>
+        class={cx("card relative flex justify-center whitespace-normal text-left", {
+          "text-content": theme === "info",
+          "border-error text-error": theme === "error",
+        })}>
         <Button
           class="button button-neutral button-xs button-circle absolute -top-2 -right-2 hidden md:inline-flex flex justify-center items-center"
           onclick={onClose}>
           <Icon icon={Close} size={4} />
         </Button>
-        <p class="md:pr-6" class:welshman-content-error={theme === "error"}>
+        <p class={cx("md:pr-6", {"welshman-content-error": theme === "error"})}>
           {#if $toast.message}
             {@html renderAsHtml(parse({content: $toast.message}))}
             {#if $toast.action}

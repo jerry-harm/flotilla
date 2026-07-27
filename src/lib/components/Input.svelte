@@ -1,6 +1,14 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
+  import type {HTMLInputAttributes} from "svelte/elements"
   import cx from "classnames"
+
+  type Props = Omit<HTMLInputAttributes, "value"> & {
+    value?: string
+    before?: Snippet
+    after?: Snippet
+    sm?: boolean
+  }
 
   let {
     value = $bindable(),
@@ -9,14 +17,7 @@
     sm = false,
     class: className = "",
     ...restProps
-  }: {
-    value?: any
-    before?: Snippet
-    after?: Snippet
-    sm?: boolean
-    class?: string
-    [key: string]: any
-  } = $props()
+  }: Props = $props()
 
   const wrapperClass = $derived(cx("input", "input-group", {"input-sm": sm}, className))
 </script>

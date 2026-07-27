@@ -6,6 +6,8 @@
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import {PLATFORM_NAME} from "@app/env"
+
+  const back = () => history.back()
 </script>
 
 <Modal
@@ -27,5 +29,5 @@
         class="underline">nostr.how</Link
       >.
     </p>
-    <Button class="button button-primary" onclick={() => history.back()}>Got it</Button>
+    <Button class="button button-primary" onclick={back}>Got it</Button>
   </ModalBody></Modal>

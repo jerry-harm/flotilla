@@ -65,7 +65,7 @@
         Title
       {/snippet}
       {#snippet input()}
-        <input bind:value={title} class="input input-bordered w-full" placeholder="Shelf title" />
+        <input bind:value={title} class="input w-full" placeholder="Shelf title" />
       {/snippet}
     </Field>
     <Field>
@@ -75,7 +75,7 @@
       {#snippet input()}
         <input
           bind:value={description}
-          class="input input-bordered w-full"
+          class="input w-full"
           placeholder="What's this shelf about?" />
       {/snippet}
     </Field>

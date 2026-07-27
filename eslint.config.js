@@ -26,6 +26,10 @@ export default [
         parser: ts.parser,
       },
     },
+    rules: {
+      // eslint doesn't see type parameters declared by <script generics="...">
+      "no-undef": "off",
+    },
   },
   {
     ignores: ["build/", ".svelte-kit/", "dist/"],

@@ -7,7 +7,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
 
-  interface Props {
+  type Props = {
     value?: number | undefined
   }
 

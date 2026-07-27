@@ -35,6 +35,7 @@
   const copyLink = () => clip(nevent1)
   const copyPubkey = () => clip(npub1)
   const copyJson = () => clip(json)
+  const back = () => history.back()
 
   const formatter = new Intl.DateTimeFormat(LOCALE, {
     dateStyle: "long",
@@ -110,6 +111,6 @@
     </div>
   </ModalBody>
   <ModalFooter>
-    <Button class="button button-primary grow" onclick={() => history.back()}>Got it</Button>
+    <Button class="button button-primary grow" onclick={back}>Got it</Button>
   </ModalFooter>
 </Modal>

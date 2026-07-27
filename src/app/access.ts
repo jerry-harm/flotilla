@@ -1,16 +1,6 @@
 import {derived, get, writable, type Readable} from "svelte/store"
-import {
-  dissoc,
-  filterVals,
-  fromPairs,
-  isDefined,
-  last,
-  poll,
-  randomId,
-  sleep,
-  tryCatch,
-} from "@welshman/lib"
-import {AuthStatus, load, Pool, request, SocketStatus} from "@welshman/net"
+import {dissoc, fromPairs, last, poll, randomId, sleep, tryCatch} from "@welshman/lib"
+import {AuthStatus, Pool, request, SocketStatus} from "@welshman/net"
 import {
   displayRelayUrl,
   getTagValue,
@@ -41,8 +31,6 @@ export type InviteData = {
   h?: string
   code?: string
 }
-
-export type InviteCreateStatus = "loading" | "network" | "auth" | "failed" | "noclaim" | "ready"
 
 export type JoinRequestParams = {
   url: string
@@ -115,21 +103,6 @@ export const deriveRelayAuthError = (url: string) =>
       return stripPrefix($relaysMostlyRestricted[url])
     }
   })
-
-export const requestRelayClaim = async (url: string) => {
-  const filters = [{kinds: [RELAY_INVITE], limit: 1}]
-  const events = await load({filters, relays: [url]})
-
-  if (events.length > 0) {
-    return getTagValue("claim", events[0].tags)
-  }
-}
-
-export const requestRelayClaims = async (urls: string[]) =>
-  filterVals(
-    isDefined,
-    fromPairs(await Promise.all(urls.map(async url => [url, await requestRelayClaim(url)]))),
-  )
 
 export const makeJoinRequest = (params: JoinRequestParams) =>
   makeEvent(RELAY_JOIN, {tags: [["claim", params.claim]]})

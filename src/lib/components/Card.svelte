@@ -1,6 +1,15 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
+  import type {HTMLAttributes} from "svelte/elements"
   import cx from "classnames"
+
+  type Props = HTMLAttributes<HTMLElement> & {
+    children?: Snippet
+    tag?: string
+    sm?: boolean
+    flat?: boolean
+    interactive?: boolean
+  }
 
   const {
     children,
@@ -9,15 +18,7 @@
     flat = false,
     interactive = false,
     ...restProps
-  }: {
-    children?: Snippet
-    tag?: string
-    sm?: boolean
-    flat?: boolean
-    interactive?: boolean
-    class?: string
-    [key: string]: any
-  } = $props()
+  }: Props = $props()
 
   const className = $derived(
     cx(

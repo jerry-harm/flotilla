@@ -1,17 +1,14 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
+  import type {HTMLAttributes} from "svelte/elements"
   import cx from "classnames"
 
-  const {
-    children,
-    variant = "neutral",
-    ...restProps
-  }: {
+  type Props = HTMLAttributes<HTMLSpanElement> & {
     children?: Snippet
     variant?: "neutral" | "primary" | "warning"
-    class?: string
-    [key: string]: any
-  } = $props()
+  }
+
+  const {children, variant = "neutral", ...restProps}: Props = $props()
 
   const className = $derived(cx("badge", `badge-${variant}`, restProps.class))
 </script>

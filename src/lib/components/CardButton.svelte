@@ -8,10 +8,9 @@
     title?: Snippet
     info?: Snippet
     primary?: boolean
-    [key: string]: any
   }
 
-  const {icon, title, info, primary, ...props}: Props = $props()
+  const {icon, title, info, primary}: Props = $props()
 </script>
 
 <div class="card-button {primary ? 'card-button-primary' : 'card-button-neutral'}">

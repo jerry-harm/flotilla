@@ -88,10 +88,7 @@
         Title
       {/snippet}
       {#snippet input()}
-        <input
-          bind:value={title}
-          class="input input-bordered w-full"
-          placeholder="Optional title" />
+        <input bind:value={title} class="input w-full" placeholder="Optional title" />
       {/snippet}
     </Field>
     <Field>
@@ -133,7 +130,7 @@
         <p>A URL or nostr link (note, nevent, naddr, npub, or nprofile).</p>
       {/snippet}
       {#snippet input()}
-        <input bind:value class="input input-bordered w-full" placeholder="URL or nevent..." />
+        <input bind:value class="input w-full" placeholder="URL or nevent..." />
       {/snippet}
     </Field>
   </ModalBody>

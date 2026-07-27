@@ -19,7 +19,7 @@ import {
   getTagValues,
   sortEventsAsc,
 } from "@welshman/util"
-import type {Filter, PublishedRoomMeta, TrustedEvent} from "@welshman/util"
+import type {Filter, ManagementRequest, PublishedRoomMeta, TrustedEvent} from "@welshman/util"
 import {first, simpleCache, sortBy, spec, uniq} from "@welshman/lib"
 import {addRoomMember, manageRelay, pubkey, waitForThunkError} from "@welshman/app"
 import {load} from "@welshman/net"
@@ -47,7 +47,7 @@ const DEFAULT_LIGHTNESS = 0.5
 
 // Parse the hue from a ["color", hue] tag, falling back to 0.
 export const parseRoleColor = (tags: string[][]): number => {
-  const hue = parseFloat(first(getTags("color", tags))?.[1] ?? "")
+  const hue = parseFloat(getTagValue("color", tags) ?? "")
 
   return isNaN(hue) ? 0 : hue
 }
@@ -105,6 +105,11 @@ export const deriveSpaceMemberRoles = (url: string) =>
 const reloadRole = (url: string, id: string) =>
   load({relays: [url], filters: [{kinds: [RELAY_ROLE], "#d": [id]}]})
 
+// Roles extend NIP-86: these methods aren't in welshman's ManagementMethod, and hue and
+// order go over the wire as JSON numbers, not strings, per the relay's implementation.
+const manageRole = (url: string, method: string, params: (string | number)[]) =>
+  manageRelay(url, {method, params} as ManagementRequest)
+
 export const createRole = async (
   url: string,
   id: string,
@@ -113,11 +118,7 @@ export const createRole = async (
   color: number,
   order: number,
 ): Promise<string | undefined> => {
-  const {error} = await manageRelay(url, {
-    method: "createrole" as ManagementMethod,
-    // hue and order go over the wire as JSON numbers, not strings, per the relay's NIP-86 impl.
-    params: [id, label, description, color, order] as unknown as string[],
-  })
+  const {error} = await manageRole(url, "createrole", [id, label, description, color, order])
 
   if (!error) {
     await reloadRole(url, id)
@@ -134,11 +135,7 @@ export const editRole = async (
   color: number,
   order: number,
 ): Promise<string | undefined> => {
-  const {error} = await manageRelay(url, {
-    method: "editrole" as ManagementMethod,
-    // hue and order go over the wire as JSON numbers, not strings, per the relay's NIP-86 impl.
-    params: [id, label, description, color, order] as unknown as string[],
-  })
+  const {error} = await manageRole(url, "editrole", [id, label, description, color, order])
 
   if (!error) {
     await reloadRole(url, id)
@@ -148,10 +145,7 @@ export const editRole = async (
 }
 
 export const deleteRole = async (url: string, id: string): Promise<string | undefined> => {
-  const {error} = await manageRelay(url, {
-    method: "deleterole" as ManagementMethod,
-    params: [id],
-  })
+  const {error} = await manageRole(url, "deleterole", [id])
 
   return error
 }
@@ -161,10 +155,7 @@ export const assignRole = async (
   pubkey: string,
   roleId: string,
 ): Promise<string | undefined> => {
-  const {error} = await manageRelay(url, {
-    method: "assignrole" as ManagementMethod,
-    params: [pubkey, roleId],
-  })
+  const {error} = await manageRole(url, "assignrole", [pubkey, roleId])
 
   return error
 }
@@ -174,10 +165,7 @@ export const unassignRole = async (
   pubkey: string,
   roleId: string,
 ): Promise<string | undefined> => {
-  const {error} = await manageRelay(url, {
-    method: "unassignrole" as ManagementMethod,
-    params: [pubkey, roleId],
-  })
+  const {error} = await manageRole(url, "unassignrole", [pubkey, roleId])
 
   return error
 }

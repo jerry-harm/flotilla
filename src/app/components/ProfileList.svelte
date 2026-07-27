@@ -16,6 +16,8 @@
   }
 
   const {subtitle = "", pubkeys, url, ...restProps}: Props = $props()
+
+  const back = () => history.back()
 </script>
 
 <Modal>
@@ -31,6 +33,6 @@
     {/each}
   </ModalBody>
   <ModalFooter>
-    <Button class="button button-primary" onclick={() => history.back()}>Got it</Button>
+    <Button class="button button-primary" onclick={back}>Got it</Button>
   </ModalFooter>
 </Modal>

@@ -12,7 +12,7 @@
   import {canEnforceNip70} from "@app/relays"
   import {makePollPath, makeSpacePath} from "@app/routes"
 
-  interface Props {
+  type Props = {
     url: string
     event: TrustedEvent
     showRoom?: boolean

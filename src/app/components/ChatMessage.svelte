@@ -72,8 +72,7 @@
 {/if}
 <div
   data-event={event.id}
-  class="group flex items-center justify-end gap-1 px-2"
-  class:flex-row-reverse={!isOwn}>
+  class={cx("group flex items-center justify-end gap-1 px-2", {"flex-row-reverse": !isOwn})}>
   {#if !isMobile}
     <Tippy
       bind:popover

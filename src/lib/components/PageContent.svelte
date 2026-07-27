@@ -2,7 +2,7 @@
   import cx from "classnames"
   import type {Snippet} from "svelte"
 
-  interface Props {
+  type Props = {
     element?: Element
     children?: Snippet
     noPad?: boolean

@@ -7,6 +7,8 @@
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import {PLATFORM_NAME} from "@app/env"
+
+  const back = () => history.back()
 </script>
 
 <Modal>
@@ -27,6 +29,6 @@
     </p>
   </ModalBody>
   <ModalFooter>
-    <Button class="button button-primary" onclick={() => history.back()}>Got it</Button>
+    <Button class="button button-primary" onclick={back}>Got it</Button>
   </ModalFooter>
 </Modal>

@@ -131,7 +131,7 @@
       </Tippy>
     </Button>
   </div>
-  <div class="chat-editor grow overflow-hidden rounded-box">
+  <div class="chat-editor grow overflow-hidden">
     <EditorContent {autofocus} {editor} />
   </div>
   <Button

@@ -1,10 +1,10 @@
-<script lang="ts">
+<script lang="ts" generics="T">
   import type {Snippet} from "svelte"
 
   type Props = {
-    items: any[]
-    child: Snippet<[any]>
-    getKey: (item: any) => PropertyKey
+    items: T[]
+    child: Snippet<[T]>
+    getKey: (item: T) => PropertyKey
     // Minimum column width, in tailwind spacing units (1 = 0.25rem). The browser
     // fits as many columns as the container allows, so the layout stays
     // responsive without media queries.

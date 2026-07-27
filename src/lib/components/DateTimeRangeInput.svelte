@@ -5,7 +5,7 @@
   import {anchorDatepicker} from "@lib/html"
   import Icon from "@lib/components/Icon.svelte"
 
-  interface Props {
+  type Props = {
     start?: number | undefined
     end?: number | undefined
   }

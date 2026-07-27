@@ -161,8 +161,10 @@
       <strong class="flex items-center gap-1 relative">
         <RelayName {url} class="truncate min-w-0" />
         <div
-          class="absolute -right-3 top-0 h-2 w-2 rounded-full bg-primary text-primary-content transition-all opacity-0"
-          class:opacity-100={$userIsAdmin && $actionItems.length > 0}>
+          class={cx(
+            "absolute -right-3 top-0 h-2 w-2 rounded-full bg-primary text-primary-content transition-all",
+            $userIsAdmin && $actionItems.length > 0 ? "opacity-100" : "opacity-0",
+          )}>
         </div>
         {#if $notificationSettings.push && !$shouldNotify}
           <Icon icon={BellOff} size={3} class="opacity-50" />

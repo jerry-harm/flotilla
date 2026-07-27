@@ -247,7 +247,7 @@
       </div>
     {/if}
     <span
-      class="pointer-events-none absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] truncate rounded bg-base-100/80 px-1.5 py-0.5 text-xs">
+      class="pointer-events-none absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] truncate rounded bg-surface/80 px-1.5 py-0.5 text-xs">
       {labelFor(tile.liveKitIdentity, tile.source)}{tile.isLocal ? " (you)" : ""}
     </span>
     {#if videoTiles.length > 1}

@@ -1,18 +1,9 @@
-import {deriveItems, deriveItemsByKey, getter, makeDeriveItem, makeLoadItem} from "@welshman/store"
-import {
-  ensurePlaintext,
-  makeOutboxLoader,
-  makeUserData,
-  makeUserLoader,
-  repository,
-  tracker,
-} from "@welshman/app"
-import {derived, writable} from "svelte/store"
+import {repository, tracker} from "@welshman/app"
+import {writable} from "svelte/store"
 import {
   batch,
   between,
   call,
-  groupBy,
   insertAt,
   int,
   now,
@@ -22,87 +13,13 @@ import {
   MONTH,
   YEAR,
 } from "@welshman/lib"
-import {
-  Address,
-  EVENT_TIME,
-  FEED,
-  FEEDS,
-  asDecryptedEvent,
-  getAddress,
-  getIdFilters,
-  getTagValue,
-  matchFilters,
-  readList,
-} from "@welshman/util"
-import type {Filter, PublishedList, TrustedEvent} from "@welshman/util"
-import {load, mergeRepositoryUpdates, request} from "@welshman/net"
+import {EVENT_TIME, getAddress, getTagValue, matchFilters} from "@welshman/util"
+import type {Filter, TrustedEvent} from "@welshman/util"
+import {mergeRepositoryUpdates, request} from "@welshman/net"
 import type {RepositoryUpdate} from "@welshman/net"
-import {Router} from "@welshman/router"
 import {createScroller} from "@lib/html"
 import {daysBetween} from "@lib/util"
-import {readFeed} from "@lib/feeds"
 import {getEventsForUrl} from "@app/repository"
-export const feedsByAddress = deriveItemsByKey({
-  repository,
-  getKey: feed => getAddress(feed.event),
-  filters: [{kinds: [FEED]}],
-  eventToItem: readFeed,
-})
-
-export const getFeedsByAddress = getter(feedsByAddress)
-
-export const feeds = deriveItems(feedsByAddress)
-
-export const getFeeds = getter(feeds)
-
-export const getFeed = (address: string) => getFeedsByAddress().get(address)
-
-export const fetchFeed = (address: string) => {
-  const {pubkey} = Address.from(address)
-
-  return load({
-    relays: Router.get().FromPubkey(pubkey).getUrls(),
-    filters: getIdFilters([address]),
-  })
-}
-
-export const loadFeed = makeLoadItem(fetchFeed, getFeed)
-
-export const deriveFeed = makeDeriveItem(feedsByAddress, loadFeed)
-
-export const feedsByPubkey = derived(feeds, $feeds => groupBy(f => f.event.pubkey, $feeds))
-
-export const getFeedsByPubkey = getter(feedsByPubkey)
-
-export const getFeedsForPubkey = (pubkey: string) => getFeedsByPubkey().get(pubkey)
-
-export const loadFeedsForPubkey = makeLoadItem(makeOutboxLoader(FEED), getFeedsForPubkey)
-
-export const userFeeds = makeUserData(feedsByPubkey, loadFeedsForPubkey)
-
-export const loadUserFeeds = makeUserLoader(loadFeedsForPubkey)
-
-export const feedFavoritesByPubkey = deriveItemsByKey<PublishedList>({
-  repository,
-  getKey: list => list.event.pubkey,
-  filters: [{kinds: [FEEDS]}],
-  eventToItem: async event =>
-    readList(
-      asDecryptedEvent(event, {
-        content: await ensurePlaintext(event),
-      }),
-    ),
-})
-
-export const getFeedFavoritesByPubkey = getter(feedFavoritesByPubkey)
-
-export const getFeedFavorites = (pubkey: string) => getFeedFavoritesByPubkey().get(pubkey)
-
-export const loadFeedFavorites = makeLoadItem(makeOutboxLoader(FEEDS), getFeedFavorites)
-
-export const userFeedFavorites = makeUserData(feedFavoritesByPubkey, loadFeedFavorites)
-
-export const loadUserFeedFavorites = makeUserLoader(loadFeedFavorites)
 
 export const makeFeed = ({
   relays,

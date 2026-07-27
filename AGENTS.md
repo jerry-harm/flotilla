@@ -6,7 +6,7 @@ Flotilla is a Nostr "relays as groups" community chat client. It implements NIP-
 
 - SvelteKit 5.48+ with TypeScript 5.9+
 - Capacitor for cross-platform (Web/PWA, Android, iOS)
-- TailwindCSS + DaisyUI for styling
+- TailwindCSS for styling
 - Welshman library suite for Nostr protocol
 - IndexedDB for local storage
 - Vite for building

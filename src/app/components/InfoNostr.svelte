@@ -5,6 +5,8 @@
   import ModalBody from "@lib/components/ModalBody.svelte"
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
+
+  const back = () => history.back()
 </script>
 
 <Modal
@@ -28,5 +30,5 @@
       To learn more about how to manage your keys, or to set up an account, try
       <Link external class="link" href="https://nosta.me/">nosta.me</Link>.
     </p>
-    <Button class="button button-primary" onclick={() => history.back()}>Got it</Button>
+    <Button class="button button-primary" onclick={back}>Got it</Button>
   </ModalBody></Modal>

@@ -515,8 +515,9 @@
           {#if type === "new-messages"}
             <div
               {id}
-              class="flex items-center py-2 text-xs transition-colors"
-              class:opacity-0={showFixedNewMessages}>
+              class={cx("flex items-center py-2 text-xs transition-colors", {
+                "opacity-0": showFixedNewMessages,
+              })}>
               <div class="h-px grow bg-primary text-primary-content"></div>
               <p
                 class="rounded-full bg-primary text-primary-content px-2 py-1"

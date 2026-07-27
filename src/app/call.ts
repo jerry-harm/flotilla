@@ -29,8 +29,6 @@ import {pushToast} from "@app/toast"
 
 export const LIVEKIT_PARTICIPANTS = 39004
 
-export {checkRelayHasLivekit} from "$lib/livekit"
-
 export {supportsAudioOutputSelection}
 
 const LIVEKIT_DEFAULT_DEVICE_ID = "default"
@@ -103,15 +101,6 @@ export const isParticipantSpeaking = derived(
   speakingParticipants,
   $participants => (p: CallParticipant) =>
     $participants.some(sp => participantKey(sp) === participantKey(p)),
-)
-
-export const isLocalSpeaking = derived(
-  [currentCallSession, speakingParticipants],
-  ([$session, $speaking]) => {
-    if (!$session?.livekit) return false
-    const local = participantFromLiveKitIdentity($session.livekit.localParticipant.identity)
-    return $speaking.some(sp => participantKey(sp) === participantKey(local))
-  },
 )
 
 export const videoTrackRevision = writable(0)

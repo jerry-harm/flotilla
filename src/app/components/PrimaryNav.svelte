@@ -1,5 +1,6 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
+  import cx from "classnames"
   import {userProfile} from "@welshman/app"
   import Letter from "@assets/icons/letter.svg?dataurl"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
@@ -33,7 +34,7 @@
   )
 </script>
 
-<div class="primary-nav" class:justify-between={PLATFORM_RELAYS.length === 0}>
+<div class={cx("primary-nav", {"justify-between": PLATFORM_RELAYS.length === 0})}>
   <PrimaryNavSpaces />
   {#if PLATFORM_RELAYS.length > 0}
     <Divider />

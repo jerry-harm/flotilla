@@ -1,5 +1,6 @@
 <script lang="ts">
   import {onMount} from "svelte"
+  import cx from "classnames"
   import {page} from "$app/stores"
   import {remove, uniq, formatTimestamp} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
@@ -35,8 +36,11 @@
 
 <Button class="flex flex-col justify-start gap-1 w-full" onclick={openChat}>
   <div
-    class="cursor-pointer border-t border-solid px-3 py-2 transition-colors hover:bg-surface {props.class}"
-    class:bg-surface={active}
+    class={cx(
+      "cursor-pointer border-t border-solid px-3 py-2 transition-colors hover:bg-surface",
+      props.class,
+      {"bg-surface": active},
+    )}
     style="border-color: var(--line)">
     <div class="flex flex-col justify-start gap-1">
       <div class="flex items-center justify-between gap-2">
