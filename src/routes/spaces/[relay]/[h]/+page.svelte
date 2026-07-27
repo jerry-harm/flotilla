@@ -57,8 +57,6 @@
   import {pushToast} from "@app/toast"
 
   const {h, relay} = $page.params as MakeNonOptional<typeof $page.params>
-  const mounted = now()
-  const lastChecked = $checked[$page.url.pathname]
   const url = decodeRelay(relay)
   const room = deriveRoom(url, h)
   const isVoiceRoom = $derived(getRoomType($room) === RoomType.Voice)
@@ -292,6 +290,16 @@
     }
   }
 
+  const onVisibilityChange = () => {
+    if (document.hidden) {
+      lastVisibleAt = now()
+    } else if ($events.some(e => e.pubkey !== $pubkey && e.created_at > lastVisibleAt)) {
+      newMessagesAfter = lastVisibleAt
+      newMessagesBefore = now()
+      newMessagesSeen = false
+    }
+  }
+
   let joining = $state(false)
   let leaving = $state(false)
   let userHasScrolled = $state(false)
@@ -302,6 +310,9 @@
   let share = $state(popKey<TrustedEvent | undefined>("share"))
   let parent: TrustedEvent | undefined = $state()
   let element: HTMLElement | undefined = $state()
+  let lastVisibleAt = now()
+  let newMessagesAfter = $state($checked[$page.url.pathname])
+  let newMessagesBefore = $state(now())
   let newMessagesSeen = false
   let showFixedNewMessages = $state(false)
   let showScrollButton = $state(false)
@@ -327,9 +338,11 @@
     if (events) {
       const lastUserEvent = $events.findLast(e => e.pubkey === $pubkey)
 
-      // Adjust last checked to account for messages that came from a different device
-      const adjustedLastChecked =
-        lastChecked && lastUserEvent ? Math.max(lastUserEvent.created_at, lastChecked) : lastChecked
+      // Adjust the boundary to account for messages that came from a different device
+      const adjustedAfter =
+        newMessagesAfter && lastUserEvent
+          ? Math.max(lastUserEvent.created_at, newMessagesAfter)
+          : newMessagesAfter
 
       for (const event of $events) {
         if (seen.has(event.id)) {
@@ -340,10 +353,10 @@
 
         if (
           !newMessagesSeen &&
-          adjustedLastChecked &&
+          adjustedAfter &&
           event.pubkey !== $pubkey &&
-          event.created_at > adjustedLastChecked &&
-          event.created_at < mounted
+          event.created_at > adjustedAfter &&
+          event.created_at < newMessagesBefore
         ) {
           elements.push({type: "new-messages", id: "new-messages"})
           newMessagesSeen = true
@@ -424,8 +437,13 @@
   onMount(() => {
     start()
 
-    // Wrap in a closure to avoid calling a stale cleanup function
-    return () => cleanup?.()
+    document.addEventListener("visibilitychange", onVisibilityChange)
+
+    return () => {
+      // Wrap in a closure to avoid calling a stale cleanup function
+      cleanup?.()
+      document.removeEventListener("visibilitychange", onVisibilityChange)
+    }
   })
 </script>
 
