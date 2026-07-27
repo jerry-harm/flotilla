@@ -14,7 +14,7 @@
   import {HOSTING_ENABLED} from "@app/hosting"
   import {pushModal} from "@app/modal"
 
-  const openCreate = () => pushModal(RelayCreate, {}, {size: 'large'})
+  const openCreate = () => pushModal(RelayCreate, {}, {size: "large"})
 </script>
 
 <Page>
