@@ -102,7 +102,8 @@
 
     try {
       const {url} = await createPortalSession($pubkey!)
-      window.open(url)
+
+      window.location.href = url
     } catch (e) {
       pushToast({
         theme: "error",

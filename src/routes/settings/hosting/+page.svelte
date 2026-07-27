@@ -130,6 +130,7 @@
     if (!pk || reconciling) return
 
     reconciling = true
+    error = ""
 
     try {
       await ensureSessionTenant()
