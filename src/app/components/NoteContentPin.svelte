@@ -18,6 +18,8 @@
 
     if (type === "e") return "nostr:" + nip19.neventEncode({id: data})
 
+    if (type === "p") return "nostr:" + nip19.nprofileEncode({pubkey: data})
+
     if (type === "a") {
       const {kind, pubkey, identifier} = Address.from(data)
 
@@ -35,10 +37,10 @@
   {#if pin.description}
     <Content event={{content: pin.description, tags: []}} />
   {/if}
-  {#if pin.value[0] === "i"}
-    <Content event={{content, tags: []}} />
-  {:else}
+  {#if pin.value[0] === "e" || pin.value[0] === "a"}
     <PinContentEvent value={pin.value[1]} relays={pin.value[2] ? [pin.value[2]] : []} />
+  {:else}
+    <Content event={{content, tags: []}} />
   {/if}
   {#if pin.topics.length > 0}
     <div class="mt-auto flex flex-wrap gap-1">

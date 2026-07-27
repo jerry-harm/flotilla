@@ -2,7 +2,7 @@
   import {onMount} from "svelte"
   import type {Snippet} from "svelte"
   import type {TrustedEvent} from "@welshman/util"
-  import {COMMENT, getAddress, ManagementMethod} from "@welshman/util"
+  import {COMMENT, ManagementMethod} from "@welshman/util"
   import {pubkey, repository, manageRelay} from "@welshman/app"
   import GalleryWide from "@assets/icons/gallery-wide.svg?dataurl"
   import ShareCircle from "@assets/icons/share-circle.svg?dataurl"
@@ -38,7 +38,7 @@
 
   const showInfo = () => pushModal(EventInfo, {url, event})
 
-  const addToLibrary = () => pushModal(PinboardSelect, {url, address: getAddress(event)})
+  const addToLibrary = () => pushModal(PinboardSelect, {url, event})
 
   const share = () => shareEventToChat(url, noun, event)
 

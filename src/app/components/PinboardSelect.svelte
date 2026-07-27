@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type {TrustedEvent} from "@welshman/util"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -10,19 +11,19 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import RelayName from "@app/components/RelayName.svelte"
   import PinAdd from "@app/components/PinAdd.svelte"
-  import {deriveBoards, addressToReference, type PublishedBoard} from "@app/pinboards"
+  import {deriveBoards, eventToReference, type PublishedBoard} from "@app/pinboards"
   import {makeSpacePath} from "@app/routes"
   import {pushModal} from "@app/modal"
 
   type Props = {
     url: string
-    address: string
+    event: TrustedEvent
   }
 
-  const {url, address}: Props = $props()
+  const {url, event}: Props = $props()
 
   const boards = deriveBoards(url)
-  const reference = addressToReference(address)
+  const reference = eventToReference(event)
 
   const selectBoard = (board: PublishedBoard) =>
     pushModal(PinAdd, {url, address: board.address, reference})

@@ -130,7 +130,7 @@
         Link
       {/snippet}
       {#snippet info()}
-        <p>A URL or nostr link (note, nevent, or naddr).</p>
+        <p>A URL or nostr link (note, nevent, naddr, npub, or nprofile).</p>
       {/snippet}
       {#snippet input()}
         <input bind:value class="input input-bordered w-full" placeholder="URL or nevent..." />

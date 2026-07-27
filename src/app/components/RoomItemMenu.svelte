@@ -1,6 +1,6 @@
 <script lang="ts">
   import type {TrustedEvent} from "@welshman/util"
-  import {ManagementMethod, getAddress, getTagValue} from "@welshman/util"
+  import {ManagementMethod, getTagValue} from "@welshman/util"
   import {pubkey, manageRelay, repository} from "@welshman/app"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
   import GalleryWide from "@assets/icons/gallery-wide.svg?dataurl"
@@ -36,7 +36,7 @@
 
   const addToLibrary = () => {
     onClick()
-    pushModal(PinboardSelect, {url, address: getAddress(event)})
+    pushModal(PinboardSelect, {url, event})
   }
 
   const report = () => {

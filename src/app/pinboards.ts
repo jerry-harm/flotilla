@@ -1,4 +1,5 @@
-import {derived} from "svelte/store"
+import {derived, readable} from "svelte/store"
+import type {Readable} from "svelte/store"
 import * as nip19 from "nostr-tools/nip19"
 import {now, randomId} from "@welshman/lib"
 import {
@@ -10,10 +11,12 @@ import {
   getListTags,
   getTagValue,
   getTagValues,
+  isReplaceableKind,
   readList,
   sortEventsDesc,
 } from "@welshman/util"
 import type {TrustedEvent} from "@welshman/util"
+import {isLink, parse} from "@welshman/content"
 import {deriveEventsForUrl, deriveRelaySignedEvents} from "@app/repository"
 import {signAsRelay} from "@app/relays"
 
@@ -45,8 +48,9 @@ export type Pin = {
   description: string
   title: string
   topics: string[]
-  // The pin's content reference: the first e/a/i tag found, e.g. ["e", <id>],
-  // ["a", <coord>], or ["i", <external id>]. Empty when the pin has no reference.
+  // The pin's content reference: the first e/a/p/i tag found, e.g. ["e", <id>],
+  // ["a", <coord>], ["p", <pubkey>], or ["i", <url>]. Empty when the pin has no
+  // reference.
   value: string[]
 }
 
@@ -78,7 +82,7 @@ export const readPin = (event: TrustedEvent): PublishedPin => ({
   description: event.content,
   title: getTagValue("title", event.tags) ?? "",
   topics: getTagValues("t", event.tags),
-  value: event.tags.find(tag => ["e", "a", "i"].includes(tag[0])) ?? [],
+  value: event.tags.find(tag => ["e", "a", "p", "i"].includes(tag[0])) ?? [],
 })
 
 export const deriveBoards = (url: string) =>
@@ -89,8 +93,13 @@ export const deriveBoard = (url: string, identifier: string) =>
     event ? readBoard(event) : undefined,
   )
 
-export const deriveBoardByAddress = (url: string, address: string) =>
-  deriveBoard(url, Address.from(address).identifier)
+export const deriveBoardByAddress = (
+  url: string,
+  address: string,
+): Readable<PublishedBoard | undefined> =>
+  Address.isAddress(address)
+    ? deriveBoard(url, Address.from(address).identifier)
+    : readable(undefined)
 
 export const derivePins = (url: string, address: string) =>
   derived(deriveRelaySignedEvents(url, [{kinds: [PIN], "#A": [address]}]), $events =>
@@ -175,6 +184,8 @@ const valueToReference = (value: string[]): string => {
 
   if (type === "e") return nip19.neventEncode({id: data, relays})
 
+  if (type === "p") return nip19.nprofileEncode({pubkey: data, relays})
+
   if (type === "a") {
     const {kind, pubkey, identifier} = Address.from(data)
 
@@ -186,21 +197,26 @@ const valueToReference = (value: string[]): string => {
 
 export const pinToReference = (pin: Pin): string => valueToReference(pin.value)
 
-export const addressToReference = (address: string): string => valueToReference(["a", address])
+export const eventToReference = (event: TrustedEvent): string =>
+  valueToReference(isReplaceableKind(event.kind) ? ["a", getAddress(event)] : ["e", event.id])
 
 export const referenceToPin = (reference: string): Partial<Pin> | undefined => {
   const trimmed = reference.trim()
-
-  if (!trimmed) return undefined
 
   try {
     const decoded = nip19.decode(fromNostrURI(trimmed))
 
     if (decoded.type === "note") return {value: ["e", decoded.data]}
+    if (decoded.type === "npub") return {value: ["p", decoded.data]}
     if (decoded.type === "nevent") {
       const {id, relays} = decoded.data
 
       return {value: relays?.[0] ? ["e", id, relays[0]] : ["e", id]}
+    }
+    if (decoded.type === "nprofile") {
+      const {pubkey, relays} = decoded.data
+
+      return {value: relays?.[0] ? ["p", pubkey, relays[0]] : ["p", pubkey]}
     }
     if (decoded.type === "naddr") {
       const {kind, pubkey, identifier, relays} = decoded.data
@@ -208,9 +224,13 @@ export const referenceToPin = (reference: string): Partial<Pin> | undefined => {
 
       return {value: relays?.[0] ? ["a", coordinate, relays[0]] : ["a", coordinate]}
     }
+
+    return undefined
   } catch {
     // Not a nostr entity; fall through to external url handling.
   }
 
-  return {value: ["i", trimmed]}
+  const parsed = parse({content: trimmed})
+
+  return parsed.length === 1 && isLink(parsed[0]) ? {value: ["i", trimmed]} : undefined
 }
