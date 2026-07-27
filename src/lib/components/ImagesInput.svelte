@@ -112,7 +112,7 @@
     <label
       for={id}
       class="flex aspect-square cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed text-sm"
-      style:border-color={dropActive ? "var(--primary)" : "var(--line-strong)"}
+      style:border-color={dropActive ? "var(--primary)" : undefined}
       aria-label="Drag and drop images here or click to select"
       ondragenter={stopPropagation(preventDefault(onDragEnter))}
       ondragover={stopPropagation(preventDefault(onDragOver))}

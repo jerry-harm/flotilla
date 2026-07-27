@@ -5,7 +5,7 @@
    VITE_THEME). Every theme is selected the same way via its own data-fl-theme
    value — there is no implicit default — so VITE_THEME must be set. These are
    plain CSS variables consumed by:
-     - the component classes in common.css (var(--surface), var(--shadow-lg), …)
+     - the component classes in base.css (var(--surface), var(--shadow-lg), …)
      - the Tailwind utilities registered in base.css's @theme block
        (bg-surface, text-content-muted, text-primary, rounded-2xl, shadow-lg, …)
    Reskinning = override the same names in another theme file; no markup change.
@@ -64,7 +64,7 @@
     --shadow-inset-strong: inset 0 -3px 0 rgba(0, 0, 0, 0.1);
   }
 
-  /* `.nav-rail` opts the primary nav into this dark palette unconditionally */
+  /* `.primary-nav` opts the primary nav into this dark palette unconditionally */
   &[data-theme="dark"],
   & .primary-nav {
     --primary: #8e80ff;
@@ -103,10 +103,6 @@
     --shadow-lg: 8px 8px 0 rgba(var(--shadow-color), 0.4);
     --shadow-inset: inset 0 -4px 0 rgba(0, 0, 0, 0.25);
     --shadow-inset-strong: inset 0 -3px 0 rgba(0, 0, 0, 0.3);
-  }
-
-  .link-content {
-    border-radius: var(--radius-pill);
   }
 
   .chat-editor .tiptap {

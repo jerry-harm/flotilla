@@ -10,11 +10,9 @@
 
 <div class="content-search {props.class}">
   <div class="z-feature">
-    <div class="content-sizing">
-      {@render props.input?.()}
-    </div>
+    {@render props.input?.()}
   </div>
-  <div class="scroll-container content-sizing h-full pt-2">
+  <div class="scroll-container h-full pt-2">
     {@render props.content?.()}
   </div>
 </div>

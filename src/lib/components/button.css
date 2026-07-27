@@ -83,7 +83,6 @@
   /* outline */
   .button-outline {
     @apply text-content bg-transparent;
-    border-color: var(--line-strong);
 
     &:hover {
       @apply border-primary text-primary;

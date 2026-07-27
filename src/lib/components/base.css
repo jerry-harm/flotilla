@@ -363,28 +363,6 @@ body.keyboard-open .room__compose {
   @apply underline;
 }
 
-/* date picker */
-.picker {
-  --date-picker-foreground: var(--content);
-  --date-picker-background: var(--surface-more);
-  --date-picker-highlight-border: var(--primary);
-  --date-picker-selected-color: var(--primary-content);
-  --date-picker-selected-background: var(--primary);
-}
-.date-time-field {
-  @apply bg-surface rounded-2xl px-0;
-  border: var(--border-thin) solid var(--line);
-}
-.date-time-field input {
-  height: 100% !important;
-  width: 100% !important;
-  border-radius: var(--radius-2xl) !important;
-  border: none !important;
-  background: inherit !important;
-  color: inherit !important;
-  padding: 0.7rem 1rem !important;
-}
-
 /* tippy popover */
 .tippy-target {
   @apply z-tooltip pointer-events-none fixed inset-0;

@@ -15,7 +15,6 @@
 
       &:hover {
         @apply text-primary;
-        background: color-mix(in srgb, var(--subtle) 10%, transparent);
       }
     }
   }
