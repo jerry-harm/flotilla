@@ -38,7 +38,7 @@
   import {getSetting, userSettings, notificationSettings} from "@app/settings"
   import {DUFFLEPUD_URL, DEFAULT_RELAYS, INDEXER_RELAYS, POMADE_SIGNERS} from "@app/env"
   import {pushState} from "@app/push/adapters/common"
-  import {syncApplicationData, resyncApplicationData, stopApplicationDataSync} from "@app/sync"
+  import {syncApplicationData} from "@app/sync"
   import * as groups from "@app/groups"
   import * as comments from "@app/comments"
   import * as deletes from "@app/deletes"
@@ -250,9 +250,7 @@
     unsubscribers.push(() => defaultSocketPolicies.splice(-policies.length))
 
     // History, navigation, application data
-    syncApplicationData()
-
-    unsubscribers.push(setupHistory(), setupAnalytics(), stopApplicationDataSync)
+    unsubscribers.push(setupHistory(), setupAnalytics(), syncApplicationData())
 
     // Initialize keyboard state tracking
     unsubscribers.push(syncKeyboard())
@@ -277,7 +275,7 @@
         if ($pubkey !== lastPubkey) {
           lastPubkey = $pubkey
           Pool.get().clear()
-          resyncApplicationData()
+          syncApplicationData()
         }
       }),
     )

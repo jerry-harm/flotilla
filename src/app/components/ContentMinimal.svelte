@@ -1,7 +1,6 @@
 <script lang="ts">
   import cx from "classnames"
-  import {fromNostrURI} from "@welshman/util"
-  import {nthEq} from "@welshman/lib"
+  import {fromNostrURI, getTagValue} from "@welshman/util"
   import {
     parse,
     truncate,
@@ -72,7 +71,7 @@
   const warning = $derived(
     warningDismissed
       ? undefined
-      : $userSettingsValues.hide_sensitive && event.tags.find(nthEq(0, "content-warning"))?.[1],
+      : $userSettingsValues.hide_sensitive && getTagValue("content-warning", event.tags),
   )
 
   const dropWhile = <T,>(f: (x: T) => boolean, xs: Iterable<T>) => {

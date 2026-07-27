@@ -124,11 +124,12 @@ Conventions below.
 - Do not define svelte event handlers inline, instead name them and put them in the script section of templates
 - Write a `{#if}`/`{:else if}` chain rather than hoisting display strings into a lookup `Record` in the script section.
 - Avoid using `as`, except where necessary. Instead, annotate function parameters, and ensure upstream values are typed correctly.
-- Instead of `getTag(tagName, event.tags)?.[1] || ""`, use `getTagValue(tagName, event.tags)`
+- To read a tag, use `getTagValue(tagName, event.tags)` (or `getTagValues` for all matches) rather than reaching into the tag array yourself — that means no `getTag(tagName, event.tags)?.[1] || ""` and no `event.tags.find(nthEq(0, tagName))?.[1]`. `getTagValue` is exactly the latter, so the replacement is behavior-preserving, `undefined` included. Reserve `nthEq` for cases with no `getTag*` equivalent, such as `partition(nthEq(0, "imeta"), tags)`.
 - Do not render a profile's `about` directly (e.g. `profile.about`); use the `ProfileAbout` component instead.
 - Use `type Props` instead of interface when defining props for svelte components.
 - When a component's value/prop shape mirrors a subset of an existing type, derive it with `Pick`/`Partial` and `export` that type from the component's `<script module>` (e.g. a `Values` type) for callers to import, instead of re-enumerating its sub-properties.
 - Avoid pass-through functions except when the wrapper is part of an abstraction. `x => y()` is not ok, but `x => this.impl.y()` is ok, for example.
+- For durations and timestamps, use `@welshman/lib`'s time helpers and constants (`MINUTE`, `HOUR`, `DAY`, `WEEK`, `MONTH`, `YEAR`) rather than raw milliseconds: `int(5, MINUTE)` for a duration in seconds, `ago(5, MINUTE)` for a past timestamp, `now()` for the current one, and `ms()`/`ms(int(...))` only where a browser API needs milliseconds. So `checkedAt < ago(5, MINUTE)` instead of `checkedAt < Date.now() - 300_000`. Write these count-first (`int(3, MONTH)`, `ago(2, WEEK)`) — the declared parameter order is `(unit, count)`, but the product is the same either way and every call site in this repo reads count-first. Nostr timestamps are seconds, so prefer `now()` over `Date.now()` for anything stored on an event.
 - When declaring variables in a svelte component, the order should generally be: props, constants derived from props/state, functions declared with `const`, mutable variables declared with `let`, effects, onMount. This order may vary due to dependencies, but should generally be adhered to.
 
 **Human-First Simplicity:**

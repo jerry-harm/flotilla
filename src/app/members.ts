@@ -20,7 +20,7 @@ import {
   sortEventsAsc,
 } from "@welshman/util"
 import type {Filter, ManagementRequest, PublishedRoomMeta, TrustedEvent} from "@welshman/util"
-import {first, simpleCache, sortBy, spec, uniq} from "@welshman/lib"
+import {ago, first, MINUTE, now, simpleCache, sortBy, spec, uniq} from "@welshman/lib"
 import {addRoomMember, manageRelay, pubkey, waitForThunkError} from "@welshman/app"
 import {load} from "@welshman/net"
 import {get} from "svelte/store"
@@ -260,8 +260,8 @@ export const deriveUserIsSpaceAdmin = simpleCache(([url]: [string | undefined]) 
   let checkedAt = 0
 
   return readable(false, set => {
-    if (url && checkedAt < Date.now() - 300_000) {
-      checkedAt = Date.now()
+    if (url && checkedAt < ago(5, MINUTE)) {
+      checkedAt = now()
 
       manageRelay(url, {method: ManagementMethod.SupportedMethods, params: []})
         .then(({result}) => set(Boolean(result?.length)))

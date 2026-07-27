@@ -472,17 +472,14 @@ const syncDMs = () => {
 let unsubscribe: Unsubscriber | undefined
 
 export const syncApplicationData = () => {
+  unsubscribe?.()
+
   const unsubscribers = [syncRelays(), syncUserData(), syncSpaces(), syncDMs()]
 
   unsubscribe = () => unsubscribers.forEach(call)
-}
 
-export const stopApplicationDataSync = () => {
-  unsubscribe?.()
-  unsubscribe = undefined
-}
-
-export const resyncApplicationData = () => {
-  stopApplicationDataSync()
-  syncApplicationData()
+  return () => {
+    unsubscribe?.()
+    unsubscribe = undefined
+  }
 }

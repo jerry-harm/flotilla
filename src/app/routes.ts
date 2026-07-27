@@ -3,7 +3,6 @@ import {get} from "svelte/store"
 import * as nip19 from "nostr-tools/nip19"
 import {goto} from "$app/navigation"
 import {page} from "$app/stores"
-import {nthEq} from "@welshman/lib"
 import type {TrustedEvent} from "@welshman/util"
 import {getAddress} from "@welshman/util"
 import {tracker, userMessagingRelayList, getRelay} from "@welshman/app"
@@ -206,9 +205,9 @@ export const getEventPath = (event: TrustedEvent, urls: string[]) => {
       return makeMessagePath(url, event)
     }
 
-    const address = event.tags.find(nthEq(0, "A"))?.[1]
-    const kind = event.tags.find(nthEq(0, "K"))?.[1]
-    const id = event.tags.find(nthEq(0, "E"))?.[1]
+    const address = getTagValue("A", event.tags)
+    const kind = getTagValue("K", event.tags)
+    const id = getTagValue("E", event.tags)
 
     if (id && kind) {
       if (parseInt(kind) === ZAP_GOAL) {

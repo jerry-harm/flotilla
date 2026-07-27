@@ -39,4 +39,9 @@
 @import "./space-menu.css";
 @import "./tooltip.css";
 
+/* SocketStatusIndicator builds its class as bg-{status.theme}, which the source
+   scanner can't see. These are the themes deriveSocketStatus can return. Kept
+   below every @import, since an @import after another at-rule is invalid. */
+@source inline("bg-success bg-warning bg-error bg-gray-500");
+
 @config "../../../tailwind.config.js";

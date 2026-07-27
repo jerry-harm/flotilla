@@ -19,7 +19,7 @@ import {addSpace, userSpaceUrls} from "@app/groups"
 import {relaysMostlyRestricted} from "@app/policies"
 import {broadcastUserData} from "@app/profiles"
 import {Push} from "@app/push"
-import {resyncApplicationData} from "@app/sync"
+import {syncApplicationData} from "@app/sync"
 import {notificationSettings, setSpaceNotifications} from "@app/settings"
 import {deriveSocket} from "@app/relays"
 
@@ -193,15 +193,11 @@ export const attemptRelayAccess = async (url: string, claim = "") => {
     return `Failed to connect`
   }
 
-  // Relays send their challenge right after the socket opens, so if none shows up
-  // shortly the relay doesn't use auth and we can go ahead and publish.
   await poll({
-    signal: AbortSignal.timeout(800),
+    signal: AbortSignal.timeout(3000),
     condition: () => socket.auth.status === AuthStatus.Requested,
   })
 
-  // Stop at any terminal status — retrying a denied signature or a forbidden response
-  // just re-prompts the user's signer for an answer we already have.
   for (let i = 0; i < 3 && !authTerminalStatuses.includes(socket.auth.status); i++) {
     await socket.auth.retryAuth(sign)
     await waitForAuth(socket)
@@ -298,7 +294,7 @@ export class Access {
     await this.configureNotifications(notifications)
     await addSpace(this.url)
     this.clearRestricted()
-    resyncApplicationData()
+    syncApplicationData()
     broadcastUserData([this.url])
   }
 

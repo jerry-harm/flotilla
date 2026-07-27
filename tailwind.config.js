@@ -2,8 +2,6 @@
 export default {
   content: ["./src/**/*.{html,js,svelte,ts}"],
   darkMode: ["selector", '[data-theme="dark"]'],
-  // dynamic socket-status classes (bg-{$status.theme}) the scanner can't see
-  safelist: ["w-4", "h-4", "bg-success", "bg-warning", "bg-error", "bg-gray-500"],
   theme: {
     zIndex: {
       none: 0,
