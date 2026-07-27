@@ -214,9 +214,7 @@ export const joinVoiceRoom = async (
         whenAborted(signal),
       ])
     } catch (e) {
-      if (activeRoom === liveKitRoom) activeRoom = undefined
-      liveKitRoom.removeAllListeners()
-      liveKitRoom.disconnect()
+      teardownRoom(liveKitRoom)
       throw e
     }
 
@@ -239,9 +237,7 @@ export const joinVoiceRoom = async (
     // A cancel during the mic step must tear down the connected room rather
     // than leaking it.
     if (signal.aborted) {
-      if (activeRoom === liveKitRoom) activeRoom = undefined
-      liveKitRoom.removeAllListeners()
-      liveKitRoom.disconnect()
+      teardownRoom(liveKitRoom)
       throw new AbortError()
     }
 
@@ -294,9 +290,7 @@ export const leaveVoiceRoom = async () => {
   }
 
   // Always tear down this room's connection and listeners.
-  if (activeRoom === session.livekit) activeRoom = undefined
-  session.livekit.removeAllListeners()
-  session.livekit.disconnect()
+  teardownRoom(session.livekit)
 
   // Only reset shared UI state if this session is still current. A slow leave
   // that was superseded by a new join (bounded by a timeout in joinVoiceRoom)
@@ -320,16 +314,16 @@ export const toggleMute = async () => {
   if (!session) return
 
   callMicMuted.update(not)
-  if (get(callMicMuted)) {
-    session.livekit.localParticipant.setMicrophoneEnabled(false)
-    return
-  }
 
+  const muted = get(callMicMuted)
   try {
-    await session.livekit.localParticipant.setMicrophoneEnabled(true)
-  } catch (e) {
-    callMicMuted.set(true)
-    pushToast({theme: "error", message: "Could not access microphone"})
+    await session.livekit.localParticipant.setMicrophoneEnabled(!muted)
+  } catch {
+    callMicMuted.set(!muted)
+    pushToast({
+      theme: "error",
+      message: muted ? "Could not mute microphone" : "Could not access microphone",
+    })
   }
 }
 
@@ -340,7 +334,7 @@ export const toggleCamera = async () => {
   const cameraOn = !session.cameraOn
   try {
     await session.livekit.localParticipant.setCameraEnabled(cameraOn)
-    currentCallSession.set({...session, cameraOn})
+    currentCallSession.update(s => s && {...s, cameraOn})
   } catch {
     pushToast({
       theme: "error",
@@ -356,7 +350,7 @@ export const toggleScreenShare = async () => {
   const screenShareOn = !session.screenShareOn
   try {
     await session.livekit.localParticipant.setScreenShareEnabled(screenShareOn)
-    currentCallSession.set({...session, screenShareOn})
+    currentCallSession.update(s => s && {...s, screenShareOn})
   } catch {
     pushToast({
       theme: "error",
@@ -462,6 +456,21 @@ currentCallSession.subscribe(session => {
   videoPrimaryTileKey.set(undefined)
   resetVideoCallLayout()
 })
+
+const teardownRoom = (livekit: LiveKitRoom) => {
+  if (activeRoom === livekit) activeRoom = undefined
+
+  // Dropping the listeners keeps TrackUnsubscribed from removing the hidden
+  // audio elements onTrackSubscribed appended, so detach them here instead.
+  for (const participant of livekit.remoteParticipants.values()) {
+    for (const publication of participant.audioTrackPublications.values()) {
+      publication.track?.detach().forEach(el => el.remove())
+    }
+  }
+
+  livekit.removeAllListeners()
+  livekit.disconnect()
+}
 
 const countLiveVisualFeeds = (session: CallSession): number => {
   const livekit = session.livekit
@@ -639,6 +648,8 @@ const makeOnRoomDisconnected = (livekit: LiveKitRoom) => (reason?: DisconnectRea
   // Ignore disconnects from rooms that are no longer the active session.
   if (livekit !== activeRoom) return
 
+  // Livekit unsubscribes remote tracks before emitting Disconnected, so
+  // onTrackUnsubscribed has already removed their audio elements by now.
   activeRoom = undefined
   livekit.removeAllListeners()
 
