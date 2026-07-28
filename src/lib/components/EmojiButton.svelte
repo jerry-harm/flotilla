@@ -15,6 +15,14 @@
     popover?.hide()
   }
 
+  const onShow = () => {
+    visible = true
+  }
+
+  const onHidden = () => {
+    visible = false
+  }
+
   const onMouseMove = throttle(300, ({clientX, clientY}: MouseEvent) => {
     if (popover) {
       const {x, y, width, height} = popover.popper.getBoundingClientRect()
@@ -26,9 +34,10 @@
   })
 
   let popover: Instance | undefined = $state()
+  let visible = $state(false)
 </script>
 
-<svelte:document onmousemove={onMouseMove} />
+<svelte:document onmousemove={visible ? onMouseMove : undefined} />
 
 <Button onclick={open} class={props.class}>
   <Tippy
@@ -36,7 +45,7 @@
     class="flex"
     component={EmojiPicker}
     props={{onClick}}
-    params={{trigger: "manual", interactive: true, ...tippyParams}}>
+    params={{trigger: "manual", interactive: true, ...tippyParams, onShow, onHidden}}>
     {@render props.children?.()}
   </Tippy>
 </Button>

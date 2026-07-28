@@ -379,7 +379,7 @@ export const sync = (): StorageSync => {
     deferredTimers.push(timeout)
   }
 
-  const ready = (async () => {
+  const ready = call(async () => {
     await db.connect()
 
     await Promise.all([loadCriticalEvents(), loadCriticalRelays()])
@@ -408,7 +408,7 @@ export const sync = (): StorageSync => {
     scheduleDeferred(async () => {
       addUnsubscriber(await initWrapManager())
     })
-  })()
+  })
 
   const unsubscribe = () => {
     stopped = true

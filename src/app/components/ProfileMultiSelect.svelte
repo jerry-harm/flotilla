@@ -46,7 +46,7 @@
   }
 
   const onKeyDown = (e: Event) => {
-    if (instance.onKeyDown(e)) {
+    if (instance?.onKeyDown(e)) {
       e.preventDefault()
     }
   }

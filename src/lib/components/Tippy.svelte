@@ -2,7 +2,8 @@
   import "tippy.js/animations/shift-away.css"
 
   import tippy from "tippy.js"
-  import {onMount, mount} from "svelte"
+  import type {Instance} from "tippy.js"
+  import {onMount, mount, unmount} from "svelte"
   import {isMobile} from "@lib/html"
 
   let {
@@ -35,12 +36,19 @@
       appendTo: document.querySelector(".tippy-target")!,
       trigger: isMobile ? "click" : "mouseenter focus",
       ...params,
-    })
+      onShow: (tippyInstance: Instance) => {
+        instance ??= mount(component, {target, props: mountedProps})
 
-    instance = mount(component, {target, props: mountedProps})
+        return params.onShow?.(tippyInstance)
+      },
+    })
 
     return () => {
       popover?.destroy()
+
+      if (instance) {
+        unmount(instance)
+      }
     }
   })
 </script>

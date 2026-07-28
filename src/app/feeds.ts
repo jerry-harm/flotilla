@@ -1,18 +1,6 @@
 import {repository, tracker} from "@welshman/app"
 import {writable} from "svelte/store"
-import {
-  batch,
-  between,
-  call,
-  insertAt,
-  int,
-  now,
-  on,
-  sortBy,
-  uniqBy,
-  MONTH,
-  YEAR,
-} from "@welshman/lib"
+import {batch, between, call, int, now, on, sortBy, uniqBy, MONTH, YEAR} from "@welshman/lib"
 import {EVENT_TIME, getAddress, getTagValue, matchFilters} from "@welshman/util"
 import type {Filter, TrustedEvent} from "@welshman/util"
 import {mergeRepositoryUpdates, request} from "@welshman/net"
@@ -74,22 +62,25 @@ export const makeFeed = ({
     }
 
     if (visible.length > 0) {
+      visible.sort((a, b) => a.created_at - b.created_at)
+
       events.update($events => {
-        for (const event of visible) {
-          let inserted = false
-          for (let i = 0; i < $events.length; i++) {
-            if ($events[i].created_at > event.created_at) {
-              $events = insertAt(i, event, $events)
-              inserted = true
-              break
-            }
-          }
-          if (!inserted) {
-            $events = [...$events, event]
+        const merged: TrustedEvent[] = []
+        let i = 0
+        let j = 0
+
+        while (i < $events.length && j < visible.length) {
+          if ($events[i].created_at <= visible[j].created_at) {
+            merged.push($events[i++])
+          } else {
+            merged.push(visible[j++])
           }
         }
 
-        return $events
+        while (i < $events.length) merged.push($events[i++])
+        while (j < visible.length) merged.push(visible[j++])
+
+        return merged
       })
     }
   }
@@ -105,6 +96,22 @@ export const makeFeed = ({
 
     insertEvents(drained)
   }
+
+  const onTrackedId = batch(150, (ids: string[]) => {
+    const matching: TrustedEvent[] = []
+
+    for (const id of new Set(ids)) {
+      const event = repository.getEvent(id)
+
+      if (event && matchFilters(filters, event)) {
+        matching.push(event)
+      }
+    }
+
+    if (matching.length > 0) {
+      insertEvents(matching)
+    }
+  })
 
   const unsubscribers = [
     on(
@@ -135,11 +142,7 @@ export const makeFeed = ({
     ),
     on(tracker, "add", (id: string, url: string) => {
       if (relays.includes(url)) {
-        const event = repository.getEvent(id)
-
-        if (event && matchFilters(filters, event)) {
-          insertEvents([event])
-        }
+        onTrackedId(id)
       }
     }),
   ]
@@ -255,34 +258,50 @@ export const makeCalendarFeed = ({
 
     if (valid.length === 0) return
 
+    for (const event of valid) {
+      seen.add(event.id)
+    }
+
+    valid.sort((a, b) => getStart(a) - getStart(b))
+
     events.update($events => {
-      for (const event of valid) {
-        seen.add(event.id)
+      // Calendar events are addressable, so a new version supersedes the old one
+      const superseded = new Set(valid.map(getAddress))
+      const kept = $events.filter(e => !superseded.has(getAddress(e)))
+      const merged: TrustedEvent[] = []
+      let i = 0
+      let j = 0
 
-        const start = getStart(event)
-        const address = getAddress(event)
-
-        let handled = false
-        for (let i = 0; i < $events.length; i++) {
-          if ($events[i].id === event.id) {
-            handled = true
-            break
-          }
-          if (getStart($events[i]) > start) {
-            $events = insertAt(i, event, $events)
-            handled = true
-            break
-          }
-        }
-
-        if (!handled) {
-          $events = [...$events.filter(e => getAddress(e) !== address), event]
+      while (i < kept.length && j < valid.length) {
+        if (getStart(kept[i]) <= getStart(valid[j])) {
+          merged.push(kept[i++])
+        } else {
+          merged.push(valid[j++])
         }
       }
 
-      return $events
+      while (i < kept.length) merged.push(kept[i++])
+      while (j < valid.length) merged.push(valid[j++])
+
+      return merged
     })
   }
+
+  const onTrackedId = batch(150, (ids: string[]) => {
+    const matching: TrustedEvent[] = []
+
+    for (const id of new Set(ids)) {
+      const event = repository.getEvent(id)
+
+      if (event && matchFilters(filters, event)) {
+        matching.push(event)
+      }
+    }
+
+    if (matching.length > 0) {
+      insertEvents(matching)
+    }
+  })
 
   const unsubscribers = [
     on(
@@ -308,11 +327,7 @@ export const makeCalendarFeed = ({
     ),
     on(tracker, "add", (id: string, url: string) => {
       if (relays.includes(url)) {
-        const event = repository.getEvent(id)
-
-        if (event && matchFilters(filters, event)) {
-          insertEvents([event])
-        }
+        onTrackedId(id)
       }
     }),
   ]

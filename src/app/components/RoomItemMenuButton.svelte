@@ -13,6 +13,14 @@
 
   const onClick = () => popover?.hide()
 
+  const onShow = () => {
+    visible = true
+  }
+
+  const onHidden = () => {
+    visible = false
+  }
+
   const onMouseMove = ({clientX, clientY}: any) => {
     if (popover) {
       const {x, y, width, height} = popover.popper.getBoundingClientRect()
@@ -24,16 +32,17 @@
   }
 
   let popover: Instance | undefined = $state()
+  let visible = $state(false)
 </script>
 
-<svelte:document onmousemove={onMouseMove} />
+<svelte:document onmousemove={visible ? onMouseMove : undefined} />
 
 <Button onclick={open} class="button button-xs button-neutral join-item">
   <Tippy
     bind:popover
     component={RoomItemMenu}
     props={{url, event, onClick}}
-    params={{trigger: "manual", interactive: true}}>
+    params={{trigger: "manual", interactive: true, onShow, onHidden}}>
     <Icon icon={MenuDots} size={4} />
   </Tippy>
 </Button>

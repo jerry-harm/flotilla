@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as nip19 from "nostr-tools/nip19"
   import {Router} from "@welshman/router"
-  import {LOCALE, secondsToDate} from "@welshman/lib"
+  import {call, LOCALE, secondsToDate} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
   import {displayRelayUrl, toNostrURI} from "@welshman/util"
   import {tracker} from "@welshman/app"
@@ -31,13 +31,13 @@
   const nprofile1 = toNostrURI(nip19.nprofileEncode({pubkey: event.pubkey, relays}))
   const npub1 = nip19.npubEncode(event.pubkey)
   const seenOn = tracker.getRelays(event.id)
-  const json = (() => {
+  const json = call(() => {
     try {
       return JSON.stringify(JSON.parse(event.content), null, 2)
     } catch {
       return event.content
     }
-  })()
+  })
   const copyLink = () => clip(nprofile1)
   const copyPubkey = () => clip(npub1)
   const copyJson = () => clip(json)

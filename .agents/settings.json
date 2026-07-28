@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Checking added comments",
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && git diff HEAD -U0 -- src | grep -E '^\\+' | grep -v '^+++' | grep -E '//|/\\*|\\*/|<!--' | sed 's/^+[[:space:]]*//' | jq -R -s 'select(length > 0) | {systemMessage: (\"Comment lines added to src/ — check each against the Cleanup Pass rule in AGENTS.md. Only genuinely surprising things: a workaround, an external constraint, an invariant not visible from the code. Not restating the next line, not justifying an ordinary decision.\\n\\n\" + .)}' 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
