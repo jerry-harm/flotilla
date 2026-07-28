@@ -1,68 +1,78 @@
 import {page} from "$app/stores"
 import type {Unsubscriber} from "svelte/store"
-import {last, call, assoc, WEEK, MONTH, ago} from "@welshman/lib"
-import {merged} from "@welshman/store"
-import {Router} from "@welshman/router"
+import {ago, assoc, call, MONTH, WEEK} from "@welshman/lib"
+import type {Maybe} from "@welshman/lib"
 import {
-  getListTags,
-  getRelayTagValues,
-  WRAP,
-  MUTES,
+  APP_DATA,
   FOLLOWS,
-  ROOM_META,
-  ROOM_DELETE,
-  ROOM_ADMINS,
-  ROOM_MEMBERS,
+  MESSAGE,
+  MUTES,
+  PIN,
+  PINBOARD,
+  POLL_RESPONSE,
+  RELAY_ADD_MEMBER,
+  RELAY_MEMBERS,
+  RELAY_REMOVE_MEMBER,
+  RELAY_ROLE,
   ROOM_ADD_MEMBER,
-  ROOM_REMOVE_MEMBER,
+  ROOM_ADMINS,
+  ROOM_CREATE_PERMISSION,
+  ROOM_DELETE,
   ROOM_JOIN,
   ROOM_LEAVE,
-  ROOM_CREATE_PERMISSION,
-  RELAY_MEMBERS,
-  RELAY_ADD_MEMBER,
-  RELAY_REMOVE_MEMBER,
-  MESSAGE,
-  POLL_RESPONSE,
-  APP_DATA,
-  isSignedEvent,
+  ROOM_MEMBERS,
+  ROOM_META,
+  ROOM_PINS,
+  ROOM_REMOVE_MEMBER,
+  WRAP,
+  outbox,
   unionFilters,
 } from "@welshman/util"
-import type {Filter, List, PublishedList, TrustedEvent} from "@welshman/util"
-import {request, load} from "@welshman/net"
+import type {Filter} from "@welshman/util"
+import type {
+  FollowListReader,
+  MessagingRelayListReader,
+  RelayListReader,
+  RoomListReader,
+} from "@welshman/domain"
+import {merged, synced, withGetter} from "@welshman/store"
 import {
-  pubkey,
-  loadRelay,
-  userRelayList,
-  userMessagingRelayList,
-  loadRelayList,
-  loadMessagingRelayList,
-  loadBlossomServerList,
-  loadBlockedRelayList,
-  loadFollowList,
-  loadMuteList,
-  loadProfile,
-  userFollowList,
-  getFollows,
-  repository,
-  shouldUnwrap,
+  FollowLists,
+  MessagingRelayLists,
+  RelayLists,
+  RoomLists,
+  Sync,
+  makeRoomKey,
 } from "@welshman/app"
+import {
+  app,
+  blockedRelayLists,
+  blossomServerLists,
+  deriveUserItem,
+  followLists,
+  messagingRelayLists,
+  muteLists,
+  network,
+  profiles,
+  relayLists,
+  relays,
+  roomLists,
+  router,
+} from "@app/core"
+import {LIVEKIT_PARTICIPANTS} from "@app/call"
 import {REACTION_KINDS, CONTENT_KINDS, makeCommentFilter} from "@app/content"
 import {INDEXER_RELAYS, PLATFORM_RELAYS} from "@app/env"
-import {loadSettings} from "@app/settings"
-import {
-  loadGroupList,
-  userSpaceUrls,
-  userGroupList,
-  getSpaceUrlsFromGroupList,
-  getSpaceRoomsFromGroupList,
-} from "@app/groups"
-import {decodeRelay} from "@app/relays"
-import {RELAY_ROLE} from "@app/members"
 import {FEATURED_CONTENT_D} from "@app/featured"
-import {BOARD, PIN} from "@app/pinboards"
+import {decodeRelay} from "@app/relays"
+import {Settings} from "@app/settings"
+import {kv} from "@app/storage"
 import {hasBlossomSupport} from "@app/uploads"
-import {LIVEKIT_PARTICIPANTS} from "@app/call"
-import {ROOM_PINS} from "@app/pins"
+
+// Whether to sync gift wraps. Unwrapping itself is unconditional, so this is the only
+// thing keeping a signer from being asked to decrypt the user's entire DM history.
+export const shouldUnwrap = withGetter(
+  synced({key: "shouldUnwrap", storage: kv, defaultValue: false}),
+)
 
 // Utils
 
@@ -70,97 +80,52 @@ type SyncOpts = {
   url: string
   signal: AbortSignal
   filters: Filter[]
-  onEvent?: (event: TrustedEvent) => void
 }
 
-const pullOneWithFallback = async (
-  url: string,
-  filter: Filter,
-  signal: AbortSignal,
-  onEvent?: (event: TrustedEvent) => void,
-) => {
+const pullAndListen = ({url, signal, filters}: SyncOpts) => {
   if (signal.aborted) return
 
-  const cachedEvents = repository.query([filter]).filter(isSignedEvent)
-  const since = last(cachedEvents.slice(10))?.created_at || 0
-
-  if (onEvent) {
-    for (const event of cachedEvents) {
-      onEvent(event)
-    }
-  }
-
-  // Temporarily disable negentropy until the new welshman lands, which fixes
-  // error handling (neg-err with auth-required were never getting retried)
-  const shouldFallback = true
-  // !hasNegentropy(url) ||
-  // (await new Promise(resolve => {
-  //   if (signal.aborted) {
-  //     resolve(false)
-  //     return
-  //   }
-
-  //   // If teardown wins while the diff is opening, skip the fallback path and let cleanup stay in control.
-  //   const diff = new Difference({relay: url, filter, events: cachedEvents, signal})
-
-  //   diff.on(DifferenceEvent.Error, () => {
-  //     resolve(true)
-  //   })
-
-  //   diff.on(DifferenceEvent.Close, () => {
-  //     for (const ids of chunk(100, Array.from(diff.need))) {
-  //       requestOne({relay: url, signal, autoClose: true, filters: [{ids}], onEvent})
-  //     }
-
-  //     resolve(false)
-  //   })
-  // }))
-
-  if (shouldFallback && !signal.aborted) {
-    request({relays: [url], signal, autoClose: true, filters: [{since, ...filter}], onEvent})
-  }
+  app
+    .get()
+    .use(Sync)
+    .pull({relays: [url], filters})
+  network.get().request({
+    relays: [url],
+    signal,
+    filters: unionFilters(filters.map(assoc("limit", 0))),
+  })
 }
 
-export const pullWithFallback = async ({url, signal, filters, onEvent}: SyncOpts) => {
-  await loadRelay(url)
+const userRoomList = deriveUserItem($app => $app.use(RoomLists))
 
-  if (signal.aborted) return
+const userRelayList = deriveUserItem($app => $app.use(RelayLists))
 
-  await Promise.all(filters.map(filter => pullOneWithFallback(url, filter, signal, onEvent)))
-}
+const userFollowList = deriveUserItem($app => $app.use(FollowLists))
 
-const listen = ({url, signal, filters, onEvent}: SyncOpts) => {
-  const relays = [url]
+const userMessagingRelayList = deriveUserItem($app => $app.use(MessagingRelayLists))
 
-  request({relays, signal, filters: unionFilters(filters.map(assoc("limit", 0))), onEvent})
-}
-
-const pullAndListen = (options: SyncOpts) => {
-  if (options.signal.aborted) return
-
-  pullWithFallback(options)
-  listen(options)
-}
+const getSpaceUrls = ($roomList: Maybe<RoomListReader>) =>
+  PLATFORM_RELAYS.length > 0 ? PLATFORM_RELAYS : ($roomList?.urls() ?? [])
 
 // Relays
 
 const syncRelays = () => {
   for (const url of INDEXER_RELAYS) {
-    loadRelay(url)
+    relays.get().load(url)
   }
 
   const unsubscribePage = page.subscribe($page => {
     if ($page.params.relay) {
       const url = decodeRelay($page.params.relay)
 
-      loadRelay(url)
+      relays.get().load(url)
       hasBlossomSupport(url)
     }
   })
 
-  const unsubscribeSpaceUrls = userSpaceUrls.subscribe(urls => {
-    for (const url of urls) {
-      loadRelay(url)
+  const unsubscribeSpaceUrls = userRoomList.subscribe($roomList => {
+    for (const url of $roomList?.urls() ?? []) {
+      relays.get().load(url)
     }
   })
 
@@ -173,7 +138,7 @@ const syncRelays = () => {
 // User data
 
 const syncUserSpaceMembership = (url: string) => {
-  const $pubkey = pubkey.get()
+  const $pubkey = app.get().user?.pubkey
   const controller = new AbortController()
 
   if ($pubkey) {
@@ -192,7 +157,7 @@ const syncUserSpaceMembership = (url: string) => {
 }
 
 const syncUserRoomMembership = (url: string, h: string) => {
-  const $pubkey = pubkey.get()
+  const $pubkey = app.get().user?.pubkey
   const controller = new AbortController()
 
   if ($pubkey) {
@@ -212,21 +177,19 @@ const syncUserRoomMembership = (url: string, h: string) => {
 const syncUserData = () => {
   const unsubscribersByKey = new Map<string, Unsubscriber>()
 
-  const syncGroupList = ($userGroupList: List | undefined) => {
-    if ($userGroupList) {
+  const syncRoomList = ($roomList: Maybe<RoomListReader>) => {
+    if ($roomList) {
       const keys = new Set<string>()
-      const urls =
-        PLATFORM_RELAYS.length > 0 ? PLATFORM_RELAYS : getSpaceUrlsFromGroupList($userGroupList)
 
-      for (const url of urls) {
+      for (const url of getSpaceUrls($roomList)) {
         if (!unsubscribersByKey.has(url)) {
           unsubscribersByKey.set(url, syncUserSpaceMembership(url))
         }
 
         keys.add(url)
 
-        for (const h of getSpaceRoomsFromGroupList(url, $userGroupList)) {
-          const key = `${url}'${h}`
+        for (const h of $roomList.roomsForUrl(url)) {
+          const key = makeRoomKey(url, h)
 
           if (!unsubscribersByKey.has(key)) {
             unsubscribersByKey.set(key, syncUserRoomMembership(url, h))
@@ -245,46 +208,40 @@ const syncUserData = () => {
     }
   }
 
-  const syncRelayList = ($userRelayList: PublishedList | undefined) => {
-    const pubkey = $userRelayList?.event?.pubkey
+  const syncRelayList = ($relayList: Maybe<RelayListReader>) => {
+    const author = $relayList?.author()
 
-    if (pubkey) {
-      loadBlossomServerList(pubkey)
-      loadBlockedRelayList(pubkey)
-      loadFollowList(pubkey)
-      loadGroupList(pubkey)
-      loadMuteList(pubkey)
-      loadProfile(pubkey)
-      loadSettings(pubkey)
+    if (author) {
+      blossomServerLists.get().load(author)
+      blockedRelayLists.get().load(author)
+      followLists.get().load(author)
+      roomLists.get().load(author)
+      muteLists.get().load(author)
+      profiles.get().load(author)
+      app.get().use(Settings).load(author)
     }
   }
 
-  const syncFollowNetwork = ($userFollowList: List | undefined) => {
-    const author = $userFollowList?.event?.pubkey
+  const syncFollowNetwork = async ($followList: Maybe<FollowListReader>) => {
+    const authors = $followList?.pubkeys() ?? []
 
-    if (author) {
-      const authors = getFollows(author)
+    if (authors.length > 0) {
+      const scenario = await router.get().resolve(authors.map(author => outbox(author)))
 
-      load({
+      network.get().load({
         filters: [{kinds: [FOLLOWS, MUTES], authors}],
-        relays: Router.get().FromPubkeys(authors).limit(8).getUrls(),
+        relays: scenario.limit(8).getUrls(),
       })
     }
   }
 
-  const unsubscribeGroupList = merged([userGroupList]).subscribe(([$userGroupList]) => {
-    syncGroupList($userGroupList)
-  })
-
-  const unsubscribeRelayList = merged([userRelayList]).subscribe(([$userRelayList]) => {
-    syncRelayList($userRelayList)
-  })
-
+  const unsubscribeRoomList = userRoomList.subscribe(syncRoomList)
+  const unsubscribeRelayList = userRelayList.subscribe(syncRelayList)
   const unsubscribeFollowList = userFollowList.subscribe(syncFollowNetwork)
 
   return () => {
     unsubscribersByKey.forEach(call)
-    unsubscribeGroupList()
+    unsubscribeRoomList()
     unsubscribeRelayList()
     unsubscribeFollowList()
   }
@@ -317,7 +274,7 @@ const syncSpace = (url: string) => {
           ROOM_MEMBERS,
           ROOM_DELETE,
           LIVEKIT_PARTICIPANTS,
-          BOARD,
+          PINBOARD,
           ROOM_PINS,
         ],
       },
@@ -339,13 +296,10 @@ const syncSpace = (url: string) => {
 }
 
 const syncSpaces = () => {
-  const store = merged([userGroupList, page])
   const unsubscribersByUrl = new Map<string, Unsubscriber>()
 
-  const unsubscribe = store.subscribe(([$userGroupList, $page]) => {
-    const urls = new Set(
-      PLATFORM_RELAYS.length > 0 ? PLATFORM_RELAYS : getSpaceUrlsFromGroupList($userGroupList),
-    )
+  const unsubscribe = merged([userRoomList, page]).subscribe(([$roomList, $page]) => {
+    const urls = new Set(getSpaceUrls($roomList))
     const currentUrl = $page.params.relay ? decodeRelay($page.params.relay) : undefined
 
     if (currentUrl) {
@@ -404,34 +358,6 @@ const syncDMs = () => {
     }
   }
 
-  const syncPubkey = ($pubkey: string | undefined, $shouldUnwrap: boolean) => {
-    if ($pubkey !== currentPubkey) {
-      unsubscribeAll()
-    }
-
-    if ($pubkey && $shouldUnwrap) {
-      loadRelayList($pubkey)
-        .then(() => loadMessagingRelayList($pubkey))
-        .then($l => {
-          if ($l && currentPubkey === $pubkey && currentShouldUnwrap === $shouldUnwrap) {
-            subscribeAll($pubkey, getRelayTagValues(getListTags($l)))
-          }
-        })
-    }
-
-    currentPubkey = $pubkey
-    currentShouldUnwrap = $shouldUnwrap
-  }
-
-  const syncList = ($userMessagingRelayList: List | undefined) => {
-    const $pubkey = pubkey.get()
-    const $shouldUnwrap = shouldUnwrap.get()
-
-    if ($pubkey && $shouldUnwrap) {
-      subscribeAll($pubkey, getRelayTagValues(getListTags($userMessagingRelayList)))
-    }
-  }
-
   const subscribeAll = (pubkey: string, urls: string[]) => {
     // Start syncing newly added relays
     for (const url of urls) {
@@ -449,20 +375,44 @@ const syncDMs = () => {
     }
   }
 
-  const unsubscribePubkey = merged([pubkey, shouldUnwrap]).subscribe(([$pubkey, $shouldUnwrap]) => {
-    syncPubkey($pubkey, $shouldUnwrap)
+  const syncPubkey = ($pubkey: Maybe<string>, $shouldUnwrap: boolean) => {
+    if ($pubkey !== currentPubkey) {
+      unsubscribeAll()
+    }
+
+    if ($pubkey && $shouldUnwrap) {
+      relayLists
+        .get()
+        .load($pubkey)
+        .then(() => messagingRelayLists.get().load($pubkey))
+        .then($list => {
+          if ($list && currentPubkey === $pubkey && currentShouldUnwrap === $shouldUnwrap) {
+            subscribeAll($pubkey, $list.urls())
+          }
+        })
+    }
+
+    currentPubkey = $pubkey
+    currentShouldUnwrap = $shouldUnwrap
+  }
+
+  const syncList = ($list: Maybe<MessagingRelayListReader>) => {
+    const $pubkey = app.get().user?.pubkey
+
+    if ($pubkey && shouldUnwrap.get()) {
+      subscribeAll($pubkey, $list?.urls() ?? [])
+    }
+  }
+
+  const unsubscribeUser = merged([app, shouldUnwrap]).subscribe(([$app, $shouldUnwrap]) => {
+    syncPubkey($app.user?.pubkey, $shouldUnwrap)
   })
 
-  // When user messaging relays change, update synchronization
-  const unsubscribeList = merged([userMessagingRelayList]).subscribe(
-    ([$userMessagingRelayList]) => {
-      syncList($userMessagingRelayList)
-    },
-  )
+  const unsubscribeList = userMessagingRelayList.subscribe(syncList)
 
   return () => {
     unsubscribeAll()
-    unsubscribePubkey()
+    unsubscribeUser()
     unsubscribeList()
   }
 }

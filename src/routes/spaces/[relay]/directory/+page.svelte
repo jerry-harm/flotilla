@@ -1,7 +1,7 @@
 <script lang="ts">
   import {derived} from "svelte/store"
   import {page} from "$app/stores"
-  import {displayProfileByPubkey} from "@welshman/app"
+  import {removeUndefined, sortBy} from "@welshman/lib"
   import UsersGroup from "@assets/icons/users-group-rounded.svg?dataurl"
   import AddCircle from "@assets/icons/add-circle.svg?dataurl"
   import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
@@ -17,31 +17,28 @@
   import SpaceInvite from "@app/components/SpaceInvite.svelte"
   import SpaceRoles from "@app/components/SpaceRoles.svelte"
   import SpaceMembersBanned from "@app/components/SpaceMembersBanned.svelte"
-  import {
-    deriveSpaceRoles,
-    deriveSpaceMembers,
-    deriveSpaceMemberRoles,
-    deriveUserIsSpaceAdmin,
-    type SpaceRole,
-  } from "@app/members"
+  import {deriveUserIsSpaceAdmin} from "@app/management"
+  import {deriveSpaceMemberRoles} from "@app/roles"
+  import {profiles, relayMemberLists, relayRoles} from "@app/core"
   import {decodeRelay} from "@app/relays"
   import {pushModal} from "@app/modal"
 
   const url = decodeRelay($page.params.relay!)
-  const roles = deriveSpaceRoles(url)
-  const members = deriveSpaceMembers(url)
+  const roles = $relayRoles.forUrl(url).$
+  const members = $relayMemberLists.forUrl(url)
   const memberRoles = deriveSpaceMemberRoles(url)
   const userIsAdmin = deriveUserIsSpaceAdmin(url)
 
   // Each member with their resolved roles (sorted by order).
   const memberList = derived([members, memberRoles, roles], ([$members, $memberRoles, $roles]) => {
-    const byId = new Map($roles.map(role => [role.id, role]))
+    const byId = new Map($roles.map(role => [role.identifier(), role]))
 
-    return $members.map(pubkey => ({
+    return ($members?.pubkeys() ?? []).map(pubkey => ({
       pubkey,
-      roleList: ($memberRoles.get(pubkey) ?? [])
-        .map(id => byId.get(id))
-        .filter((role): role is SpaceRole => Boolean(role)),
+      roleList: sortBy(
+        role => role.order(),
+        removeUndefined(($memberRoles.get(pubkey) ?? []).map(id => byId.get(id))),
+      ),
     }))
   })
 
@@ -67,7 +64,7 @@
   let term = $state("")
 
   const matchesTerm = (pubkey: string, t: string) =>
-    displayProfileByPubkey(pubkey).toLowerCase().includes(t) || pubkey.toLowerCase().includes(t)
+    $profiles.display(pubkey).get().toLowerCase().includes(t) || pubkey.toLowerCase().includes(t)
 
   // In-place search: match by member info or by the name of any role they hold.
   const visibleMembers = $derived.by(() => {
@@ -77,7 +74,8 @@
 
     return $memberList.filter(
       ({pubkey, roleList}) =>
-        matchesTerm(pubkey, t) || roleList.some(role => role.label.toLowerCase().includes(t)),
+        matchesTerm(pubkey, t) ||
+        roleList.some(role => (role.label() ?? "").toLowerCase().includes(t)),
     )
   })
 </script>

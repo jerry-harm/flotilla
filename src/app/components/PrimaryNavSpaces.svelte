@@ -7,7 +7,7 @@
   import PrimaryNavItem from "@lib/components/PrimaryNavItem.svelte"
   import PrimaryNavItemSpace from "@app/components/PrimaryNavItemSpace.svelte"
   import PrimaryNavSpacesOverflow from "@app/components/PrimaryNavSpacesOverflow.svelte"
-  import {userSpaceUrls} from "@app/groups"
+  import {userSpaceUrls} from "@app/rooms"
   import {PLATFORM_RELAYS, PLATFORM_LOGO} from "@app/env"
   import {notifications} from "@app/notifications"
 

@@ -1,17 +1,9 @@
 <script lang="ts">
   import cx from "classnames"
   import type {ClientOptions} from "@pomade/core"
-  import type {Profile} from "@welshman/util"
-  import {
-    makeProfile,
-    makeSecret,
-    RELAYS,
-    PROFILE,
-    MESSAGING_RELAYS,
-    makeEvent,
-    createProfile,
-  } from "@welshman/util"
-  import {loginWithNip01, publishThunk, waitForThunkCompletion} from "@welshman/app"
+  import {makeSecret, RELAYS, MESSAGING_RELAYS, makeEvent} from "@welshman/util"
+  import {Profile} from "@welshman/domain"
+  import {Thunks, nip01, publish, toSession} from "@welshman/app"
   import Key from "@assets/icons/key-minimalistic.svg?dataurl"
   import Letter from "@assets/icons/letter.svg?dataurl"
   import {getKey, setKey} from "@lib/implicit"
@@ -23,6 +15,7 @@
   import SignUpKey from "@app/components/SignUpKey.svelte"
   import SignUpEmail from "@app/components/SignUpEmail.svelte"
   import SignUpProfile from "@app/components/SignUpProfile.svelte"
+  import type {ProfileValues} from "@app/components/ProfileEditForm.svelte"
   import SignUpComplete from "@app/components/SignUpComplete.svelte"
   import {attemptRelayAccess} from "@app/access"
   import {
@@ -34,18 +27,18 @@
     DEFAULT_SPACES,
   } from "@app/env"
   import {setChecked} from "@app/notifications"
-  import {setSpaces} from "@app/groups"
   import {loginWithPomade} from "@app/pomade"
   import {pushModal, clearModals} from "@app/modal"
+  import {app, domain, login, roomLists} from "@app/core"
 
   setKey("signup.email", "")
   setKey("signup.secret", makeSecret())
-  setKey("signup.profile", makeProfile())
+  setKey("signup.profile", {})
   setKey("signup.clientOptions", undefined)
 
   const hasPomade = POMADE_SIGNERS.length >= 3
 
-  const login = () => pushModal(LogIn)
+  const showLogIn = () => pushModal(LogIn)
 
   const completeSignup = async () => {
     // Join default spaces so the relay is warmed up before we publish below
@@ -53,23 +46,26 @@
 
     // Add default outbox/inbox/messaging relays, profile, spaces
     const thunks = await Promise.all([
-      publishThunk({
+      $app.use(Thunks).publish({
         event: makeEvent(RELAYS, {tags: DEFAULT_RELAYS.map(url => ["r", url])}),
         relays: [...INDEXER_RELAYS, ...DEFAULT_RELAYS, ...DEFAULT_SPACES],
       }),
-      publishThunk({
+      $app.use(Thunks).publish({
         event: makeEvent(MESSAGING_RELAYS, {tags: DEFAULT_MESSAGING_RELAYS.map(url => ["r", url])}),
         relays: [...DEFAULT_RELAYS, ...DEFAULT_SPACES],
       }),
-      publishThunk({
-        event: makeEvent(PROFILE, createProfile(getKey<Profile>("signup.profile")!)),
+      $app.use(Thunks).publish({
+        event: await $domain
+          .writer(Profile)
+          .update(getKey<ProfileValues>("signup.profile")!)
+          .renderTemplate(),
         relays: [...DEFAULT_RELAYS, ...DEFAULT_SPACES],
       }),
-      setSpaces(DEFAULT_SPACES),
+      $roomLists.setRelays(DEFAULT_SPACES).then(publish),
     ])
 
     // Wait for all the thunks to complete
-    await Promise.all(thunks.map(waitForThunkCompletion))
+    await Promise.all(thunks.map(thunk => thunk.waitForCompletion()))
 
     // Don't show any notifications for old content
     setChecked("*")
@@ -100,7 +96,7 @@
       finalize: async () => {
         const secret = getKey<string>("signup.secret")!
 
-        loginWithNip01(secret)
+        await login(toSession(nip01, {secret}))
         await completeSignup()
       },
     },
@@ -127,7 +123,7 @@
     </Button>
     <div class="text-sm">
       Already have an account?
-      <Button class="link" onclick={login}>Log in instead</Button>
+      <Button class="link" onclick={showLogIn}>Log in instead</Button>
     </div>
   </ModalBody>
 </Modal>

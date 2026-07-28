@@ -1,6 +1,5 @@
 <script lang="ts">
   import {onMount, tick} from "svelte"
-  import {get} from "svelte/store"
   import {debounce} from "throttle-debounce"
   import {load} from "@welshman/net"
   import {groupBy, uniqBy, now, MINUTE, HOUR, DAY, WEEK} from "@welshman/lib"
@@ -19,7 +18,7 @@
   import NoteCard from "@app/components/NoteCard.svelte"
   import NoteContentMinimal from "@app/components/NoteContentMinimal.svelte"
   import {CONTENT_KINDS} from "@app/content"
-  import {deriveEventsForUrlDesc} from "@app/repository"
+  import {getEventsForUrl} from "@app/repository"
   import {popModal} from "@app/modal"
   import {goToEvent} from "@app/routes"
 
@@ -49,7 +48,7 @@
       search: searchTerm.trim(),
     }
 
-    results = get(deriveEventsForUrlDesc(url, [filter]))
+    results = sortEventsDesc(getEventsForUrl(url, [filter]))
 
     try {
       const events = await load({

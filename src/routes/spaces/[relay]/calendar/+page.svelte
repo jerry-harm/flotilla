@@ -5,7 +5,7 @@
   import {page} from "$app/stores"
   import {now, last, formatTimestampAsDate} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {EVENT_TIME, getTagValue} from "@welshman/util"
+  import {EVENT_TIME, tagValue, tagSpec} from "@welshman/util"
   import {fly} from "@lib/transition"
   import CalendarMinimalistic from "@assets/icons/calendar-minimalistic.svg?dataurl"
   import Add from "@assets/icons/add.svg?dataurl"
@@ -26,7 +26,7 @@
 
   const makeEvent = () => pushModal(CalendarEventCreate, {url})
 
-  const getStart = (event: TrustedEvent) => parseInt(getTagValue("start", event.tags) || "")
+  const getStart = (event: TrustedEvent) => parseInt(tagValue(tagSpec("start"), event.tags) || "")
 
   let element: HTMLElement | undefined = $state()
   let loading = $state(true)

@@ -1,8 +1,7 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
-  import type {RoomMeta} from "@welshman/util"
-  import {makeRoomMeta} from "@welshman/util"
-  import {waitForThunkError, createRoom, editRoom, joinRoom} from "@welshman/app"
+  import {randomId} from "@welshman/lib"
+  import type {RoomMeta} from "@welshman/app"
   import Hashtag from "@assets/icons/hashtag.svg?dataurl"
   import Volume from "@assets/icons/volume.svg?dataurl"
   import {preventDefault} from "@lib/html"
@@ -12,10 +11,11 @@
   import IconInput from "@lib/components/IconInput.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
+  import {rooms} from "@app/core"
   import {pushToast} from "@app/toast"
   import {compressFileForUpload, uploadFileOrFallback} from "@app/uploads"
   import {deriveHasLivekit} from "@app/relays"
-  import {getRoomType, RoomType} from "@app/groups"
+  import {RoomType} from "@app/rooms"
 
   type Props = {
     url: string
@@ -25,7 +25,7 @@
     initialValues?: RoomMeta
   }
 
-  const {url, header, footer, onsubmit, initialValues = makeRoomMeta()}: Props = $props()
+  const {url, header, footer, onsubmit, initialValues = {h: randomId()}}: Props = $props()
 
   const values = $state(initialValues)
   const relayHasLivekit = deriveHasLivekit(url)
@@ -53,19 +53,22 @@
       room.picture = result.url
     }
 
-    const createMessage = await waitForThunkError(createRoom(url, room))
+    const createCommand = await $rooms.createRoom(url, room)
+    const createMessage = await createCommand.publish().waitForError()
 
     if (createMessage && !createMessage.includes("already")) {
       return pushToast({theme: "error", message: createMessage})
     }
 
-    const editMessage = await waitForThunkError(editRoom(url, room))
+    const editCommand = await $rooms.editRoom(url, room)
+    const editMessage = await editCommand.publish().waitForError()
 
     if (editMessage) {
       return pushToast({theme: "error", message: editMessage})
     }
 
-    const joinMessage = await waitForThunkError(joinRoom(url, room))
+    const joinCommand = await $rooms.joinRoom(url, room)
+    const joinMessage = await joinCommand.publish().waitForError()
 
     if (joinMessage && !joinMessage.includes("already")) {
       return pushToast({theme: "error", message: joinMessage})
@@ -87,7 +90,7 @@
   let loading = $state(false)
   let imageFile = $state<File | undefined>()
   let imagePreview = $state(initialValues.picture)
-  let roomType = $state(getRoomType(initialValues))
+  let roomType = $state(initialValues.livekit ? RoomType.Voice : RoomType.Text)
 </script>
 
 <Modal tag="form" onsubmit={preventDefault(trySubmit)}>

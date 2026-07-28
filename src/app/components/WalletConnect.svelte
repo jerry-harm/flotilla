@@ -1,9 +1,9 @@
 <script lang="ts">
   import {debounce} from "throttle-debounce"
   import {nwc} from "@getalby/sdk"
-  import {sleep, assoc} from "@welshman/lib"
+  import {sleep} from "@welshman/lib"
+  import {WalletType} from "@welshman/util"
   import type {NWCInfo} from "@welshman/util"
-  import {pubkey, userProfile, updateSession} from "@welshman/app"
   import Link from "@lib/components/Link.svelte"
   import Cpu from "@assets/icons/cpu-bolt.svg?dataurl"
   import Lock from "@assets/icons/lock-keyhole.svg?dataurl"
@@ -21,11 +21,14 @@
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
-  import {getWebLn} from "@app/lightning"
+  import Divider from "@lib/components/Divider.svelte"
+  import WalletAsReceivingAddress from "@app/components/WalletAsReceivingAddress.svelte"
+  import {deriveUserItem, profiles} from "@app/core"
+  import {getWebLn, wallet} from "@app/lightning"
   import {pushToast} from "@app/toast"
   import {pushModal} from "@app/modal"
-  import WalletAsReceivingAddress from "@app/components/WalletAsReceivingAddress.svelte"
-  import Divider from "@lib/components/Divider.svelte"
+
+  const userProfile = deriveUserItem($app => $profiles)
 
   const back = () => history.back()
 
@@ -42,7 +45,7 @@
           message: "Your extension does not support lightning payments",
         })
       } else {
-        updateSession($pubkey!, assoc("wallet", {type: "webln", info}))
+        wallet.set({type: WalletType.WebLN, info})
         pushToast({message: "Wallet successfully connected!"})
 
         await sleep(400)
@@ -73,17 +76,14 @@
           message: "Wallet failed to connect",
         })
       } else {
-        updateSession(
-          $pubkey!,
-          assoc("wallet", {type: "nwc", info: client.options as unknown as NWCInfo}),
-        )
+        wallet.set({type: WalletType.NWC, info: client.options as unknown as NWCInfo})
         pushToast({message: "Wallet successfully connected!"})
 
         await sleep(400)
 
         back()
 
-        if (info.lud16 && info.lud16 !== $userProfile?.lud16) {
+        if (info.lud16 && info.lud16 !== $userProfile?.values.lud16) {
           pushModal(WalletAsReceivingAddress)
         }
       }

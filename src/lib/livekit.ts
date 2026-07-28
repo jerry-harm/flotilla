@@ -4,9 +4,9 @@ const toHttpUrl = (url: string) =>
     .replace(/^ws:\/\//, "http://")
     .replace(/\/$/, "")
 
-const livekitEndpoint = (url: string, groupId?: string) => {
+const livekitEndpoint = (url: string, roomId?: string) => {
   const base = `${toHttpUrl(url)}/.well-known/nip29/livekit`
-  return groupId ? `${base}/${groupId}` : base
+  return roomId ? `${base}/${roomId}` : base
 }
 
 export const checkRelayHasLivekit = async (url: string): Promise<boolean> => {
@@ -20,4 +20,4 @@ export const checkRelayHasLivekit = async (url: string): Promise<boolean> => {
   }
 }
 
-export const getLivekitEndpoint = (url: string, groupId: string) => livekitEndpoint(url, groupId)
+export const getLivekitEndpoint = (url: string, roomId: string) => livekitEndpoint(url, roomId)

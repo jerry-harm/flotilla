@@ -2,7 +2,6 @@
   import {page} from "$app/stores"
   import {goto} from "$app/navigation"
   import {displayRelayUrl} from "@welshman/util"
-  import {deriveRelay} from "@welshman/app"
   import ArrowLeft from "@assets/icons/arrow-left.svg?dataurl"
   import ShieldUser from "@assets/icons/shield-user.svg?dataurl"
   import BillList from "@assets/icons/bill-list.svg?dataurl"
@@ -16,11 +15,12 @@
   import ProfileLink from "@app/components/ProfileLink.svelte"
   import SpaceMembersSummary from "@app/components/SpaceMembersSummary.svelte"
   import SpaceFeaturedContent from "@app/components/SpaceFeaturedContent.svelte"
+  import {relays} from "@app/core"
   import {makeSpacePath} from "@app/routes"
   import {decodeRelay} from "@app/relays"
 
   const url = decodeRelay($page.params.relay!)
-  const relay = deriveRelay(url)
+  const relay = $relays.one(url)
   const showMenu = () => goto(makeSpacePath(url))
 </script>
 

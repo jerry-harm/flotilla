@@ -1,9 +1,10 @@
 <script lang="ts">
   import cx from "classnames"
-  import {roleColor, type SpaceRole} from "@app/members"
+  import type {RelayRoleReader} from "@welshman/domain"
+  import {roleColor} from "@app/roles"
 
   type Props = {
-    role: SpaceRole
+    role: RelayRoleReader
     size?: "sm" | "md"
   }
 
@@ -12,7 +13,7 @@
 
 <span
   class={cx("role-badge", size === "md" && "role-badge--md")}
-  style="--role-color: {roleColor(role.color)}">
+  style="--role-color: {roleColor(role.color() ?? 0)}">
   <span class="role-badge__dot" aria-hidden="true"></span>
-  {role.label || "Untitled Role"}
+  {role.label() || "Untitled Role"}
 </span>

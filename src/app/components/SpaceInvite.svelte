@@ -1,7 +1,7 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import {displayRelayUrl, ManagementMethod} from "@welshman/util"
   import {Share} from "@capacitor/share"
+  import {displayRelayUrl} from "@welshman/util"
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import Upload from "@assets/icons/upload.svg?dataurl"
   import Copy from "@assets/icons/copy.svg?dataurl"
@@ -18,19 +18,21 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import ProfileMultiSelect from "@app/components/ProfileMultiSelect.svelte"
+  import {deriveSpaceSupportedMethods} from "@app/management"
   import QRCode from "@app/components/QRCode.svelte"
-  import {clip, pushToast} from "@app/toast"
-  import {deriveSupportedMethods} from "@app/relays"
-  import {addSpaceMembers} from "@app/members"
   import {Access, makeInviteLink} from "@app/access"
+  import {relayManagement, relayMemberLists} from "@app/core"
+  import {clip, pushToast} from "@app/toast"
 
-  const {url} = $props()
+  type Props = {
+    url: string
+  }
+
+  const {url}: Props = $props()
 
   const access = new Access(url)
   const {claim, loading} = access
   const inviteStatus = access.createInviteStatus(false)
-  const supportedMethods = deriveSupportedMethods(url)
-  const canAddMembers = $derived($supportedMethods.includes(ManagementMethod.AllowPubkey))
 
   const back = () => history.back()
   const copyInvite = () => clip(invite)
@@ -45,19 +47,18 @@
     }
   }
 
-  let canShare = $state(false)
-  let invite = $state("")
-
-  let adding = $state(false)
-  let pubkeys: string[] = $state([])
-
   const addMembers = async () => {
-    if (pubkeys.length === 0) return
-
     adding = true
 
     try {
-      const error = await addSpaceMembers(url, pubkeys)
+      const members = $relayMemberLists.get(url)
+      const management = $relayManagement.forUrl(url)
+
+      const responses = await Promise.all(
+        pubkeys.filter(pk => !members?.isMember(pk)).map(pk => management.allowPubkey(pk)),
+      )
+
+      const error = responses.map(response => response.error).find(Boolean)
 
       if (error) {
         pushToast({theme: "error", message: error})
@@ -69,6 +70,16 @@
       adding = false
     }
   }
+
+  const supportedMethods = deriveSpaceSupportedMethods(url)
+
+  const canAddMembers = $derived($supportedMethods.includes("allowpubkey"))
+
+  let canShare = $state(false)
+  let invite = $state("")
+
+  let adding = $state(false)
+  let pubkeys: string[] = $state([])
 
   $effect(() => {
     invite = makeInviteLink({url, claim: $claim})

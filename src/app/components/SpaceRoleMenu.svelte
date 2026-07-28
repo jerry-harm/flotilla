@@ -1,5 +1,6 @@
 <script lang="ts">
   import {onMount} from "svelte"
+  import type {RelayRoleReader} from "@welshman/domain"
   import AddCircle from "@assets/icons/add-circle.svg?dataurl"
   import Pen from "@assets/icons/pen.svg?dataurl"
   import TrashBin from "@assets/icons/trash-bin-2.svg?dataurl"
@@ -8,13 +9,13 @@
   import Confirm from "@lib/components/Confirm.svelte"
   import RoleEdit from "@app/components/RoleEdit.svelte"
   import RoleAddMembers from "@app/components/RoleAddMembers.svelte"
-  import {deleteRole, type SpaceRole} from "@app/members"
+  import {relayManagement} from "@app/core"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
 
   type Props = {
     url: string
-    role: SpaceRole
+    role: RelayRoleReader
     onClick: () => void
   }
 
@@ -26,20 +27,22 @@
 
   const addMembers = () => pushModal(RoleAddMembers, {url, role})
 
+  const deleteRole = async () => {
+    const {error} = await $relayManagement.forUrl(url).deleteRole(role.identifier() ?? "")
+
+    if (error) {
+      pushToast({theme: "error", message: error})
+    } else {
+      pushToast({message: "Role deleted!"})
+      back()
+    }
+  }
+
   const confirmDelete = () =>
     pushModal(Confirm, {
       title: "Delete Role",
-      message: `Delete the "${role.label}" role? Members will keep their space membership.`,
-      confirm: async () => {
-        const error = await deleteRole(url, role.id)
-
-        if (error) {
-          pushToast({theme: "error", message: error})
-        } else {
-          pushToast({message: "Role deleted!"})
-          back()
-        }
-      },
+      message: `Delete the "${role.label()}" role? Members will keep their space membership.`,
+      confirm: deleteRole,
     })
 
   let ul: Element

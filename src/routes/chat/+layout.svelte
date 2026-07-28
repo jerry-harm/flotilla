@@ -3,7 +3,6 @@
   import {onMount} from "svelte"
   import {page} from "$app/stores"
   import {sleep} from "@welshman/lib"
-  import {shouldUnwrap} from "@welshman/app"
   import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
   import ChatSquarePlus from "@assets/icons/chat-square-plus.svg?dataurl"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
@@ -20,6 +19,7 @@
   import ChatItem from "@app/components/ChatItem.svelte"
   import {chatSearch} from "@app/chats"
   import {pushModal} from "@app/modal"
+  import {shouldUnwrap} from "@app/sync"
 
   type Props = {
     children?: Snippet

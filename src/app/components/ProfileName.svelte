@@ -1,6 +1,6 @@
 <script lang="ts">
   import {removeUndefined} from "@welshman/lib"
-  import {deriveProfileDisplay} from "@welshman/app"
+  import {profiles} from "@app/core"
 
   type Props = {
     pubkey: string
@@ -9,7 +9,7 @@
 
   const {pubkey, url}: Props = $props()
 
-  const profileDisplay = deriveProfileDisplay(pubkey, removeUndefined([url]))
+  const profileDisplay = $profiles.display(pubkey, removeUndefined([url])).$
 </script>
 
 {$profileDisplay}

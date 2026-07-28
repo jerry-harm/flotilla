@@ -16,15 +16,15 @@ import {
   type AudioCaptureOptions,
 } from "livekit-client"
 import {derived, get, writable} from "svelte/store"
-import {map, not, nthEq, reject, removeUndefined, uniqBy} from "@welshman/lib"
-import type {TrustedEvent} from "@welshman/util"
-import {makeHttpAuth, makeHttpAuthHeader, getTags} from "@welshman/util"
-import {signer} from "@welshman/app"
-import {load} from "@welshman/net"
+import {first, not, nthEq, reject, uniqBy} from "@welshman/lib"
+import {makeHttpAuth, makeHttpAuthHeader, sortEventsDesc, tagSpec, tagValues} from "@welshman/util"
+import {deriveDeduplicated} from "@welshman/store"
+import {makeRoomKey} from "@welshman/app"
+import type {Room} from "@welshman/app"
 import {getLivekitEndpoint} from "$lib/livekit"
 import {AbortError, TimeoutError, whenAborted, whenTimeout} from "$lib/util"
-import {deriveLatestEventForUrl} from "@app/repository"
-import {deriveRoom, makeRoomId, type Room} from "@app/groups"
+import {network, user} from "@app/core"
+import {deriveEventsForUrl} from "@app/repository"
 import {pushToast} from "@app/toast"
 
 export const LIVEKIT_PARTICIPANTS = 39004
@@ -135,7 +135,7 @@ export const joinVoiceRoom = async (
 ): Promise<void> => {
   abortJoinVoiceRoom()
 
-  callTargetRoom.set(get(deriveRoom(url, h)))
+  callTargetRoom.set({url, h, id: makeRoomKey(url, h)})
   callState.set(CallState.Joining)
 
   const controller = new AbortController()
@@ -384,7 +384,7 @@ export const toggleVideoPrimaryTile = (key: string) => {
 }
 
 export const loadCallParticipants = (url: string, h: string) =>
-  load({
+  network.get().load({
     relays: [url],
     filters: [{kinds: [LIVEKIT_PARTICIPANTS], "#d": [h]}],
   })
@@ -395,25 +395,22 @@ export const deriveCallParticipants = (url: string, h: string) =>
     [
       participantMediaState,
       callTargetRoom,
-      deriveLatestEventForUrl(url, [{kinds: [LIVEKIT_PARTICIPANTS], "#d": [h]}]),
+      deriveDeduplicated(
+        deriveEventsForUrl(url, [{kinds: [LIVEKIT_PARTICIPANTS], "#d": [h]}]),
+        events => first(sortEventsDesc(events)),
+      ),
     ],
     ([$participantMediaState, $callTargetRoom, $publishedParticipantList]) => {
-      const inCall = $participantMediaState.size > 0 && $callTargetRoom?.id === makeRoomId(url, h)
+      const inCall = $participantMediaState.size > 0 && $callTargetRoom?.id === makeRoomKey(url, h)
 
-      if (inCall) {
-        const participants = [...$participantMediaState.keys()].map(participantFromLiveKitIdentity)
-        return uniqBy((p: CallParticipant) => participantKey(p), participants)
-      } else {
-        const latestEvent = $publishedParticipantList as TrustedEvent | undefined
-        if (!latestEvent) return []
-        const participants = removeUndefined(
-          map(
-            (tag: string[]) => (tag[1] ? participantFromLiveKitIdentity(tag[1]) : undefined),
-            getTags("participant", latestEvent.tags),
-          ),
-        )
-        return uniqBy((p: CallParticipant) => participantKey(p), participants)
-      }
+      const identities = inCall
+        ? [...$participantMediaState.keys()]
+        : tagValues(tagSpec("participant"), $publishedParticipantList?.tags ?? [])
+
+      return uniqBy(
+        (p: CallParticipant) => participantKey(p),
+        identities.map(participantFromLiveKitIdentity),
+      )
     },
   )
 
@@ -527,18 +524,15 @@ const resyncAfterReconnect = (livekit: LiveKitRoom) => {
 
 const fetchLivekitToken = async (
   url: string,
-  groupId: string,
+  roomId: string,
   signal?: AbortSignal,
 ): Promise<{server_url: string; participant_token: string}> => {
-  const endpoint = getLivekitEndpoint(url, groupId)
-
-  const $signer = signer.get()
-  if (!$signer) throw new Error("No signer available")
+  const endpoint = getLivekitEndpoint(url, roomId)
 
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError")
 
   const template = await makeHttpAuth(endpoint, "GET")
-  const signedEvent = await $signer.sign(template)
+  const signedEvent = await user.get().signer.sign(template)
   const authHeader = makeHttpAuthHeader(signedEvent)
 
   const response = await fetch(endpoint, {

@@ -17,11 +17,17 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import {pushToast} from "@app/toast"
-  import {canonicalRelayHost, flagToBool, updateRelay, HostingError, type Relay} from "@app/hosting"
+  import {
+    canonicalRelayHost,
+    flagToBool,
+    updateRelay,
+    HostingError,
+    type HostedRelay,
+  } from "@app/hosting"
 
   type Props = {
-    relay: Relay
-    onUpdate?: (relay: Relay) => void
+    relay: HostedRelay
+    onUpdate?: (relay: HostedRelay) => void
   }
 
   const {relay, onUpdate}: Props = $props()

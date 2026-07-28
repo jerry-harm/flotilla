@@ -1,15 +1,7 @@
 <script lang="ts">
   import {chunk, sleep, uniq} from "@welshman/lib"
-  import {
-    makeEvent,
-    createProfile,
-    PROFILE,
-    DELETE,
-    isReplaceable,
-    getAddress,
-    RelayMode,
-  } from "@welshman/util"
-  import {pubkey, publishThunk, repository, derivePubkeyRelays} from "@welshman/app"
+  import {makeEvent, DELETE, isReplaceable, getAddress} from "@welshman/util"
+  import {Profile} from "@welshman/domain"
   import {preventDefault} from "@lib/html"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
@@ -23,15 +15,16 @@
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import {INDEXER_RELAYS, PLATFORM_NAME} from "@app/env"
-  import {userSpaceUrls} from "@app/groups"
+  import {userSpaceUrls} from "@app/rooms"
   import {pushToast} from "@app/toast"
   import {logout} from "@app/session"
+  import {app, relayLists, thunks, user, writer} from "@app/core"
 
   let progress: number | undefined = $state(undefined)
   let confirmText = $state("")
 
   const CONFIRM_TEXT = "permanently delete my nostr account"
-  const userWriteRelays = derivePubkeyRelays($pubkey!, RelayMode.Write)
+  const userWriteRelays = $relayLists.writeUrls($user.pubkey).$
   const confirmOk = $derived(confirmText.toLowerCase().trim() === CONFIRM_TEXT)
   const showProgress = $derived(progress !== undefined)
 
@@ -43,8 +36,8 @@
       })
     }
 
-    const chunks = chunk(500, repository.query([{authors: [$pubkey!]}]))
-    const profileEvent = makeEvent(PROFILE, createProfile({name: "[deleted]"}))
+    const chunks = chunk(500, $app.repository.query([{authors: [$user.pubkey]}]))
+    const profileEvent = await writer(Profile).setName("[deleted]").renderTemplate()
     const vanishEvent = makeEvent(62, {tags: [["relay", "ALL_RELAYS"]]})
     const denominator = chunks.length + 2
     const relays = uniq([...INDEXER_RELAYS, ...$userWriteRelays, ...$userSpaceUrls])
@@ -58,12 +51,12 @@
     }
 
     // First, blank out their profile in case relays don't support deletion by address
-    await publishThunk({relays, event: profileEvent})
+    await $thunks.publish({relays, event: profileEvent})
 
     await incrementProgress()
 
     // Next, send a "right to vanish" event to all relays
-    await publishThunk({relays, event: vanishEvent})
+    await $thunks.publish({relays, event: vanishEvent})
 
     await incrementProgress()
 
@@ -79,7 +72,7 @@
         }
       }
 
-      await publishThunk({relays, event: makeEvent(DELETE, {tags})})
+      await $thunks.publish({relays, event: makeEvent(DELETE, {tags})})
 
       await incrementProgress()
     }

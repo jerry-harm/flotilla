@@ -1,6 +1,4 @@
 <script lang="ts">
-  import {getRelaysFromList} from "@welshman/util"
-  import {waitForThunkError, setMessagingRelays, userRelayList, setRelays} from "@welshman/app"
   import {preventDefault} from "@lib/html"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
@@ -12,6 +10,7 @@
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
+  import {deriveUserItem, messagingRelayLists, relayLists} from "@app/core"
   import {DEFAULT_RELAYS, DEFAULT_MESSAGING_RELAYS} from "@app/env"
   import {pushToast} from "@app/toast"
 
@@ -21,7 +20,7 @@
 
   const {next}: Props = $props()
 
-  let loading = $state(false)
+  const userRelayList = deriveUserItem($app => $relayLists)
 
   const back = () => history.back()
 
@@ -29,8 +28,14 @@
     loading = true
 
     try {
-      if (getRelaysFromList($userRelayList).length === 0) {
-        const error = await waitForThunkError(await setRelays(DEFAULT_RELAYS.map(r => ["r", r])))
+      const relayUrls = $userRelayList?.urls() ?? []
+
+      if (relayUrls.length === 0) {
+        const command = await $relayLists.update(writer =>
+          writer.setReadUrls(DEFAULT_RELAYS).setWriteUrls(DEFAULT_RELAYS),
+        )
+
+        const error = await command.publish().waitForError()
 
         if (error) {
           pushToast({theme: "error", message: error})
@@ -38,7 +43,8 @@
         }
       }
 
-      const error = await waitForThunkError(await setMessagingRelays(DEFAULT_MESSAGING_RELAYS))
+      const command = await $messagingRelayLists.setUrls(DEFAULT_MESSAGING_RELAYS)
+      const error = await command.publish().waitForError()
 
       if (error) {
         pushToast({theme: "error", message: error})
@@ -50,6 +56,8 @@
       loading = false
     }
   }
+
+  let loading = $state(false)
 </script>
 
 <Modal tag="form" onsubmit={preventDefault(enable)}>

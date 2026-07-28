@@ -1,8 +1,16 @@
 <script lang="ts">
   import {derived} from "svelte/store"
   import cx from "classnames"
-  import {displayRelayUrl, EVENT_TIME, ZAP_GOAL, THREAD, CLASSIFIED, POLL} from "@welshman/util"
-  import {deriveRelay, createSearch, pubkey} from "@welshman/app"
+  import {
+    displayRelayUrl,
+    EVENT_TIME,
+    ZAP_GOAL,
+    THREAD,
+    CLASSIFIED,
+    PINBOARD,
+    POLL,
+  } from "@welshman/util"
+  import {createSearch} from "@welshman/app"
   import {fly} from "@lib/transition"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import AltArrowDown from "@assets/icons/alt-arrow-down.svg?dataurl"
@@ -44,19 +52,22 @@
   import SpaceMenuRoomItem from "@app/components/SpaceMenuRoomItem.svelte"
   import VoiceWidget from "@app/components/VoiceWidget.svelte"
   import SocketStatusIndicator from "@app/components/SocketStatusIndicator.svelte"
+  import {relays, user} from "@app/core"
   import {ENABLE_ZAPS} from "@app/env"
   import {CONTENT_KINDS} from "@app/content"
   import {deriveHostedRelay, HOSTING_ENABLED} from "@app/hosting"
-  import {deriveUserCanCreateRoom, deriveUserIsSpaceAdmin} from "@app/members"
   import {
-    deriveUserRooms,
+    deriveSpaceSupportedMethods,
+    deriveUserCanCreateRoom,
+    deriveUserIsSpaceAdmin,
+  } from "@app/management"
+  import {
     deriveOtherRooms,
     deriveOtherVoiceRooms,
-    userSpaceUrls,
+    deriveUserRooms,
     displayRoom,
-  } from "@app/groups"
-  import {hasNip29, deriveSupportedMethods} from "@app/relays"
-  import {BOARD} from "@app/pinboards"
+    userSpaceUrls,
+  } from "@app/rooms"
   import {deriveEventsForUrl} from "@app/repository"
   import {deriveSpaceActionItems} from "@app/actionItems"
   import {notificationSettings, deriveShouldNotify, setSpaceNotifications} from "@app/settings"
@@ -71,7 +82,7 @@
 
   const {url, mobile = false}: Props = $props()
 
-  const relay = deriveRelay(url)
+  const relay = $relays.one(url)
   const chatPath = makeSpacePath(url, "chat")
   const goalsPath = makeSpacePath(url, "goals")
   const threadsPath = makeSpacePath(url, "threads")
@@ -90,11 +101,10 @@
     $events => new Set($events.map(e => e.kind)),
   )
 
-  const boardEvents = deriveEventsForUrl(url, [{kinds: [BOARD]}])
-  const supportedMethods = deriveSupportedMethods(url)
-  const showLibrary = $derived(
-    $boardEvents.length > 0 || $supportedMethods.some(m => (m as string) === "signevent"),
-  )
+  const boardEvents = deriveEventsForUrl(url, [{kinds: [PINBOARD]}])
+  const hasNip29 = $derived($relay?.hasNip(29) ?? false)
+  const supportedMethods = deriveSpaceSupportedMethods(url)
+  const showLibrary = $derived($boardEvents.length > 0 || $supportedMethods.includes("signevent"))
 
   const roomSearch = derived(otherRooms, $otherRooms =>
     createSearch(
@@ -196,7 +206,7 @@
             </Button>
           </li>
         {/if}
-        {#if $relay?.pubkey && $relay.pubkey !== $pubkey}
+        {#if $relay?.pubkey && $relay.pubkey !== $user.pubkey}
           <li>
             <Button onclick={contactOwner}>
               <Icon icon={Letter} />
@@ -257,7 +267,7 @@
   <SecondaryNavItem href={makeSpacePath(url, "about")}>
     <Icon icon={Home} /> Space Details
   </SecondaryNavItem>
-  {#if hasNip29($relay)}
+  {#if hasNip29}
     <SecondaryNavItem href={makeSpacePath(url, "recent")}>
       <Icon icon={History} /> Recent Activity
     </SecondaryNavItem>
@@ -299,7 +309,7 @@
       <Icon icon={Revote} /> Polls
     </SecondaryNavItem>
   {/if}
-  {#if hasNip29($relay)}
+  {#if hasNip29}
     <SecondaryNavItem onclick={openSearch}>
       <Icon icon={Magnifier} /> Search
     </SecondaryNavItem>
@@ -307,7 +317,7 @@
 {/snippet}
 
 {#snippet spaceRooms()}
-  {#if hasNip29($relay)}
+  {#if hasNip29}
     {#if $userRooms.length > 0}
       {#if !mobile}
         <div class="h-2 shrink-0"></div>
@@ -376,7 +386,7 @@
           <SecondaryNavHeader>Space</SecondaryNavHeader>
           {@render spaceNavItems()}
         </div>
-        {#if hasNip29($relay) && ($userRooms.length > 0 || $otherRooms.length > 0 || $otherVoiceRooms.length > 0 || $canCreateRoom)}
+        {#if hasNip29 && ($userRooms.length > 0 || $otherRooms.length > 0 || $otherVoiceRooms.length > 0 || $canCreateRoom)}
           <div class="card space-menu__card flex flex-col gap-1">
             {@render spaceRooms()}
           </div>

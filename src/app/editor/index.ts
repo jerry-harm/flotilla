@@ -1,18 +1,10 @@
 import {mount} from "svelte"
 import type {Writable} from "svelte/store"
 import {get, derived} from "svelte/store"
-import {Router} from "@welshman/router"
-import {dec, inc, uniq} from "@welshman/lib"
+import {sortBy, uniq} from "@welshman/lib"
 import {throttled} from "@welshman/store"
-import type {PublishedProfile, RoomMeta} from "@welshman/util"
-import {
-  createSearch,
-  profiles,
-  searchProfiles,
-  handlesByNip05,
-  getMaxWot,
-  getWotGraph,
-} from "@welshman/app"
+import {createSearch, splitRoomKey} from "@welshman/app"
+import type {Room} from "@welshman/app"
 import type {FileAttributes} from "@welshman/editor"
 import {
   Editor,
@@ -22,14 +14,14 @@ import {
   editorProps,
 } from "@welshman/editor"
 import {escapeHtml} from "@lib/html"
-import {makeMentionNodeView} from "@app/editor/MentionNodeView"
+import {profiles, relayLists, relayMemberLists, rooms} from "@app/core"
+import {MentionNodeView} from "@app/editor/MentionNodeView"
 import ProfileSuggestion from "@app/editor/ProfileSuggestion.svelte"
 import {RoomReferenceExtension} from "@app/editor/RoomReferenceExtension"
 import RoomSuggestion from "@app/editor/RoomSuggestion.svelte"
 import {NativeClipboardPasteExtension} from "@app/editor/clipboard"
 import {compressFileForUpload, uploadFile} from "@app/uploads"
-import {deriveSpaceMembers} from "@app/members"
-import {makeRoomId, splitRoomId, userSpaceUrls, roomsByUrl} from "@app/groups"
+import {userSpaceUrls} from "@app/rooms"
 import {PLATFORM_RELAYS} from "@app/env"
 import {pushToast} from "@app/toast"
 
@@ -56,49 +48,19 @@ export const makeEditor = async ({
   uploading?: Writable<boolean>
   wordCount?: Writable<number>
 }) => {
-  const profileSearch = derived(
-    [
-      throttled(800, profiles),
-      throttled(800, handlesByNip05),
-      throttled(800, deriveSpaceMembers(url || "")),
-    ],
-    ([$profiles, $handlesByNip05, $spaceMembers]) => {
-      // Remove invalid nip05's from profiles
-      const options = $profiles.map(p => {
-        const isNip05Valid = !p.nip05 || $handlesByNip05.get(p.nip05)?.pubkey === p.event.pubkey
+  const searchProfiles = derived(
+    [profiles.get().profileSearch, throttled(800, relayMemberLists.get().forUrl(url ?? ""))],
+    ([$profileSearch, $spaceMembers]) => {
+      const memberPubkeys = new Set($spaceMembers?.pubkeys())
 
-        return isNip05Valid ? p : {...p, nip05: ""}
-      })
-
-      return createSearch(options, {
-        onSearch: searchProfiles,
-        getValue: (profile: PublishedProfile) => profile.event.pubkey,
-        sortFn: ({score = 1, item}) => {
-          const wotScore = getWotGraph().get(item.event.pubkey) || 0
-          const membershipScale = $spaceMembers?.includes(item.event.pubkey) ? 2 : 1
-
-          return dec(score) * inc(wotScore / getMaxWot()) * membershipScale
-        },
-        fuseOptions: {
-          keys: [
-            "nip05",
-            {name: "name", weight: 0.8},
-            {name: "display_name", weight: 0.5},
-            {name: "about", weight: 0.3},
-          ],
-          threshold: 0.3,
-          shouldSort: false,
-        },
-      })
+      return (term: string) =>
+        sortBy(pubkey => (memberPubkeys.has(pubkey) ? 0 : 1), $profileSearch.searchValues(term))
     },
   )
 
   const roomReferenceSearch = derived(
-    [throttled(800, userSpaceUrls), throttled(800, roomsByUrl)],
+    [throttled(800, userSpaceUrls), throttled(800, rooms.get().byUrl.$)],
     ([$userSpaceUrls, $roomsByUrl]) => {
-      const roomIdByMeta = new WeakMap<RoomMeta, string>()
-      const options: RoomMeta[] = []
-
       // When platform relays are configured, restrict suggestions to those spaces.
       // Otherwise suggest rooms from the user's joined spaces plus the current one.
       const spaceUrls =
@@ -106,15 +68,16 @@ export const makeEditor = async ({
           ? PLATFORM_RELAYS
           : uniq(url ? [url, ...$userSpaceUrls] : $userSpaceUrls)
 
-      for (const roomUrl of spaceUrls) {
-        for (const room of $roomsByUrl.get(roomUrl) || []) {
-          roomIdByMeta.set(room, makeRoomId(roomUrl, room.h))
-          options.push(room)
-        }
-      }
+      const options = spaceUrls.flatMap(spaceUrl =>
+        ($roomsByUrl.get(spaceUrl) ?? []).map((room: Room) => ({
+          id: room.id,
+          h: room.h,
+          name: room.meta?.name() ?? "",
+        })),
+      )
 
       return createSearch(options, {
-        getValue: item => roomIdByMeta.get(item) || item.h,
+        getValue: option => option.id,
         fuseOptions: {
           keys: ["name", "h"],
           threshold: 0.3,
@@ -158,14 +121,14 @@ export const makeEditor = async ({
           },
           nprofile: {
             extend: {
-              addNodeView: () => makeMentionNodeView(url),
+              addNodeView: () => MentionNodeView,
               addProseMirrorPlugins() {
                 return [
                   MentionSuggestion({
                     editor: (this as any).editor,
-                    search: (term: string) => get(profileSearch).searchValues(term),
-                    getRelays: (pubkey: string) => Router.get().FromPubkeys([pubkey]).getUrls(),
-                    updateSignal: profileSearch,
+                    search: (term: string) => get(searchProfiles)(term),
+                    getRelays: (pubkey: string) => relayLists.get().writeUrls(pubkey).get(),
+                    updateSignal: searchProfiles,
                     createSuggestion: (value: string) => {
                       const target = document.createElement("div")
 
@@ -181,13 +144,11 @@ export const makeEditor = async ({
                     search: (term: string) => get(roomReferenceSearch).searchValues(term),
                     updateSignal: roomReferenceSearch,
                     select: (id: string, props) => {
-                      const [roomUrl, h] = splitRoomId(id)
+                      const [roomUrl, h] = splitRoomKey(id)
 
-                      if (!roomUrl || !h) {
-                        return
+                      if (roomUrl && h) {
+                        return props.command({url: roomUrl, h})
                       }
-
-                      return props.command({url: roomUrl, h})
                     },
                     createSuggestion: (value: string) => {
                       const target = document.createElement("div")

@@ -1,9 +1,8 @@
 <script lang="ts">
-  import {first} from "@welshman/lib"
-  import {signer, deriveZapperForPubkey} from "@welshman/app"
-  import {load} from "@welshman/net"
-  import {Router} from "@welshman/router"
-  import {requestZap, makeZapRequest, getZapResponseFilter} from "@welshman/util"
+  import {first, uniq} from "@welshman/lib"
+  import {inbox} from "@welshman/util"
+  import {ZapRequest} from "@welshman/domain"
+  import {Zappers} from "@welshman/app"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -21,16 +20,19 @@
   import {payInvoice} from "@app/lightning"
   import {zapAmounts} from "@app/settings"
   import {pushToast} from "@app/toast"
+  import {app, domain, network, router} from "@app/core"
 
   type Props = {
     url?: string
     pubkey: string
     eventId?: string
+    // NIP-75 requires a zap to a goal to request its receipt on the goal's own relays.
+    goalRelays?: string[]
   }
 
-  const {url, pubkey, eventId}: Props = $props()
+  const {url, pubkey, eventId, goalRelays = []}: Props = $props()
 
-  const zapperStore = deriveZapperForPubkey(pubkey)
+  const zapper = $app.use(Zappers).forPubkey(pubkey)
 
   const back = () => history.back()
 
@@ -38,13 +40,24 @@
     loading = true
 
     try {
-      const zapper = $zapperStore!
-      const msats = amount * 1000
-      const relays = url ? [url] : Router.get().ForPubkey(pubkey).getUrls()
-      const filters = [getZapResponseFilter({zapper, pubkey, eventId})]
-      const params = {pubkey, content, eventId, msats, relays, zapper}
-      const event = await $signer!.sign(makeZapRequest(params))
-      const res = await requestZap({zapper, event})
+      const currentZapper = zapper.get()!
+      const relays = uniq([
+        ...(url ? [url] : await $router.resolver.relays([inbox(pubkey)])),
+        ...goalRelays,
+      ])
+      const writer = $domain
+        .writer(ZapRequest)
+        .setContent(content)
+        .setAmount(amount * 1000)
+        .setLnurl(currentZapper.lnurl)
+        .setRecipient(pubkey)
+        .setUrls(relays)
+
+      if (eventId) {
+        writer.setEventId(eventId)
+      }
+
+      const res = await writer.requestInvoice(currentZapper)
 
       if (!res.invoice) {
         return pushToast({
@@ -54,7 +67,10 @@
       }
 
       await payInvoice(res.invoice)
-      await load({relays, filters})
+      await $network.load({
+        relays,
+        filters: [currentZapper.getResponseFilter(pubkey, eventId)],
+      })
 
       pushToast({message: "Zap successfully sent!"})
       back()

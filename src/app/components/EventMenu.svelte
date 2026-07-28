@@ -2,8 +2,7 @@
   import {onMount} from "svelte"
   import type {Snippet} from "svelte"
   import type {TrustedEvent} from "@welshman/util"
-  import {COMMENT, ManagementMethod} from "@welshman/util"
-  import {pubkey, repository, manageRelay} from "@welshman/app"
+  import {COMMENT} from "@welshman/util"
   import GalleryWide from "@assets/icons/gallery-wide.svg?dataurl"
   import ShareCircle from "@assets/icons/share-circle.svg?dataurl"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
@@ -17,9 +16,10 @@
   import EventDeleteConfirm from "@app/components/EventDeleteConfirm.svelte"
   import PinboardSelect from "@app/components/PinboardSelect.svelte"
   import {shareEventToChat} from "@app/share"
-  import {deriveUserIsSpaceAdmin} from "@app/members"
+  import {deriveUserIsSpaceAdmin} from "@app/management"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
+  import {app, relayManagement, user} from "@app/core"
 
   type Props = {
     url: string
@@ -49,16 +49,13 @@
       title: `Delete ${noun}`,
       message: `Are you sure you want to delete this ${noun.toLowerCase()} from the space?`,
       confirm: async () => {
-        const {error} = await manageRelay(url, {
-          method: ManagementMethod.BanEvent,
-          params: [event.id],
-        })
+        const {error} = await $relayManagement.forUrl(url).banEvent(event.id)
 
         if (error) {
           pushToast({theme: "error", message: error})
         } else {
           pushToast({message: "Event has successfully been deleted!"})
-          repository.removeEvent(event.id)
+          $app.repository.removeEvent(event.id)
           history.back()
         }
       },
@@ -93,7 +90,7 @@
     </Button>
   </li>
   {@render customActions?.()}
-  {#if event.pubkey === $pubkey}
+  {#if event.pubkey === $user.pubkey}
     <li>
       <Button onclick={showDelete} class="text-error">
         <Icon size={4} icon={TrashBin2} />

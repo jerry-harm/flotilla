@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {fromNostrURI, getTagValue} from "@welshman/util"
+  import {fromNostrURI, tagSpec, tagValue} from "@welshman/util"
   import {
     parse,
     truncate,
@@ -38,7 +38,7 @@
   import {entityLink} from "@app/env"
   import {userSettingsValues} from "@app/settings"
 
-  interface Props {
+  type Props = {
     event: any
     minLength?: number
     maxLength?: number
@@ -106,7 +106,7 @@
   const warning = $derived(
     warningDismissed
       ? undefined
-      : $userSettingsValues.hide_sensitive && getTagValue("content-warning", event.tags),
+      : $userSettingsValues.hide_sensitive && tagValue(tagSpec("content-warning"), event.tags),
   )
 
   const dropWhile = <T,>(f: (x: T) => boolean, xs: Iterable<T>) => {

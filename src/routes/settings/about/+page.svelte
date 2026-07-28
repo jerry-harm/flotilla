@@ -1,20 +1,20 @@
 <script lang="ts">
-  import {session} from "@welshman/app"
   import {Capacitor} from "@capacitor/core"
   import Link from "@lib/components/Link.svelte"
   import Button from "@lib/components/Button.svelte"
-  import Zap from "@app/components/Zap.svelte"
-  import ZapInvoice from "@app/components/ZapInvoice.svelte"
   import Icon from "@lib/components/Icon.svelte"
   import Card from "@lib/components/Card.svelte"
-  import ProfileDetail from "@app/components/ProfileDetail.svelte"
-  import {PLATFORM_NAME} from "@app/env"
-  import {pushModal} from "@app/modal"
-  import {makeSpacePath} from "@app/routes"
   import Code from "@assets/icons/code-2.svg?dataurl"
   import Global from "@assets/icons/global.svg?dataurl"
   import Pen from "@assets/icons/pen.svg?dataurl"
   import HeadphonesRound from "@assets/icons/headphones-round.svg?dataurl"
+  import Zap from "@app/components/Zap.svelte"
+  import ZapInvoice from "@app/components/ZapInvoice.svelte"
+  import ProfileDetail from "@app/components/ProfileDetail.svelte"
+  import {PLATFORM_NAME} from "@app/env"
+  import {wallet} from "@app/lightning"
+  import {pushModal} from "@app/modal"
+  import {makeSpacePath} from "@app/routes"
 
   const hash = import.meta.env.VITE_BUILD_HASH
 
@@ -22,7 +22,7 @@
 
   const openProfile = () => pushModal(ProfileDetail, {pubkey})
 
-  const zap = () => pushModal($session?.wallet ? Zap : ZapInvoice, {pubkey})
+  const zap = () => pushModal($wallet ? Zap : ZapInvoice, {pubkey})
 </script>
 
 <div class="flex flex-col gap-6 p-8 max-w-2xl h-screen justify-center m-auto">

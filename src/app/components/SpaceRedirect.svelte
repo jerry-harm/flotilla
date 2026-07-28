@@ -12,7 +12,7 @@
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
-  import {moveSpace} from "@app/groups"
+  import {roomLists} from "@app/core"
   import {goToMovedSpace} from "@app/routes"
 
   type Props = {
@@ -28,7 +28,7 @@
     loading = true
 
     try {
-      await moveSpace(url, newUrl)
+      await $roomLists.migrateRelay(url, newUrl).then(command => command?.publish())
       await goToMovedSpace(url, newUrl)
     } finally {
       loading = false

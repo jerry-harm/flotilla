@@ -5,7 +5,7 @@
   import {page} from "$app/stores"
   import {sortBy, partition, spec, max, pushToMapKey, groupBy} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {THREAD, getTagValue} from "@welshman/util"
+  import {THREAD, tagValue, tagSpec} from "@welshman/util"
   import NotesMinimalistic from "@assets/icons/notes-minimalistic.svg?dataurl"
   import Add from "@assets/icons/add.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -16,7 +16,7 @@
   import ThreadBoard from "@app/components/ThreadBoard.svelte"
   import ThreadCreate from "@app/components/ThreadCreate.svelte"
   import {decodeRelay} from "@app/relays"
-  import {displayRoom} from "@app/groups"
+  import {displayRoom} from "@app/rooms"
   import {makeCommentFilter} from "@app/content"
   import {makeFeed} from "@app/feeds"
   import {pushModal} from "@app/modal"
@@ -34,7 +34,7 @@
     const [threads, comments] = partition(spec({kind: THREAD}), $events)
 
     for (const comment of comments) {
-      const id = getTagValue("E", comment.tags)
+      const id = tagValue(tagSpec("E"), comment.tags)
 
       if (id) {
         pushToMapKey(scores, id, comment.created_at)
@@ -43,7 +43,7 @@
 
     const items = sortBy(e => -max([...(scores.get(e.id) || []), e.created_at]), threads)
 
-    const byRoom = groupBy(e => getTagValue("h", e.tags) || "", items)
+    const byRoom = groupBy(e => tagValue(tagSpec("h"), e.tags) || "", items)
     const roomName = (h: string) => (h ? displayRoom(url, h) : "general").toLowerCase()
     const boards = sortBy(([h]) => roomName(h), Array.from(byRoom.entries()))
 

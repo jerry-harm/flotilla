@@ -2,6 +2,7 @@
   import {goto} from "$app/navigation"
   import {remove} from "@welshman/lib"
   import {displayRelayUrl} from "@welshman/util"
+  import {publish} from "@welshman/app"
   import {preventDefault} from "@lib/html"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
   import CheckCircle from "@assets/icons/check-circle.svg?dataurl"
@@ -16,9 +17,9 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import InfoSignatures from "@app/components/InfoSignatures.svelte"
   import {relaysPendingTrust} from "@app/policies"
-  import {removeSpace} from "@app/groups"
   import {addTrustedRelay, removeTrustedRelay} from "@app/settings"
   import {pushModal} from "@app/modal"
+  import {roomLists} from "@app/core"
 
   type Props = {
     url: string
@@ -32,7 +33,7 @@
     loading = true
 
     try {
-      await removeSpace(url)
+      await $roomLists.removeRelay(url).then(publish)
       await removeTrustedRelay(url)
       goto("/home")
     } finally {

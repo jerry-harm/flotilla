@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {spec} from "@welshman/lib"
   import cx from "classnames"
   import {writable} from "svelte/store"
   import type {Writable} from "svelte/store"
@@ -50,7 +51,7 @@
     }
   }
 
-  const currency = $derived(currencyOptions.find(c => c.code === value))
+  const currency = $derived(currencyOptions.find(spec({code: value})))
 
   let wrapper: Element | undefined = $state()
   let popover: Instance | undefined = $state()

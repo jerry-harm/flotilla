@@ -1,11 +1,11 @@
 <script lang="ts">
   import {goto} from "$app/navigation"
-  import {pubkey} from "@welshman/app"
+  import {publish} from "@welshman/app"
   import RelayForm, {type RelayFormValues} from "@app/components/hosting/RelayForm.svelte"
   import PaymentDialog from "@app/components/hosting/PaymentDialog.svelte"
   import PaymentSetup from "@app/components/hosting/PaymentSetup.svelte"
+  import {roomLists, user} from "@app/core"
   import {pushModal} from "@app/modal"
-  import {addSpace} from "@app/groups"
   import {makeSpacePath} from "@app/routes"
   import {HOSTING_RELAY_DOMAIN} from "@app/env"
   import {
@@ -34,7 +34,7 @@
     }
 
     const overrides = {
-      tenant_pubkey: $pubkey!,
+      tenant_pubkey: $user.pubkey,
       zooid_domain: HOSTING_RELAY_DOMAIN,
       blossom_enabled: values.plan_id === "free" ? 0 : 1,
       livekit_enabled: values.plan_id === "free" ? 0 : 1,
@@ -51,15 +51,15 @@
 
     // Join the space we just made, otherwise the space layout prompts us to join
     // it, displacing the payment modals below.
-    await addSpace(url)
-    await reconcileTenant($pubkey!)
+    await $roomLists.addRelay(url).then(publish)
+    await reconcileTenant($user.pubkey)
 
-    const tenant = await getTenant($pubkey!)
+    const tenant = await getTenant($user.pubkey)
 
     await goto(makeSpacePath(url, "admin"), {replaceState: true})
 
     if (values.plan_id !== "free" && !autopayConfigured(tenant)) {
-      const invoice = selectPayableInvoice(await listTenantInvoices($pubkey!))
+      const invoice = selectPayableInvoice(await listTenantInvoices($user.pubkey))
 
       if (invoice) {
         pushModal(PaymentDialog, {invoice})

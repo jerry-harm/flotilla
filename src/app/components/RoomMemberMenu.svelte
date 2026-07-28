@@ -1,11 +1,10 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import {waitForThunkError, removeRoomMember} from "@welshman/app"
   import MinusCircle from "@assets/icons/minus-circle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import Confirm from "@lib/components/Confirm.svelte"
-  import {deriveRoom} from "@app/groups"
+  import {rooms} from "@app/core"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
 
@@ -18,14 +17,13 @@
 
   const {url, h, pubkey, onClick}: Props = $props()
 
-  const room = deriveRoom(url, h)
-
   const removeMember = () =>
     pushModal(Confirm, {
       title: "Remove Member",
       message: "Are you sure you want to remove this user from the room?",
       confirm: async () => {
-        const error = await waitForThunkError(removeRoomMember(url, $room, pubkey))
+        const command = await $rooms.removeMember(url, {h}, pubkey)
+        const error = await command.publish().waitForError()
 
         if (error) {
           pushToast({theme: "error", message: error})

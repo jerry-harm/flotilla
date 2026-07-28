@@ -2,6 +2,7 @@
   import {goto} from "$app/navigation"
   import {displayRelayUrl} from "@welshman/util"
   import {parse, renderAsHtml} from "@welshman/content"
+  import {publish} from "@welshman/app"
   import Button from "@lib/components/Button.svelte"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
@@ -16,11 +17,16 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import SpaceAccessRequest from "@app/components/SpaceAccessRequest.svelte"
   import {publishLeaveRequest} from "@app/access"
+  import {roomLists} from "@app/core"
   import {pushModal, clearModals} from "@app/modal"
-  import {removeSpace} from "@app/groups"
   import {removeTrustedRelay} from "@app/settings"
 
-  const {url, error} = $props()
+  type Props = {
+    url: string
+    error: string
+  }
+
+  const {url, error}: Props = $props()
 
   const back = () => goto("/home")
 
@@ -30,8 +36,8 @@
     loading = true
 
     try {
-      await removeSpace(url)
-      await publishLeaveRequest({url})
+      await $roomLists.removeRelay(url).then(publish)
+      await publishLeaveRequest(url)
       await removeTrustedRelay(url)
     } finally {
       loading = false

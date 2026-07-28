@@ -1,46 +1,63 @@
-import {
-  deriveArray,
-  deriveDeduplicated,
-  deriveEventsAsc,
-  deriveEventsById,
-  deriveEventsByIdForUrl,
-  deriveEventsDesc,
-  getEventsByIdForUrl,
-  makeDeriveEvent,
-} from "@welshman/store"
-import {deriveRelay, repository, tracker} from "@welshman/app"
-import {sortEventsDesc} from "@welshman/util"
-import type {Filter} from "@welshman/util"
-import {load} from "@welshman/net"
-import {filter, first, spec} from "@welshman/lib"
 import {derived} from "svelte/store"
-export const deriveEvent = makeDeriveEvent({
-  repository,
-  includeDeleted: true,
-  onDerive: (filters: Filter[], relays: string[]) => load({filters, relays}),
-})
+import {filter, spec} from "@welshman/lib"
+import type {Filter, TrustedEvent} from "@welshman/util"
+import * as store from "@welshman/store"
+import {Network, Relays} from "@welshman/app"
+import {app, fromApp} from "@app/core"
+
+// Events
+
+export const deriveEvent = (idOrAddress: string, relays: string[] = []) =>
+  fromApp($app =>
+    store.makeDeriveEvent({
+      repository: $app.repository,
+      includeDeleted: true,
+      onDerive: (filters: Filter[], hints: string[]) =>
+        $app.use(Network).load({filters, relays: hints}),
+    })(idOrAddress, relays),
+  )
+
+export const deriveEventsById = (filters: Filter[] = [{}]) =>
+  fromApp($app => store.deriveEventsById({repository: $app.repository, filters}))
 
 export const deriveEvents = (filters: Filter[] = [{}]) =>
-  deriveEventsDesc(deriveEventsById({repository, filters}))
+  store.deriveEventsDesc(deriveEventsById(filters))
+
+export const deriveIsDeleted = (event: TrustedEvent) =>
+  fromApp($app => store.deriveIsDeleted($app.repository, event))
+
+// Events on a relay
 
 export const getEventsForUrl = (url: string, filters: Filter[] = [{}]) =>
-  getEventsByIdForUrl({url, tracker, repository, filters}).values()
+  store
+    .getEventsByIdForUrl({
+      url,
+      filters,
+      tracker: app.get().tracker,
+      repository: app.get().repository,
+    })
+    .values()
+
+export const deriveEventsByIdForUrl = (url: string, filters: Filter[] = [{}]) =>
+  fromApp($app =>
+    store.deriveEventsByIdForUrl({
+      url,
+      filters,
+      tracker: $app.tracker,
+      repository: $app.repository,
+    }),
+  )
 
 export const deriveEventsForUrl = (url: string, filters: Filter[] = [{}]) =>
-  deriveArray(deriveEventsByIdForUrl({url, tracker, repository, filters}))
+  store.deriveArray(deriveEventsByIdForUrl(url, filters))
 
-export const deriveEventsForUrlAsc = (url: string, filters: Filter[] = [{}]) =>
-  deriveEventsAsc(deriveEventsByIdForUrl({url, tracker, repository, filters}))
-
-export const deriveEventsForUrlDesc = (url: string, filters: Filter[] = [{}]) =>
-  deriveEventsDesc(deriveEventsByIdForUrl({url, tracker, repository, filters}))
-
-export const deriveLatestEventForUrl = (url: string, filters: Filter[] = [{}]) =>
-  deriveDeduplicated(deriveEventsByIdForUrl({url, tracker, repository, filters}), $eventsById =>
-    first(sortEventsDesc($eventsById.values())),
+export const deriveEventsByIdByUrl = (filters: Filter[] = [{}]) =>
+  fromApp($app =>
+    store.deriveEventsByIdByUrl({filters, tracker: $app.tracker, repository: $app.repository}),
   )
 
 export const deriveRelaySignedEvents = (url: string, filters: Filter[] = [{}]) =>
-  derived([deriveRelay(url), deriveEventsForUrl(url, filters)], ([relay, events]) =>
-    filter(spec({pubkey: relay?.self}), events),
+  derived(
+    [fromApp($app => $app.use(Relays).one(url)), deriveEventsForUrl(url, filters)],
+    ([$relay, $events]) => filter(spec({pubkey: $relay?.self}), $events as TrustedEvent[]),
   )

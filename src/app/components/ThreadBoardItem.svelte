@@ -1,8 +1,8 @@
 <script lang="ts">
+  import {goto} from "$app/navigation"
   import {formatTimestamp, max} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {COMMENT, getTagValue} from "@welshman/util"
-  import {goto} from "$app/navigation"
+  import {COMMENT, tagSpec, tagValue} from "@welshman/util"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
   import {deriveEventsForUrl} from "@app/repository"
@@ -20,7 +20,7 @@
   const replies = deriveEventsForUrl(url, filters)
   const replyCount = $derived($replies.length)
   const lastActive = $derived(max([...$replies, event].map(e => e.created_at)))
-  const title = getTagValue("title", event.tags)
+  const title = tagValue(tagSpec("title"), event.tags)
   const path = makeThreadPath(url, event.id)
 
   const goToThread = () => goto(path)

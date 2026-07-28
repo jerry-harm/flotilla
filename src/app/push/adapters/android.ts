@@ -1,10 +1,10 @@
 import {throttle} from "throttle-debounce"
 import {App} from "@capacitor/app"
 import {registerPlugin} from "@capacitor/core"
-import {session} from "@welshman/app"
-import type {Session} from "@welshman/app"
 import {maybe, now} from "@welshman/lib"
 import type {Filter} from "@welshman/util"
+import type {Session} from "@welshman/app"
+import {app, session} from "@app/core"
 import {pushState} from "@app/push/adapters/common"
 import type {IPushAdapter} from "@app/push/adapters/common"
 import {requestPermissions, syncRelaySubscriptions} from "@app/push/adapters/common"
@@ -16,7 +16,10 @@ type AndroidFallbackSubscription = {
   ignore: Array<Filter>
 }
 
+// A Session no longer carries the pubkey it belongs to, but the worker needs it to build auth
+// events, so it's passed alongside. Keep this in sync with AndroidPushFallbackWorker.kt.
 type AndroidPushFallbackState = {
+  pubkey?: string
   session?: Session
   activeSince?: number
   subscriptions?: Array<AndroidFallbackSubscription>
@@ -44,6 +47,7 @@ export class AndroidFallbackNotifications implements IPushAdapter {
       const doSync = throttle(1000, () => {
         AndroidPushFallback.syncState({
           state: {
+            pubkey: app.get().user?.pubkey,
             session: session.get(),
             activeSince: this._activeSince,
             subscriptions: Array.from(this._subscriptions.values()),

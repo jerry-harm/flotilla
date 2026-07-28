@@ -12,7 +12,7 @@ import {
   REPOST,
   THREAD,
   ZAP_GOAL,
-  ZAP_RESPONSE,
+  ZAP_RECEIPT,
 } from "@welshman/util"
 import type {Filter} from "@welshman/util"
 import {ENABLE_ZAPS} from "@app/env"
@@ -37,7 +37,7 @@ export const REPOST_KINDS = [REPOST, GENERIC_REPOST]
 export const REACTION_KINDS = [REPORT, DELETE, REACTION]
 
 if (ENABLE_ZAPS) {
-  REACTION_KINDS.push(ZAP_RESPONSE)
+  REACTION_KINDS.push(ZAP_RECEIPT)
 }
 
 export const CONTENT_KINDS = [ZAP_GOAL, EVENT_TIME, THREAD, CLASSIFIED, POLL]

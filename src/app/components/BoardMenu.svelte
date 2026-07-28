@@ -1,17 +1,17 @@
 <script lang="ts">
   import {onMount} from "svelte"
+  import type {PinboardReader} from "@welshman/domain"
   import ShareCircle from "@assets/icons/share-circle.svg?dataurl"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import EventInfo from "@app/components/EventInfo.svelte"
-  import {type PublishedBoard} from "@app/pinboards"
   import {shareEventToChat} from "@app/share"
   import {pushModal} from "@app/modal"
 
   type Props = {
     url: string
-    board: PublishedBoard
+    board: PinboardReader
     onClick: () => void
   }
 

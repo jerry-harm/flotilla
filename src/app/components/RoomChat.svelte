@@ -5,14 +5,14 @@
   import {goto} from "$app/navigation"
   import type {Readable} from "svelte/store"
   import {debounce} from "throttle-debounce"
-  import {pubkey, publishThunk, waitForThunkError, joinRoom, leaveRoom} from "@welshman/app"
+  import cx from "classnames"
   import {now, ifLet, int, formatTimestampAsDate, ago, MINUTE} from "@welshman/lib"
   import type {TrustedEvent, EventContent} from "@welshman/util"
-  import {makeEvent, makeRoomMeta, MESSAGE, RELAY_ADD_MEMBER, ROOM_ADD_MEMBER} from "@welshman/util"
+  import {makeEvent, MESSAGE, RELAY_ADD_MEMBER, ROOM_ADD_MEMBER} from "@welshman/util"
+  import {publish} from "@welshman/app"
   import AltArrowDown from "@assets/icons/alt-arrow-down.svg?dataurl"
   import ClockCircle from "@assets/icons/clock-circle.svg?dataurl"
   import Login2 from "@assets/icons/login-3.svg?dataurl"
-  import cx from "classnames"
   import {fade, fly} from "@lib/transition"
   import {popKey} from "@lib/implicit"
   import Button from "@lib/components/Button.svelte"
@@ -28,6 +28,7 @@
   import ThunkToast from "@app/components/ThunkToast.svelte"
   import VideoCallContent from "@app/components/VideoCallContent.svelte"
   import VoiceWidget from "@app/components/VoiceWidget.svelte"
+  import {deletes, relays, rooms, thunks, user} from "@app/core"
   import {publishRoomJoinRequest} from "@app/access"
   import {
     CallState,
@@ -37,10 +38,14 @@
     videoCallLayout,
     videoTileCount,
   } from "@app/call"
-  import {publishDelete} from "@app/deletes"
-  import {prependParent, deriveRoom, getRoomType, PROTECTED, RoomType} from "@app/groups"
-  import {deriveUserRoomMembershipStatus, MembershipStatus} from "@app/members"
-  import {canEnforceNip70} from "@app/relays"
+  import {
+    PROTECTED,
+    RoomType,
+    deriveUserRoomMembershipStatus,
+    MembershipStatus,
+    getRoomType,
+    prependParent,
+  } from "@app/rooms"
   import {userSettingsValues} from "@app/settings"
   import {makeFeed} from "@app/feeds"
   import {checked, deferredRoomPath, setChecked} from "@app/notifications"
@@ -54,7 +59,7 @@
 
   const {url, h}: Props = $props()
 
-  const room = h ? deriveRoom(url, h) : readable(undefined)
+  const room = h ? $rooms.forRoom(url, h) : readable(undefined)
   const addMemberKind = h ? ROOM_ADD_MEMBER : RELAY_ADD_MEMBER
   const isVoiceRoom = $derived($room && getRoomType($room) === RoomType.Voice)
 
@@ -110,7 +115,7 @@
     prevVideoTileCount = n
   })
 
-  const shouldProtect = canEnforceNip70(url)
+  const shouldProtect = $relays.hasNip(url, 70)
   const membershipStatus = h
     ? deriveUserRoomMembershipStatus(url, h)
     : readable(MembershipStatus.Granted)
@@ -122,11 +127,11 @@
       joining = true
 
       try {
-        const message = await waitForThunkError(
-          inviteCode
-            ? publishRoomJoinRequest(url, h, inviteCode)
-            : joinRoom(url, makeRoomMeta({h})),
-        )
+        const thunk = await (inviteCode
+          ? publishRoomJoinRequest(url, h, inviteCode)
+          : $rooms.joinRoom(url, {h}).then(publish))
+
+        const message = await thunk.waitForError()
 
         if (message && !message.startsWith("duplicate:")) {
           return pushToast({theme: "error", message})
@@ -144,7 +149,8 @@
     if (h) {
       leaving = true
       try {
-        const message = await waitForThunkError(leaveRoom(url, makeRoomMeta({h})))
+        const thunk = await $rooms.leaveRoom(url, {h}).then(publish)
+        const message = await thunk.waitForError()
 
         if (message && !message.startsWith("duplicate:")) {
           pushToast({theme: "error", message})
@@ -182,7 +188,9 @@
         tags.push(["h", h])
       }
 
-      if (await shouldProtect) {
+      const protect = await shouldProtect
+
+      if (protect) {
         tags.push(PROTECTED)
       }
 
@@ -196,22 +204,23 @@
 
         // Delete previous message, to be republished with same timestamp
         template.created_at = eventToEdit.created_at
-        publishDelete({
-          relays: [url],
-          event: $state.snapshot(eventToEdit),
-          protect: await shouldProtect,
-        })
+
+        const command = await $deletes.deleteEvent($state.snapshot(eventToEdit), w =>
+          w.setProtected(protect),
+        )
+
+        command.publishToRelays([url])
       }
 
       if (share) {
-        template = prependParent(share, template, url)
+        template = await prependParent(share, template, url)
       }
 
       if (parent) {
-        template = prependParent(parent, template, url)
+        template = await prependParent(parent, template, url)
       }
 
-      const thunk = publishThunk({
+      const thunk = $thunks.publish({
         relays: [url],
         event: makeEvent(MESSAGE, template),
         delay: $userSettingsValues.send_delay,
@@ -295,7 +304,7 @@
   const onVisibilityChange = () => {
     if (document.hidden) {
       lastVisibleAt = now()
-    } else if ($events.some(e => e.pubkey !== $pubkey && e.created_at > lastVisibleAt)) {
+    } else if ($events.some(e => e.pubkey !== $user.pubkey && e.created_at > lastVisibleAt)) {
       newMessagesAfter = lastVisibleAt
       newMessagesBefore = now()
       newMessagesSeen = false
@@ -338,7 +347,7 @@
     let newMessagesSeen = false
 
     if (events) {
-      const lastUserEvent = $events.findLast(e => e.pubkey === $pubkey)
+      const lastUserEvent = $events.findLast(e => e.pubkey === $user.pubkey)
 
       // Adjust the boundary to account for messages that came from a different device
       const adjustedAfter =
@@ -356,7 +365,7 @@
         if (
           !newMessagesSeen &&
           adjustedAfter &&
-          event.pubkey !== $pubkey &&
+          event.pubkey !== $user.pubkey &&
           event.created_at > adjustedAfter &&
           event.created_at < newMessagesBefore
         ) {
@@ -428,7 +437,7 @@
   }
 
   const canEditEvent = (event: TrustedEvent) =>
-    event.pubkey === $pubkey && event.created_at >= ago(5, MINUTE)
+    event.pubkey === $user.pubkey && event.created_at >= ago(5, MINUTE)
 
   const onEditEvent = (event: TrustedEvent) => {
     clearParent()
@@ -484,7 +493,7 @@
         "room__content scroll-container",
         showMobileVideoPanel ? "hidden md:flex md:flex-col-reverse" : "flex",
       )}>
-      {#if $room?.isPrivate && $membershipStatus !== MembershipStatus.Granted}
+      {#if $room?.meta?.isPrivate() && $membershipStatus !== MembershipStatus.Granted}
         <div class="py-20">
           <div class="card flex flex-col gap-8 m-auto max-w-md items-center text-center">
             <p class="opacity-75">You aren't currently a member of this room.</p>
@@ -560,9 +569,9 @@
         showMobileVideoPanel && "max-md:hidden",
       )}>
       <div class="room__compose-inner min-w-0 flex-1">
-        {#if $room?.isPrivate && $membershipStatus !== MembershipStatus.Granted}
+        {#if $room?.meta?.isPrivate() && $membershipStatus !== MembershipStatus.Granted}
           <!-- pass -->
-        {:else if $room?.isRestricted && $membershipStatus !== MembershipStatus.Granted}
+        {:else if $room?.meta?.isRestricted() && $membershipStatus !== MembershipStatus.Granted}
           <div class="card m-4 flex flex-row items-center justify-between px-4 py-3">
             <p class="opacity-75">Only members are allowed to post to this room.</p>
             {#if $membershipStatus === MembershipStatus.Pending}

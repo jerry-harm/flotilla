@@ -1,10 +1,11 @@
 import {append, identity, uniq} from "@welshman/lib"
-import {repository, displayProfileByPubkey} from "@welshman/app"
-import {displayPubkey, getTagValue} from "@welshman/util"
-import {PLATFORM_NAME} from "@app/env"
+import {tagSpec, tagValue} from "@welshman/util"
+import {displayPubkey} from "@welshman/domain"
+import {makeRoomKey} from "@welshman/app"
 import {decodePubkey} from "@lib/util"
+import {app, profiles, rooms} from "@app/core"
+import {PLATFORM_NAME} from "@app/env"
 import {decodeRelay} from "@app/relays"
-import {getRoom, makeRoomId} from "@app/groups"
 import {splitChatId} from "@app/chats"
 
 const FALLBACK_APP_NAME = "Flotilla"
@@ -65,9 +66,9 @@ const getRoomTitle = (params: RouteParams) => {
     return "Room"
   }
 
-  const url = decodeRelay(relay)
+  const room = rooms.get().get(makeRoomKey(decodeRelay(relay), h))
 
-  return getRoom(makeRoomId(url, h))?.name || "Room"
+  return room?.meta?.name() || "Room"
 }
 
 const getEventForTitle = (routeId: string, params: RouteParams) => {
@@ -81,7 +82,7 @@ const getEventForTitle = (routeId: string, params: RouteParams) => {
     return
   }
 
-  return repository.getEvent(eventId)
+  return app.get().repository.getEvent(eventId)
 }
 
 const getChatTitle = (chatId: string | undefined, pubkey: string | undefined) => {
@@ -127,7 +128,7 @@ export const getPageTitle = ({page, pubkey}: PageTitleContext) => {
     const profilePubkey = decodePubkey(page.params.npub!)
 
     if (profilePubkey) {
-      return makeTitle(displayProfileByPubkey(profilePubkey))
+      return makeTitle(profiles.get().display(profilePubkey).get())
     }
   }
 
@@ -138,19 +139,19 @@ export const getPageTitle = ({page, pubkey}: PageTitleContext) => {
   const event = getEventForTitle(routeId, page.params)
 
   if (routeId === "/spaces/[relay]/threads/[id]") {
-    return makeTitle(getTagValue("title", event?.tags || []) || "Thread")
+    return makeTitle(tagValue(tagSpec("title"), event?.tags || []) || "Thread")
   }
 
   if (routeId === "/spaces/[relay]/calendar/[address]") {
-    return makeTitle(getTagValue("title", event?.tags || []) || "Event")
+    return makeTitle(tagValue(tagSpec("title"), event?.tags || []) || "Event")
   }
 
   if (routeId === "/spaces/[relay]/classifieds/[address]") {
-    return makeTitle(getTagValue("title", event?.tags || []) || "Listing")
+    return makeTitle(tagValue(tagSpec("title"), event?.tags || []) || "Listing")
   }
 
   if (routeId === "/spaces/[relay]/goals/[id]") {
-    return makeTitle(event?.content || getTagValue("summary", event?.tags || []) || "Goal")
+    return makeTitle(event?.content || tagValue(tagSpec("summary"), event?.tags || []) || "Goal")
   }
 
   return makeTitle()

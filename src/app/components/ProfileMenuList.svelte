@@ -1,13 +1,13 @@
 <script lang="ts">
   import {onMount} from "svelte"
   import type {Snippet} from "svelte"
-  import {deriveProfile} from "@welshman/app"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
   import ShareCircle from "@assets/icons/share-circle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import ProfileInfo from "@app/components/ProfileInfo.svelte"
   import ProfileQrCode from "@app/components/ProfileQrCode.svelte"
+  import {profiles} from "@app/core"
   import {pushModal} from "@app/modal"
 
   type Props = {
@@ -19,7 +19,7 @@
 
   const {pubkey, url, onClick, customActions}: Props = $props()
 
-  const profile = deriveProfile(pubkey)
+  const profile = $profiles.one(pubkey)
 
   const showInfo = () => pushModal(ProfileInfo, {event: $profile!.event, url})
 

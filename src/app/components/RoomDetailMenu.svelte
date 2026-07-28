@@ -1,10 +1,8 @@
 <script lang="ts">
   import {onMount} from "svelte"
   import {goto} from "$app/navigation"
-  import type {RoomMeta} from "@welshman/util"
-  import {makeRoomMeta} from "@welshman/util"
-  import type {Thunk} from "@welshman/app"
-  import {deleteRoom, waitForThunkError, repository, joinRoom, leaveRoom} from "@welshman/app"
+  import type {Command} from "@welshman/app"
+  import {publish} from "@welshman/app"
   import Pen from "@assets/icons/pen.svg?dataurl"
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
   import Login3 from "@assets/icons/login-3.svg?dataurl"
@@ -14,12 +12,8 @@
   import Spinner from "@lib/components/Spinner.svelte"
   import Confirm from "@lib/components/Confirm.svelte"
   import RoomEdit from "@app/components/RoomEdit.svelte"
-  import {deriveRoom, removeRoom} from "@app/groups"
-  import {
-    deriveUserIsRoomAdmin,
-    deriveUserRoomMembershipStatus,
-    MembershipStatus,
-  } from "@app/members"
+  import {app, roomLists, rooms} from "@app/core"
+  import {deriveUserIsRoomAdmin, deriveUserRoomMembershipStatus, MembershipStatus} from "@app/rooms"
   import {makeSpacePath} from "@app/routes"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
@@ -32,17 +26,17 @@
 
   const {url, h, onClick}: Props = $props()
 
-  const room = deriveRoom(url, h)
   const userIsAdmin = deriveUserIsRoomAdmin(url, h)
   const membershipStatus = deriveUserRoomMembershipStatus(url, h)
 
   const startEdit = () => pushModal(RoomEdit, {url, h})
 
-  const handleLoading = async (f: (url: string, room: RoomMeta) => Thunk) => {
+  const handleLoading = async (buildCommand: () => Promise<Command>) => {
     loading = true
 
     try {
-      const message = await waitForThunkError(f(url, makeRoomMeta({h})))
+      const command = await buildCommand()
+      const message = await command.publish().waitForError()
 
       if (message && !message.startsWith("duplicate:")) {
         pushToast({theme: "error", message})
@@ -52,9 +46,9 @@
     }
   }
 
-  const join = () => handleLoading(joinRoom)
+  const join = () => handleLoading(() => $rooms.joinRoom(url, {h}))
 
-  const leave = () => handleLoading(leaveRoom)
+  const leave = () => handleLoading(() => $rooms.leaveRoom(url, {h}))
 
   const startDelete = () =>
     pushModal(Confirm, {
@@ -62,14 +56,15 @@
       message:
         "This room will no longer be accessible to space members, and all messages posted to it will be deleted.",
       confirm: async () => {
-        const thunk = deleteRoom(url, $room)
-        const message = await waitForThunkError(thunk)
+        const command = await $rooms.deleteRoom(url, {h})
+        const thunk = command.publish()
+        const message = await thunk.waitForError()
 
         if (message) {
-          repository.removeEvent(thunk.event.id)
+          $app.repository.removeEvent(thunk.event.id)
           pushToast({theme: "error", message})
         } else {
-          await removeRoom(url, h)
+          await $roomLists.removeRoom(h, url).then(publish)
           goto(makeSpacePath(url))
         }
       },

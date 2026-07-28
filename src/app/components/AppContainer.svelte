@@ -1,13 +1,13 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
-  import {pubkey} from "@welshman/app"
   import Dialog from "@lib/components/Dialog.svelte"
   import Landing from "@app/components/Landing.svelte"
   import Toast from "@app/components/Toast.svelte"
   import PrimaryNav from "@app/components/PrimaryNav.svelte"
+  import {app} from "@app/core"
   import {modal} from "@app/modal"
 
-  interface Props {
+  type Props = {
     children: Snippet
   }
 
@@ -15,7 +15,7 @@
 </script>
 
 <div class="flex h-screen overflow-hidden">
-  {#if $pubkey}
+  {#if $app.user?.pubkey}
     <PrimaryNav>
       {@render children?.()}
     </PrimaryNav>

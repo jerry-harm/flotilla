@@ -3,8 +3,9 @@
   import {page} from "$app/stores"
   import {sleep} from "@welshman/lib"
   import type {MakeNonOptional} from "@welshman/lib"
-  import {getIdFilters} from "@welshman/util"
-  import {request} from "@welshman/net"
+  import {PIN, getIdFilters} from "@welshman/util"
+  import {Pinboards, Pins} from "@welshman/app"
+  import {errorMessage} from "@lib/util"
   import {fly} from "@lib/transition"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
@@ -25,8 +26,9 @@
   import EventInfo from "@app/components/EventInfo.svelte"
   import PinboardEdit from "@app/components/PinboardEdit.svelte"
   import PinAdd from "@app/components/PinAdd.svelte"
-  import {decodeRelay, deriveSupportedMethods} from "@app/relays"
-  import {deriveBoardByAddress, derivePins, deleteBoard, PIN} from "@app/pinboards"
+  import {app, deletes, network} from "@app/core"
+  import {deriveUserIsSpaceAdmin} from "@app/management"
+  import {decodeRelay} from "@app/relays"
   import {shareEventToChat} from "@app/share"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
@@ -34,10 +36,9 @@
   const {relay, address} = $page.params as MakeNonOptional<typeof $page.params>
   const url = decodeRelay(relay)
 
-  const board = deriveBoardByAddress(url, address)
-  const pins = derivePins(url, address)
-  const supportedMethods = deriveSupportedMethods(url)
-  const canManage = $derived($supportedMethods.some(m => (m as string) === "signevent"))
+  const board = $app.use(Pinboards).one(address)
+  const pins = $app.use(Pins).forBoard(address).$
+  const canManage = deriveUserIsSpaceAdmin(url)
 
   let term = $state("")
   let menuOpen = $state(false)
@@ -47,11 +48,14 @@
 
     if (!value) return $pins
 
-    return $pins.filter(pin =>
-      [pin.title, pin.description, pin.value[0] === "i" ? pin.value[1] : "", ...pin.topics].some(
-        field => field?.toLowerCase().includes(value),
-      ),
-    )
+    return $pins.filter(pin => {
+      const reference = pin.reference()
+      const external = reference?.type === "external" ? reference.id : ""
+
+      return [pin.title(), pin.content(), external, ...pin.topics()].some(field =>
+        field?.toLowerCase().includes(value),
+      )
+    })
   })
 
   const back = () => history.back()
@@ -90,28 +94,37 @@
     pushModal(PinboardEdit, {url, board: $board})
   }
 
+  const deleteBoard = async () => {
+    try {
+      const command = await $deletes.deleteEvent($board!.event)
+      const thunk = await command.publishAsRelay(url)
+      const error = await thunk.waitForError()
+
+      if (error) {
+        return pushToast({theme: "error", message: error})
+      }
+
+      pushToast({message: "Shelf deleted!"})
+      back()
+    } catch (e) {
+      console.error(e)
+      pushToast({theme: "error", message: errorMessage(e)})
+    }
+  }
+
   const confirmDelete = () => {
     menuOpen = false
     pushModal(Confirm, {
       title: "Delete Shelf",
-      message: `Delete "${$board?.title || "this shelf"}"?`,
-      confirm: async () => {
-        const error = await deleteBoard(url, address)
-
-        if (error) {
-          pushToast({theme: "error", message: error})
-        } else {
-          pushToast({message: "Shelf deleted!"})
-          back()
-        }
-      },
+      message: `Delete "${$board?.title() || "this shelf"}"?`,
+      confirm: deleteBoard,
     })
   }
 
   onMount(() => {
     const controller = new AbortController()
 
-    request({
+    $network.request({
       relays: [url],
       filters: [...getIdFilters([address]), {kinds: [PIN], "#A": [address]}],
       signal: controller.signal,
@@ -123,7 +136,7 @@
 
 <SpaceBar {back}>
   {#snippet title()}
-    <h1 class="truncate text-xl">{$board?.title || "Shelf"}</h1>
+    <h1 class="truncate text-xl">{$board?.title() || "Shelf"}</h1>
   {/snippet}
   {#snippet action()}
     <div class="relative">
@@ -150,7 +163,7 @@
                 Share to chat
               </Button>
             </li>
-            {#if canManage}
+            {#if $canManage}
               <li>
                 <Button onclick={addLink}>
                   <Icon icon={AddCircle} />
@@ -182,7 +195,7 @@
     {#if $pins.length === 0}
       <div class="flex flex-col items-center gap-4 py-20 text-center">
         <p class="opacity-70">This shelf doesn't have any links yet.</p>
-        {#if canManage}
+        {#if $canManage}
           <Button class="button button-primary" onclick={addLink}>
             <Icon icon={AddCircle} />
             Add a link
@@ -197,7 +210,7 @@
       {#if filtered.length === 0}
         <p class="py-20 text-center opacity-70">No links found.</p>
       {:else}
-        <Masonry items={filtered} getKey={pin => pin.id} columnWidth={60} gap={3}>
+        <Masonry items={filtered} getKey={pin => pin.id()} columnWidth={60} gap={3}>
           {#snippet child(pin)}
             <PinItem {url} {pin} />
           {/snippet}

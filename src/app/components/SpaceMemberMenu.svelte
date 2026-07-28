@@ -1,7 +1,5 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import {ManagementMethod} from "@welshman/util"
-  import {displayProfileByPubkey} from "@welshman/app"
   import Pen from "@assets/icons/pen.svg?dataurl"
   import UserMinus from "@assets/icons/user-minus.svg?dataurl"
   import MinusCircle from "@assets/icons/minus-circle.svg?dataurl"
@@ -9,8 +7,8 @@
   import Button from "@lib/components/Button.svelte"
   import Confirm from "@lib/components/Confirm.svelte"
   import SpaceMemberRoles from "@app/components/SpaceMemberRoles.svelte"
-  import {removeSpaceMembers, banSpaceMembers} from "@app/members"
-  import {deriveSupportedMethods} from "@app/relays"
+  import {profiles, relayManagement} from "@app/core"
+  import {deriveSpaceSupportedMethods} from "@app/management"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
 
@@ -22,11 +20,12 @@
 
   const {url, pubkey, onClick}: Props = $props()
 
-  const supportedMethods = deriveSupportedMethods(url)
-  const canUnallow = $derived($supportedMethods.includes(ManagementMethod.UnallowPubkey))
-  const canBan = $derived($supportedMethods.includes(ManagementMethod.BanPubkey))
-  const canAssign = $derived($supportedMethods.some(m => (m as string) === "assignrole"))
-  const canUnassign = $derived($supportedMethods.some(m => (m as string) === "unassignrole"))
+  const supportedMethods = deriveSpaceSupportedMethods(url)
+
+  const canUnallow = $derived($supportedMethods.includes("unallowpubkey"))
+  const canBan = $derived($supportedMethods.includes("banpubkey"))
+  const canAssign = $derived($supportedMethods.includes("assignrole"))
+  const canUnassign = $derived($supportedMethods.includes("unassignrole"))
 
   const back = () => history.back()
 
@@ -35,9 +34,9 @@
   const removeMember = () =>
     pushModal(Confirm, {
       title: "Remove Member",
-      message: `Remove @${displayProfileByPubkey(pubkey)} from the space?`,
+      message: `Remove @${$profiles.display(pubkey).get()} from the space?`,
       confirm: async () => {
-        const error = await removeSpaceMembers(url, [pubkey])
+        const {error} = await $relayManagement.forUrl(url).unallowPubkey(pubkey)
 
         if (error) {
           pushToast({theme: "error", message: error})
@@ -51,9 +50,9 @@
   const banMember = () =>
     pushModal(Confirm, {
       title: "Ban Member",
-      message: `Ban @${displayProfileByPubkey(pubkey)} from the space?`,
+      message: `Ban @${$profiles.display(pubkey).get()} from the space?`,
       confirm: async () => {
-        const error = await banSpaceMembers(url, [pubkey])
+        const {error} = await $relayManagement.forUrl(url).banPubkey(pubkey)
 
         if (error) {
           pushToast({theme: "error", message: error})

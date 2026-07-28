@@ -1,7 +1,5 @@
 <script lang="ts">
-  import {makeProfile} from "@welshman/util"
   import {getWalletAddress} from "@welshman/util"
-  import {userProfile, waitForThunkError, session} from "@welshman/app"
   import {errorMessage} from "@lib/util"
   import Button from "@lib/components/Button.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
@@ -10,19 +8,21 @@
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
-  import {updateProfile} from "@app/profiles"
+  import {deriveUserItem, profiles} from "@app/core"
+  import {wallet} from "@app/lightning"
   import {clearModals} from "@app/modal"
   import {pushToast} from "@app/toast"
 
-  const lud16 = getWalletAddress($session!.wallet!)
+  const userProfile = deriveUserItem($app => $profiles)
+
+  const lud16 = getWalletAddress(wallet.get()!)
 
   const confirm = async () => {
-    const profile = $userProfile || makeProfile()
-
     loading = true
 
     try {
-      const error = await waitForThunkError(updateProfile({profile: {...profile, lud16}}))
+      const command = await $profiles.update(writer => writer.update({lud16}))
+      const error = await command.publish().waitForError()
 
       if (error) {
         pushToast({theme: "error", message: `Failed to update profile: ${errorMessage(error)}`})
@@ -46,7 +46,7 @@
     <ModalHeader>
       <ModalTitle>Set as Receiving Address?</ModalTitle>
     </ModalHeader>
-    {#if $userProfile?.lud16}
+    {#if $userProfile?.values.lud16}
       <p>
         Your current receiving address is different from the one provided by your connected wallet.
       </p>

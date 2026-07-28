@@ -2,7 +2,6 @@
   import cx from "classnames"
   import {LOCALE, always, call, removeAt, replaceAt, sleep} from "@welshman/lib"
   import {WalletType, displayRelayUrl, isNWCWallet, fromMsats} from "@welshman/util"
-  import {session, pubkey, profilesByPubkey} from "@welshman/app"
   import DownloadMinimalistic from "@assets/icons/download-minimalistic.svg?dataurl"
   import UploadMinimalistic from "@assets/icons/upload-minimalistic.svg?dataurl"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
@@ -13,19 +12,20 @@
   import Button from "@lib/components/Button.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import PageContent from "@lib/components/PageContent.svelte"
+  import Wallet2 from "@assets/icons/wallet.svg?dataurl"
+  import CheckCircle from "@assets/icons/check-circle.svg?dataurl"
+  import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
+  import InfoCircle from "@assets/icons/info-circle.svg?dataurl"
   import WalletPay from "@app/components/WalletPay.svelte"
   import WalletReceive from "@app/components/WalletReceive.svelte"
   import WalletConnect from "@app/components/WalletConnect.svelte"
   import WalletDisconnect from "@app/components/WalletDisconnect.svelte"
   import WalletUpdateReceivingAddress from "@app/components/WalletUpdateReceivingAddress.svelte"
   import {pushModal} from "@app/modal"
-  import {getNwcClient, getWebLn} from "@app/lightning"
+  import {getNwcClient, getWebLn, wallet} from "@app/lightning"
   import {userSettingsValues, publishSettings} from "@app/settings"
   import {pushToast} from "@app/toast"
-  import Wallet2 from "@assets/icons/wallet.svg?dataurl"
-  import CheckCircle from "@assets/icons/check-circle.svg?dataurl"
-  import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
-  import InfoCircle from "@assets/icons/info-circle.svg?dataurl"
+  import {profiles, user} from "@app/core"
 
   const connect = () => pushModal(WalletConnect)
 
@@ -33,16 +33,14 @@
 
   const updateReceivingAddress = () => pushModal(WalletUpdateReceivingAddress)
 
-  const profile = $derived($profilesByPubkey.get($pubkey || ""))
-  const profileLightningAddress = $derived(profile?.lud16)
-  const walletLud16 = $derived(
-    $session?.wallet && isNWCWallet($session.wallet) ? $session.wallet.info.lud16 : undefined,
-  )
+  const profile = $derived($profiles.get($user.pubkey))
+  const profileLightningAddress = $derived(profile?.lnurl())
+  const walletLud16 = $derived($wallet && isNWCWallet($wallet) ? $wallet.info.lud16 : undefined)
 
   const pay = () => pushModal(WalletPay)
 
   const receive = () => {
-    if ($session?.wallet) {
+    if ($wallet) {
       pushModal(WalletReceive)
     } else {
       pushModal(WalletConnect)
@@ -51,7 +49,7 @@
 
   let walletStatus = $state("checking")
 
-  const isWalletAvailable = $derived(Boolean($session?.wallet) && walletStatus === "connected")
+  const isWalletAvailable = $derived(Boolean($wallet) && walletStatus === "connected")
   const statusClass = $derived(
     cx("flex items-center gap-2 text-sm", {
       "text-success": walletStatus === "connected",
@@ -60,12 +58,12 @@
   )
   const connectionVerb = $derived(walletStatus === "connected" ? "Connected to" : "Configured for")
 
-  const startWalletStatusCheck = async (wallet = $session?.wallet) => {
+  const startWalletStatusCheck = async (currentWallet = $wallet) => {
     walletStatus = "checking"
 
-    if (wallet) {
+    if (currentWallet) {
       const promise =
-        wallet.type === WalletType.NWC
+        currentWallet.type === WalletType.NWC
           ? getNwcClient().getInfo()
           : call(async () => {
               const client = getWebLn()
@@ -83,7 +81,7 @@
   }
 
   $effect(() => {
-    startWalletStatusCheck($session?.wallet)
+    startWalletStatusCheck($wallet)
   })
 
   const resetZapAmounts = () => {
@@ -144,7 +142,7 @@
         <Icon icon={Wallet2} />
         Your Wallet
       </strong>
-      {#if $session?.wallet}
+      {#if $wallet}
         <div class={statusClass}>
           {#if walletStatus === "checking"}
             <Spinner size="xs" />
@@ -165,13 +163,13 @@
       {/if}
     </div>
     <div class="flex flex-col gap-4">
-      {#if $session?.wallet}
-        {#if $session.wallet.type === "webln"}
-          {@const {node, version} = $session.wallet.info}
+      {#if $wallet}
+        {#if $wallet.type === "webln"}
+          {@const {node, version} = $wallet.info}
           <div class="flex flex-col justify-between gap-2 lg:flex-row">
             <p>
               {connectionVerb} <strong>{node?.alias || version || "unknown wallet"}</strong>
-              via <strong>{$session.wallet.type}</strong>
+              via <strong>{$wallet.type}</strong>
             </p>
             <p class="flex gap-2 whitespace-nowrap">
               {#if walletStatus === "connected"}
@@ -194,8 +192,8 @@
               {/if}
             </p>
           </div>
-        {:else if $session.wallet.type === "nwc"}
-          {@const {lud16, relayUrl} = $session.wallet.info}
+        {:else if $wallet.type === "nwc"}
+          {@const {lud16, relayUrl} = $wallet.info}
           <div class="flex flex-col justify-between gap-2 lg:flex-row">
             <p>
               {connectionVerb} <strong>{lud16}</strong> via
@@ -257,7 +255,7 @@
       <Button class="button button-neutral button-xs ml-3" onclick={updateReceivingAddress}
         >Update</Button>
     </div>
-    {#if profileLightningAddress && walletLud16 && profile?.lud16 !== walletLud16}
+    {#if profileLightningAddress && walletLud16 && profileLightningAddress !== walletLud16}
       <div class="card flex items-center gap-2 text-xs">
         <Icon icon={InfoCircle} size={4} />
         Your profile has a different lightning address than your connected wallet.

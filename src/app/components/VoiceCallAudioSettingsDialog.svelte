@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {spec} from "@welshman/lib"
   import Button from "@lib/components/Button.svelte"
   import FieldInline from "@lib/components/FieldInline.svelte"
   import Modal from "@lib/components/Modal.svelte"
@@ -35,9 +36,9 @@
     if (!navigator.mediaDevices?.enumerateDevices) return
     try {
       const devices = await navigator.mediaDevices.enumerateDevices()
-      audioInputs = devices.filter(d => d.kind === "audioinput")
-      audioOutputs = devices.filter(d => d.kind === "audiooutput")
-      videoInputs = devices.filter(d => d.kind === "videoinput")
+      audioInputs = devices.filter(spec({kind: "audioinput"}))
+      audioOutputs = devices.filter(spec({kind: "audiooutput"}))
+      videoInputs = devices.filter(spec({kind: "videoinput"}))
     } catch {
       audioInputs = []
       audioOutputs = []

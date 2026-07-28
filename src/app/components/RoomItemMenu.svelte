@@ -1,7 +1,6 @@
 <script lang="ts">
   import type {TrustedEvent} from "@welshman/util"
-  import {ManagementMethod, getTagValue} from "@welshman/util"
-  import {pubkey, manageRelay, repository} from "@welshman/app"
+  import {tagSpec, tagValue} from "@welshman/util"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
   import GalleryWide from "@assets/icons/gallery-wide.svg?dataurl"
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
@@ -14,9 +13,9 @@
   import Report from "@app/components/Report.svelte"
   import PinboardSelect from "@app/components/PinboardSelect.svelte"
   import EventDeleteConfirm from "@app/components/EventDeleteConfirm.svelte"
-  import {ROOM} from "@app/groups"
-  import {deriveUserIsRoomAdmin, deriveUserIsSpaceAdmin} from "@app/members"
-  import {deriveRoomPinIds, pinRoomMessage, unpinRoomMessage} from "@app/pins"
+  import {app, relayManagement, roomPinLists, user} from "@app/core"
+  import {deriveUserIsSpaceAdmin} from "@app/management"
+  import {ROOM, deriveUserIsRoomAdmin} from "@app/rooms"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
 
@@ -28,8 +27,8 @@
 
   const {url, event, onClick}: Props = $props()
 
-  const h = getTagValue(ROOM, event.tags) ?? ""
-  const pinIds = deriveRoomPinIds(url, h)
+  const h = tagValue(tagSpec(ROOM), event.tags) ?? ""
+  const pinIds = $roomPinLists.pins(url, h).$
   const userIsAdmin = deriveUserIsSpaceAdmin(url)
   const userIsRoomAdmin = deriveUserIsRoomAdmin(url, h)
   const isPinned = $derived($pinIds.includes(event.id))
@@ -59,16 +58,13 @@
       title: `Delete Message`,
       message: `Are you sure you want to delete this message from the space?`,
       confirm: async () => {
-        const {error} = await manageRelay(url, {
-          method: ManagementMethod.BanEvent,
-          params: [event.id],
-        })
+        const {error} = await $relayManagement.forUrl(url).banEvent(event.id)
 
         if (error) {
           pushToast({theme: "error", message: error})
         } else {
           pushToast({message: "Event has successfully been deleted!"})
-          repository.removeEvent(event.id)
+          $app.repository.removeEvent(event.id)
           history.back()
         }
       },
@@ -79,9 +75,9 @@
 
     if (!h) return
 
-    const error = isPinned
-      ? await unpinRoomMessage(url, h, event.id, $pinIds)
-      : await pinRoomMessage(url, h, event.id, $pinIds)
+    const pins = isPinned ? $pinIds.filter(pin => pin !== event.id) : [...$pinIds, event.id]
+    const command = await $roomPinLists.setPins(url, h, pins)
+    const error = await command.publishToRelays([url]).waitForError()
 
     if (error) {
       pushToast({theme: "error", message: error})
@@ -112,7 +108,7 @@
       </Button>
     </li>
   {/if}
-  {#if event.pubkey === $pubkey}
+  {#if event.pubkey === $user.pubkey}
     <li>
       <Button onclick={showDelete} class="text-error">
         <Icon size={4} icon={TrashBin2} />

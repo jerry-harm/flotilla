@@ -1,7 +1,7 @@
 <script lang="ts">
   import {goto} from "$app/navigation"
-  import type {RoomMeta} from "@welshman/util"
   import {displayRelayUrl} from "@welshman/util"
+  import type {RoomMeta} from "@welshman/app"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
   import Spinner from "@lib/components/Spinner.svelte"
@@ -14,7 +14,11 @@
   import RoomForm from "@app/components/RoomForm.svelte"
   import {makeSpacePath} from "@app/routes"
 
-  const {url} = $props()
+  type Props = {
+    url: string
+  }
+
+  const {url}: Props = $props()
 
   const back = () => history.back()
 

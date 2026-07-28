@@ -2,23 +2,22 @@
   import {onMount} from "svelte"
   import {max, gt, formatTimestampRelative} from "@welshman/lib"
   import {COMMENT} from "@welshman/util"
-  import {load} from "@welshman/net"
-  import {deriveArray, deriveEventsById} from "@welshman/store"
   import type {TrustedEvent} from "@welshman/util"
-  import {repository} from "@welshman/app"
-  import {deriveChecked} from "@app/notifications"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
+  import {deriveEvents} from "@app/repository"
+  import {network} from "@app/core"
+  import {deriveChecked} from "@app/notifications"
 
   const {url, path, event}: {url: string; path: string; event: TrustedEvent} = $props()
 
   const checked = deriveChecked(path)
   const filters = [{kinds: [COMMENT], "#E": [event.id]}]
-  const replies = deriveArray(deriveEventsById({repository, filters}))
+  const replies = deriveEvents(filters)
   const lastActive = $derived(max([...$replies, event].map(e => e.created_at)))
 
   onMount(() => {
-    load({relays: [url], filters})
+    $network.load({relays: [url], filters})
   })
 </script>
 

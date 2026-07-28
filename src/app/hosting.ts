@@ -4,7 +4,7 @@ import {Capacitor} from "@capacitor/core"
 import type {Maybe} from "@welshman/lib"
 import {sortBy, int, MINUTE, ms} from "@welshman/lib"
 import {makeHttpAuth, makeHttpAuthHeader, normalizeRelayUrl} from "@welshman/util"
-import {pubkey, signer} from "@welshman/app"
+import {user} from "@app/core"
 import {HOSTING_BACKEND_URL, PLATFORM_URL} from "@app/env"
 
 // Apple doesn't allow selling hosting outside their payment system, so on iOS we
@@ -21,7 +21,7 @@ export type Plan = {
   livekit: boolean
 }
 
-export type Relay = {
+export type HostedRelay = {
   id: string
   tenant_pubkey: string
   subdomain: string
@@ -180,15 +180,12 @@ const AUTH_TTL = ms(int(10, MINUTE))
 // switching accounts doesn't keep signing as the old one.
 let cachedAuth: Maybe<{pubkey: string; expiresAt: number; header: Promise<string>}>
 
-const getAuthHeader = (): Maybe<Promise<string>> => {
-  const $pubkey = pubkey.get()
-  const $signer = signer.get()
+const getAuthHeader = (): Promise<string> => {
+  const {pubkey, signer} = user.get()
 
-  if (!$pubkey || !$signer) return undefined
-
-  if (cachedAuth?.pubkey !== $pubkey || cachedAuth.expiresAt < Date.now()) {
+  if (cachedAuth?.pubkey !== pubkey || cachedAuth.expiresAt < Date.now()) {
     const header = makeHttpAuth(HOSTING_BACKEND_URL, "GET")
-      .then(template => $signer.sign(template))
+      .then(template => signer.sign(template))
       .then(makeHttpAuthHeader)
 
     // A declined signature shouldn't be cached, or the user can't retry.
@@ -196,7 +193,7 @@ const getAuthHeader = (): Maybe<Promise<string>> => {
       if (cachedAuth?.header === header) cachedAuth = undefined
     })
 
-    cachedAuth = {pubkey: $pubkey, expiresAt: Date.now() + AUTH_TTL, header}
+    cachedAuth = {pubkey, expiresAt: Date.now() + AUTH_TTL, header}
   }
 
   return cachedAuth.header
@@ -205,10 +202,11 @@ const getAuthHeader = (): Maybe<Promise<string>> => {
 type HostingResponse<T> = {data: T; error?: string}
 
 export const hostingFetch = async <T>(method: string, path: string, body?: unknown): Promise<T> => {
-  const auth = await getAuthHeader()
-  const headers: Record<string, string> = {Accept: "application/json"}
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    Authorization: await getAuthHeader(),
+  }
 
-  if (auth) headers["Authorization"] = auth
   if (body !== undefined) headers["Content-Type"] = "application/json"
 
   const response = await fetch(new URL(path, HOSTING_BACKEND_URL).toString(), {
@@ -237,7 +235,7 @@ export const updateTenant = (pubkey: string, input: UpdateTenantInput) =>
   hostingFetch<Tenant>("PUT", `/tenants/${pubkey}`, input)
 
 export const listTenantRelays = (pubkey: string) =>
-  hostingFetch<Relay[]>("GET", `/tenants/${pubkey}/relays`)
+  hostingFetch<HostedRelay[]>("GET", `/tenants/${pubkey}/relays`)
 
 export const listTenantInvoices = (pubkey: string) =>
   hostingFetch<Invoice[]>("GET", `/tenants/${pubkey}/invoices`)
@@ -256,12 +254,12 @@ export const createPortalSession = (pubkey: string, returnUrl: string = hostingR
   )
 
 export const createRelay = (input: CreateRelayInput) =>
-  hostingFetch<Relay>("POST", "/relays", input)
+  hostingFetch<HostedRelay>("POST", "/relays", input)
 
-export const getRelay = (id: string) => hostingFetch<Relay>("GET", `/relays/${id}`)
+export const getRelay = (id: string) => hostingFetch<HostedRelay>("GET", `/relays/${id}`)
 
 export const updateRelay = (id: string, input: UpdateRelayInput) =>
-  hostingFetch<Relay>("PUT", `/relays/${id}`, input)
+  hostingFetch<HostedRelay>("PUT", `/relays/${id}`, input)
 
 export const deactivateRelay = (id: string) =>
   hostingFetch<void>("POST", `/relays/${id}/deactivate`)
@@ -322,16 +320,16 @@ export const formatPeriod = (startSecs?: number, endSecs?: number) =>
     : `${new Date(ms(startSecs)).toLocaleDateString()} – ${new Date(ms(endSecs)).toLocaleDateString()}`
 
 // A verified custom domain when present, otherwise the platform subdomain.
-export const relayHost = (relay: Relay): string =>
+export const relayHost = (relay: HostedRelay): string =>
   relay.custom_domain_verified && relay.custom_domain
     ? relay.custom_domain
     : canonicalRelayHost(relay)
 
 // The host a custom domain must CNAME to.
-export const canonicalRelayHost = (relay: Relay): string =>
+export const canonicalRelayHost = (relay: HostedRelay): string =>
   `${relay.subdomain}.${relay.zooid_domain}`
 
-export const getHostedRelayUrl = (relay: Relay): string =>
+export const getHostedRelayUrl = (relay: HostedRelay): string =>
   normalizeRelayUrl("wss://" + relayHost(relay))
 
 // On native, redirects can't round-trip through location.origin; use the
@@ -345,9 +343,7 @@ export const hostingReturnUrl = (path = "/settings/hosting"): string =>
 let tenantPromise: Maybe<{pubkey: string; promise: Promise<Tenant>}>
 
 export const ensureSessionTenant = async () => {
-  const $pubkey = pubkey.get()
-
-  if (!$pubkey) return
+  const $pubkey = user.get().pubkey
 
   if (tenantPromise?.pubkey !== $pubkey) {
     const promise = createTenant(hostingReturnUrl())
@@ -399,17 +395,15 @@ export const deriveRelayActivity = (id: Readable<Maybe<string>>) =>
 
 // Loading is distinct from "not hosted here" — both leave `relay` undefined, but
 // only one of them should keep the caller waiting.
-export type HostedRelayState = {loading: boolean; relay: Maybe<Relay>}
+export type HostedRelayState = {loading: boolean; relay: Maybe<HostedRelay>}
 
 export const deriveHostedRelay = (url: string) =>
-  derived<typeof pubkey, HostedRelayState>(
-    pubkey,
-    ($pubkey, set) => {
-      if (!$pubkey) return set({loading: false, relay: undefined})
-
+  derived<typeof user, HostedRelayState>(
+    user,
+    ($user, set) => {
       set({loading: true, relay: undefined})
 
-      listTenantRelays($pubkey).then(
+      listTenantRelays($user.pubkey).then(
         relays => set({loading: false, relay: relays.find(r => getHostedRelayUrl(r) === url)}),
         () => set({loading: false, relay: undefined}),
       )

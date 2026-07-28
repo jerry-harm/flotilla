@@ -1,9 +1,8 @@
 <script lang="ts">
   import {stopPropagation} from "svelte/legacy"
-  import type {AbstractThunk} from "@welshman/app"
-  import {getFailedThunkUrls, getThunkUrlsWithStatus} from "@welshman/app"
   import {PublishStatus} from "@welshman/net"
   import {displayRelayUrl} from "@welshman/util"
+  import {BaseThunk} from "@welshman/app"
   import CheckCircle from "@assets/icons/check-circle.svg?dataurl"
   import Danger from "@assets/icons/danger-triangle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -11,14 +10,14 @@
   import {addPeriod} from "@lib/util"
 
   interface Props {
-    thunk: AbstractThunk
+    thunk: BaseThunk
     retry: (url: string) => void
   }
 
   const {thunk, retry}: Props = $props()
 
-  const successUrls = $derived(getThunkUrlsWithStatus(PublishStatus.Success, $thunk))
-  const failedUrls = $derived(getFailedThunkUrls($thunk))
+  const successUrls = $derived($thunk.getUrlsWithStatus(PublishStatus.Success))
+  const failedUrls = $derived($thunk.getFailedUrls())
   const total = $derived(successUrls.length + failedUrls.length)
   const isPartial = $derived(successUrls.length > 0 && failedUrls.length > 0)
 

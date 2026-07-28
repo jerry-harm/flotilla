@@ -1,7 +1,5 @@
 <script lang="ts">
   import {Client} from "@pomade/core"
-  import type {SessionPomade} from "@welshman/app"
-  import {session} from "@welshman/app"
   import {preventDefault} from "@lib/html"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
@@ -15,12 +13,14 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import {pushModal} from "@app/modal"
+  import {session} from "@app/core"
+  import {requirePomadeSession} from "@app/pomade"
   import KeyRecoveryConfirm from "@app/components/KeyRecoveryConfirm.svelte"
 
   const {
     email,
     clientOptions: {peers},
-  } = $session as SessionPomade
+  } = requirePomadeSession($session).data
 
   const requestRecovery = async () => {
     const {peersByPrefix} = await Client.requestChallenge(email, peers)

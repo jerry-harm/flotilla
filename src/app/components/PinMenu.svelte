@@ -1,30 +1,31 @@
 <script lang="ts">
   import {onMount} from "svelte"
+  import type {PinReader} from "@welshman/domain"
   import Pen from "@assets/icons/pen.svg?dataurl"
   import TrashBin from "@assets/icons/trash-bin-2.svg?dataurl"
   import ShareCircle from "@assets/icons/share-circle.svg?dataurl"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
+  import {errorMessage} from "@lib/util"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import Confirm from "@lib/components/Confirm.svelte"
   import EventInfo from "@app/components/EventInfo.svelte"
   import PinEdit from "@app/components/PinEdit.svelte"
-  import {deriveSupportedMethods} from "@app/relays"
-  import {deletePin, type PublishedPin} from "@app/pinboards"
+  import {deletes} from "@app/core"
+  import {deriveUserIsSpaceAdmin} from "@app/management"
   import {shareEventToChat} from "@app/share"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
 
   type Props = {
     url: string
-    pin: PublishedPin
+    pin: PinReader
     onClick: () => void
   }
 
   const {url, pin, onClick}: Props = $props()
 
-  const supportedMethods = deriveSupportedMethods(url)
-  const canManage = $derived($supportedMethods.some(m => (m as string) === "signevent"))
+  const canManage = deriveUserIsSpaceAdmin(url)
 
   const showInfo = () => pushModal(EventInfo, {url, event: pin.event})
 
@@ -32,19 +33,27 @@
 
   const edit = () => pushModal(PinEdit, {url, pin})
 
+  const deletePin = async () => {
+    try {
+      const command = await $deletes.deleteEvent(pin.event)
+      const error = await command.publishAsRelay(url).then(thunk => thunk.waitForError())
+
+      if (error) {
+        pushToast({theme: "error", message: error})
+      } else {
+        pushToast({message: "Link deleted!"})
+      }
+    } catch (e) {
+      console.error(e)
+      pushToast({theme: "error", message: errorMessage(e)})
+    }
+  }
+
   const confirmDelete = () =>
     pushModal(Confirm, {
       title: "Delete Link",
       message: "Delete this link?",
-      confirm: async () => {
-        const error = await deletePin(url, pin.id)
-
-        if (error) {
-          pushToast({theme: "error", message: error})
-        } else {
-          pushToast({message: "Link deleted!"})
-        }
-      },
+      confirm: deletePin,
     })
 
   let ul: Element
@@ -67,7 +76,7 @@
       Share to chat
     </Button>
   </li>
-  {#if canManage}
+  {#if $canManage}
     <li>
       <Button onclick={edit}>
         <Icon icon={Pen} />

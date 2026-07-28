@@ -1,6 +1,7 @@
 <script lang="ts">
   import {get} from "svelte/store"
-  import {displayProfileByPubkey} from "@welshman/app"
+  import {sortBy} from "@welshman/lib"
+  import {RelayRoles} from "@welshman/app"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import Spinner from "@lib/components/Spinner.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -12,22 +13,23 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import RoleItem from "@app/components/RoleItem.svelte"
-  import {deriveSpaceRoles, deriveSpaceMemberRoles, assignRole, unassignRole} from "@app/members"
+  import {app, profiles, relayManagement} from "@app/core"
+  import {deriveSpaceMemberRoles} from "@app/roles"
   import {pushToast} from "@app/toast"
 
-  interface Props {
+  type Props = {
     url: string
     pubkey: string
   }
 
   const {url, pubkey}: Props = $props()
 
-  const roles = deriveSpaceRoles(url)
+  const relayRoles = $app.use(RelayRoles).forUrl(url).$
+  const roles = $derived(sortBy(role => [role.order(), role.label() ?? ""], $relayRoles))
+
+  const profileDisplay = $profiles.display(pubkey).$
   const memberRoles = deriveSpaceMemberRoles(url)
   const initial = new Set(get(memberRoles).get(pubkey) ?? [])
-
-  let selected = $state(new Set(initial))
-  let loading = $state(false)
 
   const back = () => history.back()
 
@@ -47,9 +49,11 @@
     loading = true
 
     try {
+      const management = $relayManagement.forUrl(url)
+
       for (const id of selected) {
         if (!initial.has(id)) {
-          const error = await assignRole(url, pubkey, id)
+          const {error} = await management.assignRole(pubkey, id)
 
           if (error) {
             pushToast({theme: "error", message: error})
@@ -60,7 +64,7 @@
 
       for (const id of initial) {
         if (!selected.has(id)) {
-          const error = await unassignRole(url, pubkey, id)
+          const {error} = await management.unassignRole(pubkey, id)
 
           if (error) {
             pushToast({theme: "error", message: error})
@@ -75,6 +79,9 @@
       loading = false
     }
   }
+
+  let selected = $state(new Set(initial))
+  let loading = $state(false)
 </script>
 
 <Modal>
@@ -82,21 +89,21 @@
     <ModalHeader>
       <ModalTitle>Edit Member</ModalTitle>
       <ModalSubtitle>
-        Manage roles for <span class="text-primary">@{displayProfileByPubkey(pubkey)}</span>
+        Manage roles for <span class="text-primary">@{$profileDisplay}</span>
       </ModalSubtitle>
     </ModalHeader>
-    {#if $roles.length === 0}
+    {#if roles.length === 0}
       <div class="card bg-surface p-4 text-sm opacity-70">This space has no roles yet.</div>
     {:else}
       <div class="flex flex-col gap-2">
-        {#each $roles as role (role.id)}
+        {#each roles as role (role.identifier())}
           <label class="card card-sm flex justify-between cursor-pointer gap-3">
             <RoleItem {role} />
             <input
               type="checkbox"
               class="checkbox"
-              checked={selected.has(role.id)}
-              onchange={() => toggle(role.id)} />
+              checked={selected.has(role.identifier() ?? "")}
+              onchange={() => toggle(role.identifier() ?? "")} />
           </label>
         {/each}
       </div>

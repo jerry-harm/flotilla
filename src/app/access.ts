@@ -1,27 +1,28 @@
-import {derived, get, writable, type Readable} from "svelte/store"
+import {derived, writable, type Readable} from "svelte/store"
 import {dissoc, fromPairs, last, poll, randomId, sleep, tryCatch} from "@welshman/lib"
-import {AuthStatus, Pool, request, SocketStatus} from "@welshman/net"
+import {AuthStatus, SocketStatus} from "@welshman/net"
+import type {Socket} from "@welshman/net"
 import {
   displayRelayUrl,
-  getTagValue,
   isRelayUrl,
   makeEvent,
   normalizeRelayUrl,
+  FOLLOWS,
+  MESSAGING_RELAYS,
+  PROFILE,
   RELAY_INVITE,
-  RELAY_JOIN,
-  RELAY_LEAVE,
-  ROOM_JOIN,
+  RELAYS,
 } from "@welshman/util"
-import {publishThunk, sign, waitForThunkError} from "@welshman/app"
+import {RelayInvite, RelayJoin, RelayLeave, RoomJoin} from "@welshman/domain"
+import {Sync, User, publish} from "@welshman/app"
 import {stripPrefix} from "@lib/util"
+import {app, command, network, reader, roomLists, thunks, writer} from "@app/core"
 import {PLATFORM_URL} from "@app/env"
-import {addSpace, userSpaceUrls} from "@app/groups"
 import {relaysMostlyRestricted} from "@app/policies"
-import {broadcastUserData} from "@app/profiles"
 import {Push} from "@app/push"
-import {syncApplicationData} from "@app/sync"
-import {notificationSettings, setSpaceNotifications} from "@app/settings"
 import {deriveSocket} from "@app/relays"
+import {notificationSettings, setSpaceNotifications} from "@app/settings"
+import {syncApplicationData} from "@app/sync"
 
 export const ROOM_CREATE_INVITE = 9009
 
@@ -30,11 +31,6 @@ export type InviteData = {
   claim: string
   h?: string
   code?: string
-}
-
-export type JoinRequestParams = {
-  url: string
-  claim: string
 }
 
 export const isNetworkAuthError = (error: string) => {
@@ -104,51 +100,41 @@ export const deriveRelayAuthError = (url: string) =>
     }
   })
 
-export const makeJoinRequest = (params: JoinRequestParams) =>
-  makeEvent(RELAY_JOIN, {tags: [["claim", params.claim]]})
+export const publishJoinRequest = (url: string, claim = "") =>
+  command(writer(RelayJoin).forceRelays(url).setClaim(claim)).then(publish)
 
-export const publishJoinRequest = (params: JoinRequestParams) =>
-  publishThunk({event: makeJoinRequest(params), relays: [params.url]})
+export const publishLeaveRequest = (url: string) =>
+  command(writer(RelayLeave).forceRelays(url)).then(publish)
 
-export type LeaveRequestParams = {
-  url: string
+export const publishRoomJoinRequest = (url: string, h: string, code?: string) => {
+  const eventWriter = writer(RoomJoin).setRoom(url, h)
+
+  if (code) {
+    eventWriter.setClaim(code)
+  }
+
+  return command(eventWriter).then(publish)
 }
-
-export const publishLeaveRequest = (params: LeaveRequestParams) =>
-  publishThunk({event: makeEvent(RELAY_LEAVE), relays: [params.url]})
 
 export const publishRoomInvite = async (url: string, h: string) => {
   const code = randomId()
-  const error = await waitForThunkError(
-    publishThunk({
-      event: makeEvent(ROOM_CREATE_INVITE, {
-        tags: [
-          ["h", h],
-          ["code", code],
-        ],
-      }),
-      relays: [url],
-    }),
-  )
+  const event = makeEvent(ROOM_CREATE_INVITE, {
+    tags: [
+      ["h", h],
+      ["code", code],
+    ],
+  })
+
+  const error = await thunks
+    .get()
+    .publish({event, relays: [url]})
+    .waitForError()
 
   if (error) {
     return {error, code: undefined}
   }
 
   return {error: undefined, code}
-}
-
-export const publishRoomJoinRequest = (url: string, h: string, code?: string) => {
-  const tags = [["h", h]]
-
-  if (code) {
-    tags.push(["code", code])
-  }
-
-  return publishThunk({
-    event: makeEvent(ROOM_JOIN, {tags}),
-    relays: [url],
-  })
 }
 
 const authTerminalStatuses = [
@@ -158,7 +144,7 @@ const authTerminalStatuses = [
   AuthStatus.DeniedSignature,
 ]
 
-const waitForAuth = async (socket: ReturnType<ReturnType<typeof Pool.get>["get"]>) => {
+const waitForAuth = async (socket: Socket) => {
   await poll({
     signal: AbortSignal.timeout(10_000),
     condition: () => authTerminalStatuses.includes(socket.auth.status),
@@ -180,7 +166,7 @@ const formatAuthError = (status: AuthStatus, details?: string) => {
 }
 
 export const attemptRelayAccess = async (url: string, claim = "") => {
-  const socket = Pool.get().get(url)
+  const socket = app.get().pool.get(url)
 
   socket.attemptToOpen()
 
@@ -199,7 +185,7 @@ export const attemptRelayAccess = async (url: string, claim = "") => {
   })
 
   for (let i = 0; i < 3 && !authTerminalStatuses.includes(socket.auth.status); i++) {
-    await socket.auth.retryAuth(sign)
+    await socket.auth.retryAuth(User.require(app.get()).sign)
     await waitForAuth(socket)
   }
 
@@ -207,7 +193,8 @@ export const attemptRelayAccess = async (url: string, claim = "") => {
     return formatAuthError(socket.auth.status, socket.auth.details)
   }
 
-  const error = await waitForThunkError(publishJoinRequest({url, claim}))
+  const thunk = await publishJoinRequest(url, claim)
+  const error = await thunk.waitForError()
 
   if (shouldIgnoreError(error)) return
 
@@ -292,10 +279,21 @@ export class Access {
 
   async completeJoin(notifications: boolean) {
     await this.configureNotifications(notifications)
-    await addSpace(this.url)
+    await roomLists.get().addRelay(this.url).then(publish)
     this.clearRestricted()
     syncApplicationData()
-    broadcastUserData([this.url])
+    app
+      .get()
+      .use(Sync)
+      .push({
+        relays: [this.url],
+        filters: [
+          {
+            kinds: [RELAYS, MESSAGING_RELAYS, FOLLOWS, PROFILE],
+            authors: [User.require(app.get()).pubkey],
+          },
+        ],
+      })
   }
 
   async joinSpace({
@@ -321,7 +319,8 @@ export class Access {
   async joinRoom(h: string, code?: string) {
     if (!code) return
 
-    const message = await waitForThunkError(publishRoomJoinRequest(this.url, h, code))
+    const thunk = await publishRoomJoinRequest(this.url, h, code)
+    const message = await thunk.waitForError()
 
     if (message && !message.startsWith("duplicate:")) {
       return message
@@ -329,11 +328,11 @@ export class Access {
   }
 
   async acceptInvite(data: InviteData, notifications: boolean) {
-    const alreadyInSpace = get(userSpaceUrls).includes(data.url)
+    const spaceUrls = roomLists.get().urls(User.require(app.get()).pubkey).get()
     const error = await this.joinSpace({
       claim: data.claim,
       notifications,
-      alreadyJoined: alreadyInSpace,
+      alreadyJoined: spaceUrls.includes(data.url),
     })
 
     if (error) {
@@ -351,7 +350,7 @@ export class Access {
     // A request that times out or hits a closed socket resolves with no events, so an
     // empty result is the only signal we get that the relay never answered.
     const [events, roomInviteResult] = await Promise.all([
-      request({
+      network.get().request({
         relays: [this.url],
         autoClose: true,
         signal: AbortSignal.timeout(10000),
@@ -362,7 +361,13 @@ export class Access {
       sleep(300),
     ])
 
-    this.claim.set(getTagValue("claim", events[0]?.tags || []) || "")
+    if (events[0]) {
+      const eventReader = reader(RelayInvite)
+      const invite = await eventReader(events[0])
+
+      this.claim.set(invite.claim() ?? "")
+    }
+
     this.claimFailed.set(events.length === 0)
 
     if (h) {

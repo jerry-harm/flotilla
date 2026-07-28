@@ -1,16 +1,15 @@
 <script lang="ts">
-  import {getTagValue, ManagementMethod} from "@welshman/util"
-  import type {TrustedEvent, PublishedRoomMeta} from "@welshman/util"
-  import {repository, manageRelay} from "@welshman/app"
+  import {tagSpec, tagValue} from "@welshman/util"
+  import type {TrustedEvent} from "@welshman/util"
   import Card from "@lib/components/Card.svelte"
   import Button from "@lib/components/Button.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
   import RoomName from "@app/components/RoomName.svelte"
+  import {app, relayManagement} from "@app/core"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
-  import {deriveRoom} from "@app/groups"
-  import {addRoomMembers} from "@app/members"
+  import {addRoomMembers} from "@app/rooms"
 
   type Props = {
     url: string
@@ -20,8 +19,7 @@
 
   const {url, event, onResolved}: Props = $props()
 
-  const h = getTagValue("h", event.tags) || ""
-  const room = deriveRoom(url, h)
+  const h = tagValue(tagSpec("h"), event.tags) || ""
 
   const showProfile = () => pushModal(ProfileDetail, {pubkey: event.pubkey, url})
 
@@ -29,16 +27,15 @@
     loading = true
 
     try {
-      const {error} = await manageRelay(url, {
-        method: ManagementMethod.BanEvent,
-        params: [event.id, "Join request dismissed"],
-      })
+      const {error} = await $relayManagement
+        .forUrl(url)
+        .banEvent(event.id, "Join request dismissed")
 
       if (error) {
         pushToast({theme: "error", message: error})
       } else {
         pushToast({message: "Join request has been dismissed."})
-        repository.removeEvent(event.id)
+        $app.repository.removeEvent(event.id)
         onResolved?.()
       }
     } finally {
@@ -50,7 +47,7 @@
     loading = true
 
     try {
-      const error = await addRoomMembers(url, $room as PublishedRoomMeta, [event.pubkey])
+      const error = await addRoomMembers(url, {h}, [event.pubkey])
 
       if (error) {
         pushToast({theme: "error", message: error})

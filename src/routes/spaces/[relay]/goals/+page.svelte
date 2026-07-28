@@ -5,7 +5,7 @@
   import {page} from "$app/stores"
   import {sortBy, partition, spec, pushToMapKey, max} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {ZAP_GOAL, getTagValue} from "@welshman/util"
+  import {ZAP_GOAL, tagSpec, tagValue} from "@welshman/util"
   import {fly} from "@lib/transition"
   import StarFallMinimalistic from "@assets/icons/star-fall-minimalistic.svg?dataurl"
   import Add from "@assets/icons/add.svg?dataurl"
@@ -34,7 +34,7 @@
     const [goals, comments] = partition(spec({kind: ZAP_GOAL}), $events)
 
     for (const comment of comments) {
-      const id = getTagValue("E", comment.tags)
+      const id = tagValue(tagSpec("E"), comment.tags)
 
       if (id) {
         pushToMapKey(scores, id, comment.created_at)

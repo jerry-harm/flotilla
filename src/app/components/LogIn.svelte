@@ -3,7 +3,8 @@
   import {onMount} from "svelte"
   import {Capacitor} from "@capacitor/core"
   import {getNip07, getNip55, Nip55Signer} from "@welshman/signer"
-  import {addSession, type Session, makeNip07Session, makeNip55Session} from "@welshman/app"
+  import {nip07, nip55, toSession} from "@welshman/app"
+  import type {Session} from "@welshman/app"
   import Widget from "@assets/icons/widget-4.svg?dataurl"
   import Letter from "@assets/icons/letter.svg?dataurl"
   import Cpu from "@assets/icons/cpu-bolt.svg?dataurl"
@@ -24,6 +25,7 @@
   import {PLATFORM_NAME, POMADE_SIGNERS} from "@app/env"
   import {pushToast} from "@app/toast"
   import {setChecked} from "@app/notifications"
+  import {login} from "@app/core"
 
   let signers: any[] = $state([])
   let loading: string | undefined = $state()
@@ -35,7 +37,7 @@
   const signUp = () => pushModal(SignUp)
 
   const onSuccess = async (session: Session) => {
-    addSession(session)
+    await login(session)
     setChecked("*")
     clearModals()
   }
@@ -47,7 +49,7 @@
       const pubkey = await getNip07()?.getPublicKey()
 
       if (pubkey) {
-        await onSuccess(makeNip07Session(pubkey))
+        await onSuccess(toSession(nip07, {}))
       } else {
         pushToast({
           theme: "error",
@@ -59,15 +61,15 @@
     }
   }
 
-  const loginWithNip55 = async (app: any) => {
+  const loginWithNip55 = async (signerApp: any) => {
     loading = "nip55"
 
     try {
-      const signer = new Nip55Signer(app.packageName)
+      const signer = new Nip55Signer(signerApp.packageName)
       const pubkey = await signer.getPubkey()
 
       if (pubkey) {
-        await onSuccess(makeNip55Session(pubkey, app.packageName))
+        await onSuccess(toSession(nip55, {pubkey, signer: signerApp.packageName}))
       } else {
         pushToast({
           theme: "error",
@@ -112,14 +114,14 @@
         Log in with Extension
       </Button>
     {/if}
-    {#each signers as app}
-      <Button {disabled} class="button button-primary" onclick={() => loginWithNip55(app)}>
+    {#each signers as signerApp}
+      <Button {disabled} class="button button-primary" onclick={() => loginWithNip55(signerApp)}>
         {#if loading === "nip55"}
           <Spinner size="sm" class="mr-3" />
         {:else}
-          <img src={app.iconUrl} alt={app.name} width="20" height="20" />
+          <img src={signerApp.iconUrl} alt={signerApp.name} width="20" height="20" />
         {/if}
-        Log in with {app.name}
+        Log in with {signerApp.name}
       </Button>
     {/each}
     {#if hasPomade && !hasSigner}

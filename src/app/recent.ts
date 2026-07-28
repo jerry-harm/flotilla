@@ -1,8 +1,8 @@
 import {derived} from "svelte/store"
 import {groupBy, first, sortBy, uniqBy, ago, MONTH} from "@welshman/lib"
-import {MESSAGE, COMMENT, getTagValue, getTagValues, getIdAndAddress} from "@welshman/util"
+import {MESSAGE, COMMENT, getIdAndAddress, tagSpec, tagValue, tagValues} from "@welshman/util"
 import type {TrustedEvent} from "@welshman/util"
-import {repository} from "@welshman/app"
+import {app} from "@app/core"
 import {deriveEventsForUrl} from "@app/repository"
 import {CONTENT_KINDS} from "@app/content"
 
@@ -24,7 +24,7 @@ export const deriveRecentActivity = (url: string) => {
   return derived([messages, content, comments], ([$messages, $content, $comments]) => {
     const activity: RecentActivityItem[] = []
 
-    const byRoom = groupBy(e => getTagValue("h", e.tags), $messages)
+    const byRoom = groupBy(e => tagValue(tagSpec("h"), e.tags), $messages)
     for (const roomMessages of byRoom.values()) {
       const latest = first(roomMessages)
       if (latest) {
@@ -46,13 +46,13 @@ export const deriveRecentActivity = (url: string) => {
     }
 
     for (const event of $comments) {
-      for (const k of getTagValues(["E", "A"], event.tags)) {
+      for (const k of tagValues(tagSpec(["E", "A"]), event.tags)) {
         latestActivityByKey.set(k, Math.max(latestActivityByKey.get(k) || 0, event.created_at))
       }
     }
 
     for (const [address, timestamp] of latestActivityByKey.entries()) {
-      const event = repository.getEvent(address)
+      const event = app.get().repository.getEvent(address)
 
       if (event) {
         activity.push({type: "content", event, timestamp, count: 1})

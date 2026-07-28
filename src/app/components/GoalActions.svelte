@@ -1,15 +1,14 @@
 <script lang="ts">
   import type {TrustedEvent, EventContent} from "@welshman/util"
-  import {getTagValue} from "@welshman/util"
+  import {ZapGoal} from "@welshman/domain"
   import Link from "@lib/components/Link.svelte"
+  import {reader} from "@app/core"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
+  import {publishReaction, retractReaction} from "@app/reactions"
   import ThunkStatusOrDeleted from "@app/components/ThunkStatusOrDeleted.svelte"
   import EventActivity from "@app/components/EventActivity.svelte"
   import EventActions from "@app/components/EventActions.svelte"
   import RoomName from "@app/components/RoomName.svelte"
-  import {publishDelete} from "@app/deletes"
-  import {publishReaction} from "@app/reactions"
-  import {canEnforceNip70} from "@app/relays"
   import {makeGoalPath, makeSpacePath} from "@app/routes"
 
   interface Props {
@@ -22,14 +21,13 @@
   const {url, event, showRoom, showActivity}: Props = $props()
 
   const path = makeGoalPath(url, event.id)
-  const h = getTagValue("h", event.tags)
-  const shouldProtect = canEnforceNip70(url)
+  const goal = reader(ZapGoal)(event)
 
-  const deleteReaction = async (event: TrustedEvent) =>
-    publishDelete({relays: [url], event, protect: await shouldProtect})
+  const h = goal.room()
 
-  const createReaction = async (template: EventContent) =>
-    publishReaction({...template, event, relays: [url], protect: await shouldProtect})
+  const deleteReaction = (reaction: TrustedEvent) => retractReaction(reaction, {url})
+
+  const createReaction = (values: EventContent) => publishReaction(event, values, {url})
 </script>
 
 <div class="flex grow flex-wrap justify-end gap-2">

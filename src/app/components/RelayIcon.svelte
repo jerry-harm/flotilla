@@ -1,7 +1,7 @@
 <script lang="ts">
-  import {deriveRelay} from "@welshman/app"
   import RemoteControllerMinimalistic from "@assets/icons/remote-controller-minimalistic.svg?dataurl"
   import ImageIcon from "@lib/components/ImageIcon.svelte"
+  import {relays} from "@app/core"
 
   type Props = {
     url: string
@@ -11,7 +11,7 @@
 
   const {url, size = 7, ...props}: Props = $props()
 
-  const relay = deriveRelay(url)
+  const relay = $relays.one(url)
 </script>
 
 {#if $relay?.icon}

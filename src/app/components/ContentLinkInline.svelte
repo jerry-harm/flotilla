@@ -1,6 +1,6 @@
 <script lang="ts">
   import {displayUrl} from "@welshman/lib"
-  import {getTagValue} from "@welshman/util"
+  import {tagSpec, tagValue} from "@welshman/util"
   import {preventDefault, stopPropagation} from "@lib/html"
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -12,7 +12,7 @@
   const {value, event} = $props()
 
   const url = value.url.toString()
-  const fileType = getTagValue("file-type", event.tags) || ""
+  const fileType = tagValue(tagSpec("file-type"), event.tags) || ""
 
   const expand = () => pushModal(ContentLinkDetail, {value, event}, {fullscreen: true})
 </script>

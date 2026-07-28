@@ -1,17 +1,16 @@
-import {derived, get} from "svelte/store"
-import {not, ifLet, sample} from "@welshman/lib"
-import {getRelaysFromList, RelayMode} from "@welshman/util"
+import {derived} from "svelte/store"
+import {sample} from "@welshman/lib"
 import {
-  getRelay,
-  setWriteRelays,
-  setReadRelays,
-  setSearchRelays,
-  setMessagingRelays,
-  userRelayList,
-  userSearchRelayList,
-  userMessagingRelayList,
+  MessagingRelayLists,
+  RelayLists,
+  Relays,
+  SearchRelayLists,
+  projectFrom,
+  projection,
+  publish,
 } from "@welshman/app"
-import {hasNip50} from "@app/relays"
+import type {IApp, Projection} from "@welshman/app"
+import {usePlugin} from "@app/core"
 import {DEFAULT_RELAYS, DEFAULT_MESSAGING_RELAYS} from "@app/env"
 
 export type HealthCheckContext = {
@@ -29,80 +28,106 @@ export type HealthCheck = {
   apply: (context: HealthCheckContext) => unknown
 }
 
-export const healthCheckContext = derived(
-  [userRelayList, userSearchRelayList, userMessagingRelayList],
-  ([$userRelayList, $userSearchRelayList, $userMessagingRelayList]) => {
-    return {
-      readRelays: getRelaysFromList($userRelayList, RelayMode.Read),
-      writeRelays: getRelaysFromList($userRelayList, RelayMode.Write),
-      searchRelays: getRelaysFromList($userSearchRelayList),
-      messagingRelays: getRelaysFromList($userMessagingRelayList),
-    }
-  },
-)
+export class HealthChecks {
+  context: Projection<HealthCheckContext>
+  pending: Projection<HealthCheck[]>
 
-const healthChecks: HealthCheck[] = [
-  {
-    title: "Missing Inbox Relays",
-    description: "Other people aren't currently able to reliably tag you in public notes.",
-    action: "Update",
-    isPending: context => context.readRelays.length <= 1,
-    apply: () => setReadRelays(DEFAULT_RELAYS),
-  },
-  {
-    title: "Missing Outbox Relays",
-    description: "Other people aren't currently able to reliably find your public notes.",
-    action: "Update",
-    isPending: context => context.writeRelays.length <= 1,
-    apply: () => setWriteRelays(DEFAULT_RELAYS),
-  },
-  {
-    title: "Missing DM Relays",
-    description: "You aren't currently able to reliably send or receive direct messages.",
-    action: "Update",
-    isPending: context => context.messagingRelays.length <= 1,
-    apply: () => setMessagingRelays(DEFAULT_MESSAGING_RELAYS),
-  },
-  {
-    title: "Too Many Inbox Relays",
-    description:
-      "You have more inbox relays than is really necessary, which can affect resource usage.",
-    action: "Prune Selections",
-    isPending: context => context.readRelays.length > 8,
-    apply: context => setReadRelays(sample(5, context.readRelays)),
-  },
-  {
-    title: "Too Many Outbox Relays",
-    description:
-      "You have more outbox relays than is really necessary, which can affect resource usage.",
-    action: "Prune Selections",
-    isPending: context => context.writeRelays.length > 8,
-    apply: context => setWriteRelays(sample(5, context.writeRelays)),
-  },
-  {
-    title: "Too Many DM Relays",
-    description:
-      "You have more DM relays than is really necessary, which can affect resource usage.",
-    action: "Prune Selections",
-    isPending: context => context.messagingRelays.length > 8,
-    apply: context => setMessagingRelays(sample(5, context.messagingRelays)),
-  },
-  {
-    title: "Invalid Search Relays",
-    description: "Some of your search relays don't support search.",
-    action: "Remove Invalid",
-    isPending: context => context.searchRelays.some(url => not(ifLet(getRelay(url), hasNip50))),
-    apply: context =>
-      setSearchRelays(context.searchRelays.filter(url => ifLet(getRelay(url), hasNip50))),
-  },
-]
+  constructor(private readonly app: IApp) {
+    const pubkey = app.user?.pubkey ?? ""
 
-export const isHealthCheckPending = (healthCheck: HealthCheck) =>
-  healthCheck.isPending(get(healthCheckContext))
+    this.context = projection(
+      derived(
+        [
+          app.use(RelayLists).index.$,
+          app.use(SearchRelayLists).index.$,
+          app.use(MessagingRelayLists).index.$,
+        ],
+        ([$relayLists, $searchRelayLists, $messagingRelayLists]) => {
+          const relayList = $relayLists.get(pubkey)
 
-export const applyHealthCheck = (healthCheck: HealthCheck) =>
-  healthCheck.apply(get(healthCheckContext))
+          return {
+            readRelays: relayList?.readUrls() ?? [],
+            writeRelays: relayList?.writeUrls() ?? [],
+            searchRelays: $searchRelayLists.get(pubkey)?.urls() ?? [],
+            messagingRelays: $messagingRelayLists.get(pubkey)?.urls() ?? [],
+          }
+        },
+      ),
+    )
 
-export const pendingHealthChecks = derived(healthCheckContext, ctx =>
-  healthChecks.filter(hc => hc.isPending(ctx)),
-)
+    this.pending = projectFrom(this.context, $context =>
+      this.checks.filter(check => check.isPending($context)),
+    )
+  }
+
+  private supportsSearch = (url: string) => this.app.use(Relays).get(url)?.hasNip(50)
+
+  private checks: HealthCheck[] = [
+    {
+      title: "Missing Inbox Relays",
+      description: "Other people aren't currently able to reliably tag you in public notes.",
+      action: "Update",
+      isPending: context => context.readRelays.length <= 1,
+      apply: () => this.app.use(RelayLists).setReadUrls(DEFAULT_RELAYS).then(publish),
+    },
+    {
+      title: "Missing Outbox Relays",
+      description: "Other people aren't currently able to reliably find your public notes.",
+      action: "Update",
+      isPending: context => context.writeRelays.length <= 1,
+      apply: () => this.app.use(RelayLists).setWriteUrls(DEFAULT_RELAYS).then(publish),
+    },
+    {
+      title: "Missing DM Relays",
+      description: "You aren't currently able to reliably send or receive direct messages.",
+      action: "Update",
+      isPending: context => context.messagingRelays.length <= 1,
+      apply: () =>
+        this.app.use(MessagingRelayLists).setUrls(DEFAULT_MESSAGING_RELAYS).then(publish),
+    },
+    {
+      title: "Too Many Inbox Relays",
+      description:
+        "You have more inbox relays than is really necessary, which can affect resource usage.",
+      action: "Prune Selections",
+      isPending: context => context.readRelays.length > 8,
+      apply: context =>
+        this.app.use(RelayLists).setReadUrls(sample(5, context.readRelays)).then(publish),
+    },
+    {
+      title: "Too Many Outbox Relays",
+      description:
+        "You have more outbox relays than is really necessary, which can affect resource usage.",
+      action: "Prune Selections",
+      isPending: context => context.writeRelays.length > 8,
+      apply: context =>
+        this.app.use(RelayLists).setWriteUrls(sample(5, context.writeRelays)).then(publish),
+    },
+    {
+      title: "Too Many DM Relays",
+      description:
+        "You have more DM relays than is really necessary, which can affect resource usage.",
+      action: "Prune Selections",
+      isPending: context => context.messagingRelays.length > 8,
+      apply: context =>
+        this.app.use(MessagingRelayLists).setUrls(sample(5, context.messagingRelays)).then(publish),
+    },
+    {
+      title: "Invalid Search Relays",
+      description: "Some of your search relays don't support search.",
+      action: "Remove Invalid",
+      isPending: context => context.searchRelays.some(url => !this.supportsSearch(url)),
+      apply: context =>
+        this.app
+          .use(SearchRelayLists)
+          .setUrls(context.searchRelays.filter(this.supportsSearch))
+          .then(publish),
+    },
+  ]
+
+  isPending = (healthCheck: HealthCheck) => healthCheck.isPending(this.context.get())
+
+  apply = (healthCheck: HealthCheck) => healthCheck.apply(this.context.get())
+}
+
+export const healthChecks = usePlugin(HealthChecks)

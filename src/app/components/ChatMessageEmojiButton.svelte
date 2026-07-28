@@ -1,25 +1,23 @@
 <script lang="ts">
   import type {NativeEmoji} from "emoji-picker-element/shared"
   import type {TrustedEvent} from "@welshman/util"
-  import {sendWrapped} from "@welshman/app"
   import SmileCircle from "@assets/icons/smile-circle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import EmojiButton from "@lib/components/EmojiButton.svelte"
-  import {makeReaction} from "@app/reactions"
+  import {reactions, wraps} from "@app/core"
 
-  interface Props {
+  type Props = {
     event: TrustedEvent
     pubkeys: string[]
   }
 
   const {event, pubkeys}: Props = $props()
 
-  const onEmoji = (emoji: NativeEmoji) =>
-    sendWrapped({
-      event: makeReaction({event, content: emoji.unicode, protect: false}),
-      recipients: pubkeys,
-      pow: 16,
-    })
+  const onEmoji = async (emoji: NativeEmoji) => {
+    const reaction = await $reactions.react(event, emoji.unicode)
+
+    return $wraps.publish({event: reaction.event, recipients: pubkeys, pow: 16})
+  }
 </script>
 
 <EmojiButton {onEmoji} class="button button-neutral button-xs join-item">

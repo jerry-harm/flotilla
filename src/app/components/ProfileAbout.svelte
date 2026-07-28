@@ -1,7 +1,7 @@
 <script lang="ts">
   import {removeUndefined} from "@welshman/lib"
-  import {deriveProfile} from "@welshman/app"
   import ContentMinimal from "@app/components/ContentMinimal.svelte"
+  import {profiles} from "@app/core"
 
   export type Props = {
     pubkey: string
@@ -11,9 +11,9 @@
 
   const {pubkey, url, singleLine}: Props = $props()
 
-  const profile = deriveProfile(pubkey, removeUndefined([url]))
+  const profile = $profiles.one(pubkey, removeUndefined([url]))
 </script>
 
 {#if $profile}
-  <ContentMinimal event={{content: $profile.about || "", tags: []}} {singleLine} />
+  <ContentMinimal event={{content: $profile.about() || "", tags: []}} {singleLine} />
 {/if}

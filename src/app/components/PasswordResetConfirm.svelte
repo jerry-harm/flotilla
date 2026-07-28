@@ -1,7 +1,5 @@
 <script lang="ts">
   import {Client} from "@pomade/core"
-  import {session} from "@welshman/app"
-  import type {SessionPomade} from "@welshman/app"
   import {preventDefault} from "@lib/html"
   import Key from "@assets/icons/key.svg?dataurl"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
@@ -19,6 +17,8 @@
   import {loginWithPomade, deleteCurrentPomadeSession} from "@app/pomade"
   import {clearModals} from "@app/modal"
   import {pushToast} from "@app/toast"
+  import {session} from "@app/core"
+  import {requirePomadeSession} from "@app/pomade"
 
   type Props = {
     userSecret: string
@@ -26,7 +26,7 @@
 
   const {userSecret}: Props = $props()
 
-  const {email} = $session as SessionPomade
+  const {email} = requirePomadeSession($session).data
 
   const back = () => history.back()
 

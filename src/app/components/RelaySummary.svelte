@@ -1,13 +1,13 @@
 <script lang="ts">
   import {remove} from "@welshman/lib"
-  import {pubkey} from "@welshman/app"
   import CheckCircle from "@assets/icons/check-circle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import RelayName from "@app/components/RelayName.svelte"
   import RelayIcon from "@app/components/RelayIcon.svelte"
   import RelayDescription from "@app/components/RelayDescription.svelte"
   import ProfileCircles from "@app/components/ProfileCircles.svelte"
-  import {deriveGroupListPubkeys, deriveUserRooms} from "@app/groups"
+  import {roomLists, user} from "@app/core"
+  import {deriveUserRooms} from "@app/rooms"
 
   type Props = {
     url: string
@@ -16,8 +16,8 @@
 
   const {url, hideFavorites}: Props = $props()
   const rooms = deriveUserRooms(url)
-  const favorited = deriveGroupListPubkeys(url)
-  const favoritedPubkeys = $derived(remove($pubkey!, Array.from($favorited)))
+  const favorited = $roomLists.pubkeysForUrl(url).$
+  const favoritedPubkeys = $derived(remove($user.pubkey, $favorited))
 </script>
 
 <div class="flex flex-col gap-4 text-left">

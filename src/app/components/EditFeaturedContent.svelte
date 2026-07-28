@@ -31,7 +31,8 @@
     loading = true
 
     try {
-      const error = await setFeaturedContent(url, content)
+      const thunk = await setFeaturedContent(url, content)
+      const error = await thunk.waitForError()
 
       if (error) {
         pushToast({theme: "error", message: error})
@@ -39,6 +40,9 @@
         pushToast({message: "Featured content updated!"})
         back()
       }
+    } catch (e) {
+      console.error(e)
+      pushToast({theme: "error", message: "Failed to update featured content."})
     } finally {
       loading = false
     }

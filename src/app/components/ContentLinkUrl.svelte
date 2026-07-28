@@ -1,28 +1,28 @@
 <script lang="ts">
   import {call, displayUrl} from "@welshman/lib"
   import {displayRelayUrl, isRelayUrl, normalizeRelayUrl} from "@welshman/util"
+  import {splitRoomKey} from "@welshman/app"
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Link from "@lib/components/Link.svelte"
   import RoomName from "@app/components/RoomName.svelte"
   import {PLATFORM_URL} from "@app/env"
-  import {isRoomId, splitRoomId} from "@app/groups"
+  import {isRoomId} from "@app/rooms"
   import {makeRoomPath, makeSpacePath} from "@app/routes"
 
-  const {
-    url,
-    class: className = "",
-  }: {
+  type Props = {
     url: string
     class?: string
-  } = $props()
+  }
+
+  const {url, class: className = ""}: Props = $props()
 
   const roomReference = call(() => {
     if (!isRoomId(url)) {
       return undefined
     }
 
-    const [roomUrl, h] = splitRoomId(url)
+    const [roomUrl, h] = splitRoomKey(url)
 
     if (!roomUrl || !h || !isRelayUrl(roomUrl)) {
       return undefined

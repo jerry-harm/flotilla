@@ -3,13 +3,12 @@
   import * as nip19 from "nostr-tools/nip19"
   import {page} from "$app/stores"
   import {goto} from "$app/navigation"
-  import {sleep} from "@welshman/lib"
+  import {sleep, spec} from "@welshman/lib"
   import type {MakeNonOptional} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {COMMENT, getTagValue} from "@welshman/util"
-  import {repository} from "@welshman/app"
+  import {deriveEventsAsc} from "@welshman/store"
+  import {COMMENT, tagValue, tagSpec} from "@welshman/util"
   import {request} from "@welshman/net"
-  import {deriveEventsById, deriveEventsAsc} from "@welshman/store"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import PageContent from "@lib/components/PageContent.svelte"
@@ -21,7 +20,7 @@
   import ThreadPagination from "@app/components/ThreadPagination.svelte"
   import EventReply from "@app/components/EventReply.svelte"
   import RoomName from "@app/components/RoomName.svelte"
-  import {deriveEvent} from "@app/repository"
+  import {deriveEvent, deriveEventsById} from "@app/repository"
   import {decodeRelay} from "@app/relays"
   import {makeSpacePath, scrollToEvent} from "@app/routes"
 
@@ -31,7 +30,7 @@
   const url = decodeRelay(relay)
   const event = deriveEvent(id, [url])
   const filters = [{kinds: [COMMENT], "#E": [id]}]
-  const replies = deriveEventsAsc(deriveEventsById({filters, repository}))
+  const replies = deriveEventsAsc(deriveEventsById(filters))
 
   const back = () => history.back()
 
@@ -42,7 +41,7 @@
   })
 
   const replyCount = $derived(Math.max(0, posts.length - 1))
-  const h = $derived(getTagValue("h", $event?.tags || []))
+  const h = $derived(tagValue(tagSpec("h"), $event?.tags || []))
 
   const pageCount = $derived(Math.max(1, Math.ceil(posts.length / POSTS_PER_PAGE)))
 
@@ -121,7 +120,7 @@
       return
     }
 
-    const index = posts.findIndex(post => post.id === eventId)
+    const index = posts.findIndex(spec({id: eventId}))
 
     if (index < 0) return
 
@@ -151,7 +150,7 @@
   {#snippet title()}
     <div class="flex min-w-0 flex-col gap-0.5">
       <h1 class="truncate min-w-0 font-bold sm:text-xl">
-        {getTagValue("title", $event?.tags || []) || ""}
+        {tagValue(tagSpec("title"), $event?.tags || []) || ""}
       </h1>
       <p class="text-xs opacity-75">
         {replyCount}

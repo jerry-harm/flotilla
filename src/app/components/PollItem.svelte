@@ -1,6 +1,6 @@
 <script lang="ts">
   import type {TrustedEvent} from "@welshman/util"
-  import {getTagValue} from "@welshman/util"
+  import {tagSpec, tagValue} from "@welshman/util"
   import Link from "@lib/components/Link.svelte"
   import NoteContent from "@app/components/NoteContent.svelte"
   import PollActions from "@app/components/PollActions.svelte"
@@ -15,7 +15,7 @@
 
   const {url, event}: Props = $props()
 
-  const h = getTagValue("h", event.tags)
+  const h = tagValue(tagSpec("h"), event.tags)
 </script>
 
 <Link

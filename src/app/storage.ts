@@ -1,5 +1,10 @@
-import {on, throttle, indexBy, fromPairs, batch, call} from "@welshman/lib"
-import {throttled} from "@welshman/store"
+import {writable} from "svelte/store"
+import type {Unsubscriber} from "svelte/store"
+import {deleteDB} from "idb"
+import {SecureStorage} from "@aparajita/capacitor-secure-storage"
+import {Preferences} from "@capacitor/preferences"
+import {noop, on, throttle, batch, call} from "@welshman/lib"
+import type {Maybe} from "@welshman/lib"
 import {
   ALERT_ANDROID,
   ALERT_EMAIL,
@@ -23,33 +28,21 @@ import {
   ROOM_MEMBERS,
   ROOM_ADMINS,
   ROOM_META,
+  ROOM_PINS,
   ROOM_DELETE,
   ROOM_REMOVE_MEMBER,
   ROOMS,
   verifiedSymbol,
 } from "@welshman/util"
-import type {Zapper, TrustedEvent, RelayProfile} from "@welshman/util"
+import type {Handle, TrustedEvent} from "@welshman/util"
+import {withGetter} from "@welshman/store"
 import type {RepositoryUpdate, WrapItem} from "@welshman/net"
-import type {Handle, RelayStats} from "@welshman/app"
-import {
-  tracker,
-  plaintext,
-  repository,
-  relaysByUrl,
-  relayStatsByUrl,
-  onRelayStats,
-  handlesByNip05,
-  zappersByLnurl,
-  onZapper,
-  onHandle,
-  wrapManager,
-  onRelay,
-} from "@welshman/app"
-import type {Unsubscriber} from "svelte/store"
-import {SecureStorage} from "@aparajita/capacitor-secure-storage"
-import {Preferences} from "@capacitor/preferences"
+import {Relay, Zapper} from "@welshman/domain"
+import type {RelayInfo, ZapperValues} from "@welshman/domain"
+import {Handles, Plaintext, Relays, RelayStats, User, Zappers} from "@welshman/app"
+import type {AppPolicy, IApp, RelayStatsItem} from "@welshman/app"
 import {IDB} from "@lib/indexeddb"
-import {ROOM_PINS} from "@app/pins"
+import {appPolicies} from "@app/core"
 
 export const kv = call(() => {
   let p = Promise.resolve()
@@ -119,20 +112,16 @@ export const ss = call(() => {
   return {get, set, clear}
 })
 
-export const db = new IDB({
-  name: "flotilla-9gl",
-  version: 1,
-  stores: [
-    {name: "events", keyPath: "id"},
-    {name: "tracker", keyPath: "id"},
-    {name: "relays", keyPath: "url"},
-    {name: "relayStats", keyPath: "url"},
-    {name: "handles", keyPath: "nip05"},
-    {name: "zappers", keyPath: "lnurl"},
-    {name: "plaintext", keyPath: "key"},
-    {name: "wrapManager", keyPath: "id"},
-  ],
-})
+const TABLES = [
+  {name: "events", keyPath: "id"},
+  {name: "tracker", keyPath: "id"},
+  {name: "relays", keyPath: "url"},
+  {name: "relayStats", keyPath: "url"},
+  {name: "handles", keyPath: "nip05"},
+  {name: "zappers", keyPath: "lnurl"},
+  {name: "plaintext", keyPath: "key"},
+  {name: "wrapManager", keyPath: "id"},
+]
 
 const FLUSH_INTERVAL = 3000
 
@@ -170,255 +159,309 @@ type TrackerItem = {id: string; relays: string[]}
 
 type PlaintextItem = {key: string; value: string}
 
-const loadCriticalEvents = async () => {
-  const table = db.table<TrustedEvent>("events")
-  const initialEvents = await table.getAll()
-  const keep: TrustedEvent[] = []
-  const drop: string[] = []
+/**
+ * Caches an app's repository, tracker and local collections in indexeddb. Everything stored
+ * here belongs to a single identity, so each gets its own database, named for the pubkey the
+ * policy below requires before it builds one.
+ */
+class Storage {
+  ready: Promise<void>
 
-  for (const event of initialEvents) {
-    if (shouldPersistEvent(event)) {
-      event[verifiedSymbol] = true
-      keep.push(event)
+  private db: IDB
+  private unsubscribers: Unsubscriber[] = []
+  private timeouts: ReturnType<typeof setTimeout>[] = []
+  private stopped = false
+
+  constructor(private readonly app: IApp) {
+    // Every identity used to share one database; drop it rather than leave it on disk.
+    void deleteDB("flotilla-9gl")
+
+    this.db = new IDB({name: `flotilla-9gl-${User.require(app).pubkey}`, stores: TABLES})
+    this.ready = this.start()
+  }
+
+  close = () => this.db.close()
+
+  clear = () => this.db.clear()
+
+  cleanup = () => {
+    this.stopped = true
+    this.timeouts.forEach(clearTimeout)
+    this.unsubscribers.forEach(call)
+    this.close()
+  }
+
+  private start = async () => {
+    await this.db.connect()
+
+    const [, unsubscribeRelays] = await Promise.all([this.loadCriticalEvents(), this.initRelays()])
+
+    await this.loadCriticalTracker()
+
+    this.addUnsubscriber(this.syncEvents())
+    this.addUnsubscriber(this.syncTracker())
+    this.addUnsubscriber(unsubscribeRelays)
+
+    const defer = (init: () => Promise<Unsubscriber>) => {
+      this.timeouts.push(
+        setTimeout(async () => {
+          if (!this.stopped) {
+            this.addUnsubscriber(await init())
+          }
+        }, 0),
+      )
+    }
+
+    defer(this.initRelayStats)
+    defer(this.initHandles)
+    defer(this.initZappers)
+    defer(this.initPlaintext)
+    defer(this.initWrapManager)
+  }
+
+  private addUnsubscriber = (unsubscriber: Unsubscriber) => {
+    if (this.stopped) {
+      unsubscriber()
     } else {
-      drop.push(event.id)
+      this.unsubscribers.push(unsubscriber)
     }
   }
 
-  repository.load(keep)
+  private loadCriticalEvents = async () => {
+    const table = this.db.table<TrustedEvent>("events")
+    const initialEvents = await table.getAll()
+    const keep: TrustedEvent[] = []
+    const drop: string[] = []
 
-  if (drop.length > 0) {
-    void table.bulkDelete(drop)
+    for (const event of initialEvents) {
+      if (shouldPersistEvent(event)) {
+        event[verifiedSymbol] = true
+        keep.push(event)
+      } else {
+        drop.push(event.id)
+      }
+    }
+
+    this.app.repository.load(keep)
+
+    if (drop.length > 0) {
+      void table.bulkDelete(drop)
+    }
   }
-}
 
-const syncEvents = () => {
-  const table = db.table<TrustedEvent>("events")
+  private syncEvents = () => {
+    const table = this.db.table<TrustedEvent>("events")
 
-  return on(
-    repository,
-    "update",
-    batch(3000, async (updates: RepositoryUpdate[]) => {
-      const add: TrustedEvent[] = []
-      const remove = new Set<string>()
+    return on(
+      this.app.repository,
+      "update",
+      batch(3000, async (updates: RepositoryUpdate[]) => {
+        const add: TrustedEvent[] = []
+        const remove = new Set<string>()
 
-      for (const update of updates) {
-        for (const event of update.added) {
-          if (shouldPersistEvent(event)) {
-            add.push(event)
-            remove.delete(event.id)
+        for (const update of updates) {
+          for (const event of update.added) {
+            if (shouldPersistEvent(event)) {
+              add.push(event)
+              remove.delete(event.id)
+            }
+          }
+
+          for (const id of update.removed) {
+            remove.add(id)
           }
         }
 
-        for (const id of update.removed) {
-          remove.add(id)
+        if (add.length > 0) {
+          await table.bulkPut(add)
         }
+
+        if (remove.size > 0) {
+          await table.bulkDelete(remove)
+        }
+      }),
+    )
+  }
+
+  private loadCriticalTracker = async () => {
+    const table = this.db.table<TrackerItem>("tracker")
+    const relaysById = new Map<string, Set<string>>()
+    const stale: string[] = []
+
+    for (const {id, relays} of await table.getAll()) {
+      if (this.app.repository.getEvent(id)) {
+        relaysById.set(id, new Set(relays))
+      } else {
+        stale.push(id)
+      }
+    }
+
+    this.app.tracker.load(relaysById)
+
+    if (stale.length > 0) {
+      void table.bulkDelete(stale)
+    }
+  }
+
+  private syncTracker = () => {
+    const table = this.db.table<TrackerItem>("tracker")
+
+    const _onAdd = async (ids: Iterable<string>) => {
+      const items: TrackerItem[] = []
+
+      for (const id of ids) {
+        const event = this.app.repository.getEvent(id)
+
+        if (!event || !shouldPersistEvent(event)) continue
+
+        const relays = Array.from(this.app.tracker.getRelays(id))
+
+        if (relays.length === 0) continue
+
+        items.push({id, relays})
       }
 
-      if (add.length > 0) {
-        await table.bulkPut(add)
+      await table.bulkPut(items)
+    }
+
+    const _onRemove = async (ids: Iterable<string>) => {
+      await table.bulkDelete(Array.from(ids))
+    }
+
+    const onAdd = batch(3000, _onAdd)
+    const onRemove = batch(3000, _onRemove)
+    const onLoad = () => _onAdd(this.app.tracker.relaysById.keys())
+    const onClear = () => _onRemove(this.app.tracker.relaysById.keys())
+
+    this.app.tracker.on("add", onAdd)
+    this.app.tracker.on("remove", onRemove)
+    this.app.tracker.on("load", onLoad)
+    this.app.tracker.on("clear", onClear)
+
+    return () => {
+      this.app.tracker.off("add", onAdd)
+      this.app.tracker.off("remove", onRemove)
+      this.app.tracker.off("load", onLoad)
+      this.app.tracker.off("clear", onClear)
+    }
+  }
+
+  private initRelays = async () => {
+    const table = this.db.table<RelayInfo & {url: string}>("relays")
+
+    for (const row of await table.getAll()) {
+      this.app.use(Relays).set(row.url, new Relay(row.url, row))
+    }
+
+    const enqueue = batch(
+      FLUSH_INTERVAL,
+      idleWrite((relays: Relay[]) => table.bulkPut(relays.map(relay => ({...relay})))),
+    )
+
+    return this.app.use(Relays).onItem((_url, relay) => {
+      if (relay) enqueue(relay)
+    })
+  }
+
+  private initRelayStats = async () => {
+    const table = this.db.table<RelayStatsItem>("relayStats")
+
+    for (const row of await table.getAll()) {
+      this.app.use(RelayStats).set(row.url, row)
+    }
+
+    const enqueue = batch(FLUSH_INTERVAL, idleWrite(table.bulkPut))
+
+    return this.app.use(RelayStats).onItem((_url, stats) => {
+      if (stats) enqueue(stats)
+    })
+  }
+
+  private initHandles = async () => {
+    const table = this.db.table<Handle>("handles")
+
+    for (const row of await table.getAll()) {
+      this.app.use(Handles).set(row.nip05, row)
+    }
+
+    const enqueue = batch(FLUSH_INTERVAL, idleWrite(table.bulkPut))
+
+    return this.app.use(Handles).onItem((_nip05, handle) => {
+      if (handle) enqueue(handle)
+    })
+  }
+
+  private initZappers = async () => {
+    const table = this.db.table<ZapperValues>("zappers")
+
+    for (const row of await table.getAll()) {
+      // Validation is meaningless without these, and rows cached before they were required
+      // won't have them.
+      if (row.pubkey && row.nostrPubkey) {
+        this.app.use(Zappers).set(row.lnurl, new Zapper(row))
       }
-
-      if (remove.size > 0) {
-        await table.bulkDelete(remove)
-      }
-    }),
-  )
-}
-
-const loadCriticalTracker = async () => {
-  const table = db.table<TrackerItem>("tracker")
-  const relaysById = new Map<string, Set<string>>()
-  const stale: string[] = []
-
-  for (const {id, relays} of await table.getAll()) {
-    if (!repository.getEvent(id)) {
-      stale.push(id)
-      continue
     }
 
-    relaysById.set(id, new Set(relays))
+    const enqueue = batch(
+      FLUSH_INTERVAL,
+      idleWrite((zappers: Zapper[]) => table.bulkPut(zappers.map(zapper => ({...zapper})))),
+    )
+
+    return this.app.use(Zappers).onItem((_lnurl, zapper) => {
+      if (zapper) enqueue(zapper)
+    })
   }
 
-  tracker.load(relaysById)
+  private initPlaintext = async () => {
+    const table = this.db.table<PlaintextItem>("plaintext")
 
-  if (stale.length > 0) {
-    void table.bulkDelete(stale)
-  }
-}
-
-const syncTracker = () => {
-  const table = db.table<TrackerItem>("tracker")
-
-  const _onAdd = async (ids: Iterable<string>) => {
-    const items: TrackerItem[] = []
-
-    for (const id of ids) {
-      const event = repository.getEvent(id)
-
-      if (!event || !shouldPersistEvent(event)) continue
-
-      const relays = Array.from(tracker.getRelays(id))
-
-      if (relays.length === 0) continue
-
-      items.push({id, relays})
+    for (const {key, value} of await table.getAll()) {
+      this.app.use(Plaintext).set(key, value)
     }
 
-    await table.bulkPut(items)
+    const enqueue = batch(FLUSH_INTERVAL, idleWrite(table.bulkPut))
+
+    return this.app.use(Plaintext).onItem((key, value) => {
+      if (value) enqueue({key, value})
+    })
   }
 
-  const _onRemove = async (ids: Iterable<string>) => {
-    await table.bulkDelete(Array.from(ids))
-  }
+  private initWrapManager = async () => {
+    const table = this.db.table<WrapItem>("wrapManager")
 
-  const onAdd = batch(3000, _onAdd)
-  const onRemove = batch(3000, _onRemove)
-  const onLoad = () => _onAdd(tracker.relaysById.keys())
-  const onClear = () => _onRemove(tracker.relaysById.keys())
+    this.app.wrapManager.load(await table.getAll())
 
-  tracker.on("add", onAdd)
-  tracker.on("remove", onRemove)
-  tracker.on("load", onLoad)
-  tracker.on("clear", onClear)
+    const addOne = batch(3000, table.bulkPut)
+    const removeOne = throttle(3000, table.bulkDelete)
 
-  return () => {
-    tracker.off("add", onAdd)
-    tracker.off("remove", onRemove)
-    tracker.off("load", onLoad)
-    tracker.off("clear", onClear)
-  }
-}
+    this.app.wrapManager.on("add", addOne)
+    this.app.wrapManager.on("remove", removeOne)
 
-const loadCriticalRelays = async () => {
-  const table = db.table<RelayProfile>("relays")
-
-  relaysByUrl.set(indexBy(r => r.url, await table.getAll()))
-}
-
-const syncRelays = () =>
-  onRelay(batch(FLUSH_INTERVAL, idleWrite(db.table<RelayProfile>("relays").bulkPut)))
-
-const initRelayStats = async () => {
-  const table = db.table<RelayStats>("relayStats")
-
-  relayStatsByUrl.set(indexBy(r => r.url, await table.getAll()))
-
-  return onRelayStats(batch(FLUSH_INTERVAL, idleWrite(table.bulkPut)))
-}
-
-const initHandles = async () => {
-  const table = db.table<Handle>("handles")
-
-  handlesByNip05.set(indexBy(r => r.nip05, await table.getAll()))
-
-  return onHandle(batch(FLUSH_INTERVAL, idleWrite(table.bulkPut)))
-}
-
-const initZappers = async () => {
-  const table = db.table<Zapper>("zappers")
-
-  zappersByLnurl.set(indexBy(z => z.lnurl, await table.getAll()))
-
-  return onZapper(batch(FLUSH_INTERVAL, idleWrite(table.bulkPut)))
-}
-
-const initPlaintext = async () => {
-  const table = db.table<PlaintextItem>("plaintext")
-  const initialRecords = await table.getAll()
-
-  plaintext.set(fromPairs(initialRecords.map(({key, value}) => [key, value])))
-
-  return throttled(3000, plaintext).subscribe($plaintext => {
-    table.bulkPut(Object.entries($plaintext).map(([key, value]) => ({key, value})))
-  })
-}
-
-const initWrapManager = async () => {
-  const table = db.table<WrapItem>("wrapManager")
-
-  wrapManager.load(await table.getAll())
-
-  const addOne = batch(3000, table.bulkPut)
-  const removeOne = throttle(3000, table.bulkDelete)
-
-  wrapManager.on("add", addOne)
-  wrapManager.on("remove", removeOne)
-
-  return () => {
-    wrapManager.off("add", addOne)
-    wrapManager.off("remove", removeOne)
+    return () => {
+      this.app.wrapManager.off("add", addOne)
+      this.app.wrapManager.off("remove", removeOne)
+    }
   }
 }
 
-type StorageSync = {
-  unsubscribe: Unsubscriber
-  ready: Promise<void>
-}
+// The current app's cache, which only exists once there's an identity to cache for.
+export const storage = withGetter(writable<Maybe<Storage>>(undefined))
 
-export const sync = (): StorageSync => {
-  const unsubscribers: Unsubscriber[] = []
-  const deferredTimers: ReturnType<typeof setTimeout>[] = []
-  let stopped = false
+// Storage is scoped to one app's repository, tracker and caches, so it's built and torn down
+// with the app rather than living on as a module-level singleton.
+export const storagePolicy: AppPolicy = $app => {
+  if ($app.user) {
+    const $storage = new Storage($app)
 
-  const addUnsubscriber = (unsubscriber: Unsubscriber) => {
-    if (stopped) {
-      unsubscriber()
-    } else {
-      unsubscribers.push(unsubscriber)
+    storage.set($storage)
+
+    return () => {
+      $storage.cleanup()
+      storage.set(undefined)
     }
   }
 
-  const scheduleDeferred = (task: () => Promise<void>) => {
-    const timeout = setTimeout(() => {
-      if (stopped) return
-
-      void task()
-    }, 0)
-
-    deferredTimers.push(timeout)
-  }
-
-  const ready = call(async () => {
-    await db.connect()
-
-    await Promise.all([loadCriticalEvents(), loadCriticalRelays()])
-    await loadCriticalTracker()
-
-    addUnsubscriber(syncEvents())
-    addUnsubscriber(syncTracker())
-    addUnsubscriber(syncRelays())
-
-    scheduleDeferred(async () => {
-      addUnsubscriber(await initRelayStats())
-    })
-
-    scheduleDeferred(async () => {
-      addUnsubscriber(await initHandles())
-    })
-
-    scheduleDeferred(async () => {
-      addUnsubscriber(await initZappers())
-    })
-
-    scheduleDeferred(async () => {
-      addUnsubscriber(await initPlaintext())
-    })
-
-    scheduleDeferred(async () => {
-      addUnsubscriber(await initWrapManager())
-    })
-  })
-
-  const unsubscribe = () => {
-    stopped = true
-
-    for (const timeout of deferredTimers) {
-      clearTimeout(timeout)
-    }
-
-    unsubscribers.forEach(unsubscriber => unsubscriber())
-  }
-
-  return {unsubscribe, ready}
+  return noop
 }
+
+appPolicies.push(storagePolicy)

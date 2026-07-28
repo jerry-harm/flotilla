@@ -5,7 +5,7 @@
   import {tryCatch} from "@welshman/lib"
   import {isShareableRelayUrl, isIPAddress, normalizeRelayUrl} from "@welshman/util"
   import type {Thunk} from "@welshman/app"
-  import {waitForThunkError, relaySearch} from "@welshman/app"
+  import {Relays} from "@welshman/app"
   import {createScroller} from "@lib/html"
   import {errorMessage} from "@lib/util"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
@@ -18,6 +18,7 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import RelayItem from "@app/components/RelayItem.svelte"
   import {pushToast} from "@app/toast"
+  import {app} from "@app/core"
 
   interface Props {
     relays: Readable<string[]>
@@ -35,7 +36,8 @@
     loading.add(url)
 
     try {
-      const error = await waitForThunkError(await addRelay(url))
+      const thunk = await addRelay(url)
+      const error = await thunk.waitForError()
 
       if (error) {
         pushToast({
@@ -53,11 +55,12 @@
   let element: Element | undefined = $state()
 
   const loading = $state(new SvelteSet<string>())
+  const relaySearch = $app.use(Relays).relaySearch
 
   const searchResults = $derived(
     $relaySearch
       .searchValues(term)
-      .filter(url => {
+      .filter((url: string) => {
         if (matchRelay?.(url) === false) return false
         if ($relays.includes(url)) return false
         if (isIPAddress(url)) return false

@@ -4,7 +4,6 @@
   import {page} from "$app/stores"
   import {remove, uniq, formatTimestamp} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {pubkey, loadMessagingRelayList} from "@welshman/app"
   import {fade} from "@lib/transition"
   import Button from "@lib/components/Button.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
@@ -12,6 +11,7 @@
   import ProfileCircles from "@app/components/ProfileCircles.svelte"
   import {makeChatPath, goToChat} from "@app/routes"
   import {notifications} from "@app/notifications"
+  import {messagingRelayLists, user} from "@app/core"
 
   interface Props {
     id: string
@@ -22,14 +22,14 @@
 
   const {...props}: Props = $props()
 
-  const others = uniq(remove($pubkey!, props.pubkeys))
+  const others = uniq(remove($user.pubkey, props.pubkeys))
   const active = $derived($page.params.chat === props.id)
   const path = makeChatPath(props.pubkeys)
   const openChat = () => goToChat(props.pubkeys)
 
   onMount(() => {
     for (const pk of others) {
-      loadMessagingRelayList(pk)
+      $messagingRelayLists.load(pk)
     }
   })
 </script>
@@ -46,7 +46,7 @@
       <div class="flex items-center justify-between gap-2">
         <div class="flex min-w-0 items-center gap-2">
           {#if others.length === 0}
-            <ProfileCircle pubkey={$pubkey!} size={5} />
+            <ProfileCircle pubkey={$user.pubkey} size={5} />
             Note to self
           {:else if others.length === 1}
             <ProfileCircle pubkey={others[0]} size={5} />
@@ -66,7 +66,7 @@
       </div>
       <p class="overflow-hidden text-ellipsis whitespace-nowrap text-sm">
         <span class="opacity-70">
-          {#if props.messages[0].pubkey === $pubkey}
+          {#if props.messages[0].pubkey === $user.pubkey}
             You:
           {/if}
         </span>

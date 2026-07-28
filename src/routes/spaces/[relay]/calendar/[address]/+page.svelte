@@ -1,12 +1,11 @@
 <script lang="ts">
+  import {derived} from "svelte/store"
   import {onMount} from "svelte"
   import {page} from "$app/stores"
   import {sortBy, sleep} from "@welshman/lib"
   import type {MakeNonOptional} from "@welshman/lib"
-  import {COMMENT, getTagValue} from "@welshman/util"
-  import {request} from "@welshman/net"
-  import {repository} from "@welshman/app"
-  import {deriveEventsById, deriveEventsAsc} from "@welshman/store"
+  import {COMMENT} from "@welshman/util"
+  import {TimeEvent} from "@welshman/domain"
   import SortVertical from "@assets/icons/sort-vertical.svg?dataurl"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -22,14 +21,16 @@
   import CalendarEventMeta from "@app/components/CalendarEventMeta.svelte"
   import CalendarEventDate from "@app/components/CalendarEventDate.svelte"
   import EventReply from "@app/components/EventReply.svelte"
-  import {deriveEvent} from "@app/repository"
+  import {network, reader} from "@app/core"
+  import {deriveEvent, deriveEvents} from "@app/repository"
   import {decodeRelay} from "@app/relays"
 
   const {relay, address} = $page.params as MakeNonOptional<typeof $page.params>
   const url = decodeRelay(relay)
   const event = deriveEvent(address, [url])
+  const timeEvent = derived(event, $event => ($event ? reader(TimeEvent)($event) : undefined))
   const filters = [{kinds: [COMMENT], "#A": [address]}]
-  const replies = deriveEventsAsc(deriveEventsById({filters, repository}))
+  const replies = deriveEvents(filters)
 
   const back = () => history.back()
 
@@ -51,7 +52,7 @@
   onMount(() => {
     const controller = new AbortController()
 
-    request({relays: [url], filters, signal: controller.signal})
+    $network.request({relays: [url], filters, signal: controller.signal})
 
     return () => {
       controller.abort()
@@ -61,7 +62,7 @@
 
 <SpaceBar {back}>
   {#snippet title()}
-    <h1 class="text-xl">{getTagValue("title", $event?.tags || []) || ""}</h1>
+    <h1 class="text-xl">{$timeEvent?.title() ?? ""}</h1>
   {/snippet}
 </SpaceBar>
 

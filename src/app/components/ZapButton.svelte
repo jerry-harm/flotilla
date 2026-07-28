@@ -1,12 +1,16 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
+  import {ZAP_GOAL} from "@welshman/util"
   import type {TrustedEvent} from "@welshman/util"
-  import {session, loadZapperForPubkey} from "@welshman/app"
+  import {ZapGoal} from "@welshman/domain"
+  import {Zappers} from "@welshman/app"
   import Button from "@lib/components/Button.svelte"
   import Zap from "@app/components/Zap.svelte"
   import ZapInvoice from "@app/components/ZapInvoice.svelte"
   import InfoZapperError from "@app/components/InfoZapperError.svelte"
   import {pushModal} from "@app/modal"
+  import {app, reader} from "@app/core"
+  import {wallet} from "@app/lightning"
 
   type Props = {
     url?: string
@@ -18,7 +22,11 @@
 
   const {url, event, children, replaceState, ...props}: Props = $props()
 
-  const zapperPromise = loadZapperForPubkey(event.pubkey)
+  const goal = event.kind === ZAP_GOAL ? reader(ZapGoal)(event) : undefined
+
+  const zapperPromise = $app.use(Zappers).loadForPubkey(event.pubkey)
+
+  const goalRelays = goal?.urls() ?? []
 
   const onClick = async () => {
     loading = true
@@ -28,10 +36,14 @@
 
       if (!zapper?.allowsNostr) {
         pushModal(InfoZapperError, {url, pubkey: event.pubkey, eventId: event.id}, {replaceState})
-      } else if ($session?.wallet) {
-        pushModal(Zap, {url, pubkey: event.pubkey, eventId: event.id}, {replaceState})
+      } else if ($wallet) {
+        pushModal(Zap, {url, pubkey: event.pubkey, eventId: event.id, goalRelays}, {replaceState})
       } else {
-        pushModal(ZapInvoice, {url, pubkey: event.pubkey, eventId: event.id}, {replaceState})
+        pushModal(
+          ZapInvoice,
+          {url, pubkey: event.pubkey, eventId: event.id, goalRelays},
+          {replaceState},
+        )
       }
     } finally {
       loading = false

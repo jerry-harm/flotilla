@@ -1,11 +1,16 @@
 <script lang="ts">
+  import type {TrustedEvent} from "@welshman/util"
   import {parse, isEmoji, renderAsHtml} from "@welshman/content"
   import Heart from "@assets/icons/heart-angle.svg?dataurl"
   import ThumbsDown from "@assets/icons/dislike.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import ContentEmoji from "@app/components/ContentEmoji.svelte"
 
-  export let event
+  type Props = {
+    event: TrustedEvent
+  }
+
+  const {event}: Props = $props()
 </script>
 
 {#if event.content === "+" || event.content === ""}

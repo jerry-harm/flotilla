@@ -1,5 +1,7 @@
 <script lang="ts">
   import type {TrustedEvent} from "@welshman/util"
+  import type {PinboardReader} from "@welshman/domain"
+  import {Pinboards} from "@welshman/app"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -11,7 +13,8 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import RelayName from "@app/components/RelayName.svelte"
   import PinAdd from "@app/components/PinAdd.svelte"
-  import {deriveBoards, eventToReference, type PublishedBoard} from "@app/pinboards"
+  import {app, relays} from "@app/core"
+  import {eventToReference} from "@app/pinboards"
   import {makeSpacePath} from "@app/routes"
   import {pushModal} from "@app/modal"
 
@@ -22,11 +25,14 @@
 
   const {url, event}: Props = $props()
 
-  const boards = deriveBoards(url)
+  const relay = $relays.one(url)
+
+  const boards = $derived($app.use(Pinboards).forAuthor($relay?.self ?? "").$)
+
   const reference = eventToReference(event)
 
-  const selectBoard = (board: PublishedBoard) =>
-    pushModal(PinAdd, {url, address: board.address, reference})
+  const selectBoard = (board: PinboardReader) =>
+    pushModal(PinAdd, {url, address: board.address(), reference})
 </script>
 
 <Modal class="flex flex-col gap-2">
@@ -43,14 +49,14 @@
         </Link>
       </div>
     {:else}
-      {#each $boards as board (board.address)}
+      {#each $boards as board (board.address())}
         <Button
           class="card card-sm card-interactive flex flex-row items-center justify-between gap-3"
           onclick={() => selectBoard(board)}>
           <span class="flex min-w-0 flex-col">
-            <strong class="truncate min-w-0">{board.title || "Untitled shelf"}</strong>
-            {#if board.description}
-              <span class="truncate min-w-0 text-sm opacity-70">{board.description}</span>
+            <strong class="truncate min-w-0">{board.title() || "Untitled shelf"}</strong>
+            {#if board.description()}
+              <span class="truncate min-w-0 text-sm opacity-70">{board.description()}</span>
             {/if}
           </span>
           <Icon size={4} icon={AltArrowRight} class="shrink-0" />

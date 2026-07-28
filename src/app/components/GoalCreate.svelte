@@ -1,7 +1,7 @@
 <script lang="ts">
   import {writable} from "svelte/store"
-  import {makeEvent, ZAP_GOAL} from "@welshman/util"
-  import {publishThunk, waitForThunkError} from "@welshman/app"
+  import {ZapGoal} from "@welshman/domain"
+  import {publish} from "@welshman/app"
   import {isMobile, preventDefault} from "@lib/html"
   import Paperclip from "@assets/icons/paperclip-2.svg?dataurl"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
@@ -18,11 +18,11 @@
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import EditorContent from "@app/editor/EditorContent.svelte"
+  import {command, relays, writer} from "@app/core"
   import {pushToast} from "@app/toast"
-  import {PROTECTED, publishRoomQuote} from "@app/groups"
+  import {publishRoomQuote} from "@app/rooms"
   import {makeEditor} from "@app/editor"
   import {DraftKey} from "@app/drafts"
-  import {canEnforceNip70} from "@app/relays"
 
   type Values = {
     title: string
@@ -45,7 +45,7 @@
     initialValues = draftKey.get()
   }
 
-  const shouldProtect = canEnforceNip70(url)
+  const shouldProtect = $relays.hasNip(url, 70)
 
   const uploading = writable(false)
 
@@ -73,32 +73,25 @@
       })
     }
 
-    const tags = [
-      ...ed.storage.nostr.getEditorTags(),
-      ["summary", content],
-      ["amount", String(amount)],
-      ["relays", url],
-    ]
-
     loading = true
 
     try {
       const protect = await shouldProtect
-
-      if (protect) {
-        tags.push(PROTECTED)
-      }
+      const eventWriter = writer(ZapGoal)
+        .setTitle(title)
+        .setSummary(content)
+        .setAmount(amount)
+        .setUrls([url])
+        .setProtected(protect)
+        .addTags(...ed.storage.nostr.getEditorTags())
+        .forceRelays(url)
 
       if (h) {
-        tags.push(["h", h])
+        eventWriter.setRoom(url, h)
       }
 
-      const goalThunk = publishThunk({
-        relays: [url],
-        event: makeEvent(ZAP_GOAL, {content: title, tags}),
-      })
-
-      const error = await waitForThunkError(goalThunk)
+      const goalThunk = await command(eventWriter).then(publish)
+      const error = await goalThunk.waitForError()
 
       if (error) {
         return pushToast({theme: "error", message: error})

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import {session} from "@welshman/app"
   import Link from "@lib/components/Link.svelte"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import CheckCircle from "@assets/icons/check-circle.svg?dataurl"
@@ -11,8 +10,10 @@
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import KeyRecoveryRequest from "@app/components/KeyRecoveryRequest.svelte"
+  import {isPomadeSession} from "@app/pomade"
   import {PLATFORM_NAME} from "@app/env"
   import {pushModal} from "@app/modal"
+  import {session} from "@app/core"
 
   const back = () => history.back()
 
@@ -36,7 +37,7 @@
       <strong>public key</strong>, which acts as your user ID, and a
       <strong>private key</strong> which allows you to prove your identity.
     </p>
-    {#if $session?.email}
+    {#if isPomadeSession($session)}
       <p>
         It's very important to keep private keys safe, but this can sometimes be tricky, which is
         why {PLATFORM_NAME}
@@ -47,7 +48,7 @@
       <Button class="button button-primary" onclick={back}>Got it</Button>
     {/if}
   </ModalBody>
-  {#if $session?.email}
+  {#if isPomadeSession($session)}
     <ModalFooter>
       <Button class="button button-link" onclick={back}>
         <Icon icon={AltArrowLeft} />

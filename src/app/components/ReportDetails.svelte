@@ -1,8 +1,6 @@
 <script lang="ts">
   import {REPORT} from "@welshman/util"
   import type {TrustedEvent} from "@welshman/util"
-  import {deriveEventsById} from "@welshman/store"
-  import {repository} from "@welshman/app"
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
@@ -10,6 +8,7 @@
   import ModalBody from "@lib/components/ModalBody.svelte"
   import Button from "@lib/components/Button.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
+  import {deriveEventsById} from "@app/repository"
   import ReportItem from "@app/components/ReportItem.svelte"
 
   type Props = {
@@ -19,10 +18,7 @@
 
   const {url, event}: Props = $props()
 
-  const reports = deriveEventsById({
-    repository,
-    filters: [{kinds: [REPORT], "#e": [event.id]}],
-  })
+  const reports = deriveEventsById([{kinds: [REPORT], "#e": [event.id]}])
 
   const back = () => history.back()
 

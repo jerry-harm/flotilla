@@ -1,19 +1,13 @@
-import {APP_DATA, makeEvent} from "@welshman/util"
-import type {TrustedEvent} from "@welshman/util"
-import {deriveItemsByKey, getter, makeLoadItem, withGetter} from "@welshman/store"
-import {
-  ensurePlaintext,
-  makeOutboxLoader,
-  makeUserData,
-  makeUserLoader,
-  publishThunk,
-  pubkey,
-  repository,
-  signer,
-} from "@welshman/app"
-import {append, parseJson, remove, spec} from "@welshman/lib"
-import {derived, get, writable} from "svelte/store"
-import {Router} from "@welshman/router"
+import {derived, writable} from "svelte/store"
+import {append, remove, spec} from "@welshman/lib"
+import {APP_DATA} from "@welshman/util"
+import {withGetter} from "@welshman/store"
+import {AppData} from "@welshman/domain"
+import type {AppDataReader} from "@welshman/domain"
+import {DerivedPlugin, Domain, Network, User, projectFrom} from "@welshman/app"
+import type {IApp, Projection} from "@welshman/app"
+import {app, fromApp, usePlugin} from "@app/core"
+
 export const SETTINGS = "flotilla/settings"
 
 export enum RelayAuthMode {
@@ -40,11 +34,6 @@ export type SettingsValues = {
   zap_amounts: number[]
 }
 
-export type Settings = {
-  event: TrustedEvent
-  values: SettingsValues
-}
-
 export const defaultSettings: SettingsValues = {
   show_media: true,
   hide_sensitive: true,
@@ -58,46 +47,46 @@ export const defaultSettings: SettingsValues = {
   zap_amounts: [21, 210, 2100, 21000],
 }
 
-export const settingsByPubkey = deriveItemsByKey({
-  repository,
-  getKey: settings => settings.event.pubkey,
-  filters: [{kinds: [APP_DATA], "#d": [SETTINGS]}],
-  eventToItem: async (event: TrustedEvent) => {
-    const values = {...defaultSettings, ...parseJson(await ensurePlaintext(event))}
+export class Settings extends DerivedPlugin<AppDataReader> {
+  values: Projection<SettingsValues>
 
-    return {event, values}
-  },
-})
+  constructor(app: IApp) {
+    super(app, {
+      filters: [{kinds: [APP_DATA], "#d": [SETTINGS]}],
+      eventToItem: app.use(Domain).reader(AppData),
+      getKey: settings => settings.author(),
+    })
 
-export const getSettingsByPubkey = getter(settingsByPubkey)
+    this.values = projectFrom(this.index, $settings => ({
+      ...defaultSettings,
+      ...$settings.get(app.user?.pubkey ?? "")?.values<Partial<SettingsValues>>(),
+    }))
+  }
 
-export const loadSettings = makeLoadItem(
-  makeOutboxLoader(APP_DATA, {"#d": [SETTINGS]}),
-  (pubkey: string) => getSettingsByPubkey().get(pubkey),
-)
+  fetch(pubkey: string) {
+    return this.app.use(Network).loadUsingOutbox(pubkey, {kinds: [APP_DATA], "#d": [SETTINGS]})
+  }
+}
 
-export const userSettings = makeUserData(settingsByPubkey, loadSettings)
+export const settings = usePlugin(Settings)
 
-export const loadUserSettings = makeUserLoader(loadSettings)
-
-export const userSettingsValues = derived(userSettings, $s => $s?.values || defaultSettings)
+export const userSettingsValues = withGetter(fromApp($app => $app.use(Settings).values.$))
 
 export const zapAmounts = derived(userSettingsValues, $settings => $settings.zap_amounts)
 
-export const getSettings = getter(userSettingsValues)
-
-export const getSetting = <T>(key: keyof Settings["values"]) => getSettings()[key] as T
+export const getSetting = <K extends keyof SettingsValues>(key: K) => userSettingsValues.get()[key]
 
 export const getShouldNotify = ({alerts}: SettingsValues, url: string, h?: string) => {
   const pref = alerts.find(spec({url}))
 
   if (!pref) return true
   if (!h) return pref.notify
-  if (pref.notify) return !pref.exceptions.includes(h)
-  if (!pref.notify) return pref.exceptions.includes(h)
+
+  return pref.notify ? !pref.exceptions.includes(h) : pref.exceptions.includes(h)
 }
 
-export const shouldNotify = (url: string, h?: string) => getShouldNotify(getSettings(), url, h)
+export const shouldNotify = (url: string, h?: string) =>
+  getShouldNotify(userSettingsValues.get(), url, h)
 
 export const deriveShouldNotify = (url: string, h?: string) =>
   derived(userSettingsValues, $settings => getShouldNotify($settings, url, h))
@@ -113,55 +102,51 @@ export const notificationSettings = withGetter(
   }),
 )
 
-export const makeSettings = async (params: Partial<SettingsValues>) => {
-  const json = JSON.stringify({...get(userSettingsValues), ...params})
-  const content = await signer.get().nip44.encrypt(pubkey.get()!, json)
-  const tags = [["d", SETTINGS]]
+export const publishSettings = async (params: Partial<SettingsValues>) => {
+  const $app = app.get()
+  const reader = await settings.get().forceLoad(User.require($app).pubkey)
+  const writer = $app
+    .use(Domain)
+    .writer(AppData, reader)
+    .setIdentifier(SETTINGS)
+    .setEncrypted(true)
+    .setValues({...userSettingsValues.get(), ...params})
 
-  return makeEvent(APP_DATA, {content, tags})
+  const command = await $app.use(Domain).command(writer)
+
+  return command.publish()
 }
 
-export const publishSettings = async (params: Partial<SettingsValues>) =>
-  publishThunk({event: await makeSettings(params), relays: Router.get().FromUser().getUrls()})
+export const addTrustedRelay = (url: string) =>
+  publishSettings({trusted_relays: append(url, getSetting("trusted_relays"))})
 
-export const addTrustedRelay = async (url: string) =>
-  publishSettings({trusted_relays: append(url, getSetting<string[]>("trusted_relays"))})
+export const removeTrustedRelay = (url: string) =>
+  publishSettings({trusted_relays: remove(url, getSetting("trusted_relays"))})
 
-export const removeTrustedRelay = async (url: string) =>
-  publishSettings({trusted_relays: remove(url, getSetting<string[]>("trusted_relays"))})
-
-export const setSpaceNotifications = async (url: string, notify: boolean) => {
-  const {alerts} = getSettings()
-  const existing = alerts.find((s: SpaceNotificationSettings) => s.url === url)
-
-  let updated: typeof alerts
+export const setSpaceNotifications = (url: string, notify: boolean) => {
+  const alerts = getSetting("alerts")
+  const existing = alerts.find(spec({url}))
 
   if (existing) {
-    updated = alerts.map((s: SpaceNotificationSettings) =>
-      s.url === url ? {...s, notify, exceptions: []} : s,
-    )
-  } else {
-    updated = [...alerts, {url, notify, exceptions: []}]
+    return publishSettings({
+      alerts: alerts.map(s => (s.url === url ? {...s, notify, exceptions: []} : s)),
+    })
   }
 
-  return publishSettings({alerts: updated})
+  return publishSettings({alerts: [...alerts, {url, notify, exceptions: []}]})
 }
 
-export const toggleRoomNotifications = async (url: string, h: string) => {
-  const {alerts} = getSettings()
-  const existing = alerts.find((s: SpaceNotificationSettings) => s.url === url)
+export const toggleRoomNotifications = (url: string, h: string) => {
+  const alerts = getSetting("alerts")
+  const existing = alerts.find(spec({url}))
 
-  let updated: typeof alerts
-
-  if (!existing) {
-    updated = [...alerts, {url, notify: true, exceptions: [h]}]
-  } else {
+  if (existing) {
     const exceptions = existing.exceptions.includes(h)
       ? remove(h, existing.exceptions)
       : append(h, existing.exceptions)
 
-    updated = alerts.map((s: SpaceNotificationSettings) => (s.url === url ? {...s, exceptions} : s))
+    return publishSettings({alerts: alerts.map(s => (s.url === url ? {...s, exceptions} : s))})
   }
 
-  return publishSettings({alerts: updated})
+  return publishSettings({alerts: [...alerts, {url, notify: true, exceptions: [h]}]})
 }

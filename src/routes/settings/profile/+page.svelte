@@ -2,8 +2,8 @@
   import * as nip19 from "nostr-tools/nip19"
   import {Client} from "@pomade/core"
   import {hexToBytes} from "@welshman/lib"
-  import {displayPubkey, displayProfile} from "@welshman/util"
-  import {pubkey, session, SessionMethod, displayNip05, deriveProfile} from "@welshman/app"
+  import {displayNip05} from "@welshman/util"
+  import {displayPubkey} from "@welshman/domain"
   import {slideAndFade} from "@lib/transition"
   import PenNewSquare from "@assets/icons/pen-new-square.svg?dataurl"
   import UserRounded from "@assets/icons/user-rounded.svg?dataurl"
@@ -21,7 +21,7 @@
   import PageContent from "@lib/components/PageContent.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
-  import ContentMinimal from "@app/components/ContentMinimal.svelte"
+  import ProfileAbout from "@app/components/ProfileAbout.svelte"
   import ProfileEdit from "@app/components/ProfileEdit.svelte"
   import ProfileDelete from "@app/components/ProfileDelete.svelte"
   import SignerStatus from "@app/components/SignerStatus.svelte"
@@ -30,14 +30,20 @@
   import {pushModal} from "@app/modal"
   import {POMADE_NETWORK_ERROR_MESSAGE} from "@app/pomade"
   import {clip, pushToast} from "@app/toast"
+  import {profiles, session, user} from "@app/core"
+  import {isPomadeSession, requirePomadeSession} from "@app/pomade"
 
-  const npub = nip19.npubEncode($pubkey!)
-  const profile = deriveProfile($pubkey!)
-  const pubkeyDisplay = displayPubkey($pubkey!)
+  const npub = nip19.npubEncode($user.pubkey)
+  const profile = $profiles.one($user.pubkey)
+  const pomadeEmail = $derived(isPomadeSession($session) ? $session.data.email : undefined)
+  const nip01Secret = $derived(
+    $session?.method === "nip01" ? (($session.data as {secret: string}).secret ?? "") : undefined,
+  )
+  const pubkeyDisplay = displayPubkey($user.pubkey)
 
   const copyNpub = () => clip(npub)
 
-  const copyNsec = () => clip(nip19.nsecEncode(hexToBytes($session!.secret!)))
+  const copyNsec = () => clip(nip19.nsecEncode(hexToBytes(nip01Secret!)))
 
   const startEdit = () => pushModal(ProfileEdit)
 
@@ -47,7 +53,9 @@
     loading = true
 
     try {
-      const {ok, peersByPrefix} = await Client.requestChallenge($session!.email)
+      const {ok, peersByPrefix} = await Client.requestChallenge(
+        requirePomadeSession($session).data.email,
+      )
 
       if (!ok) {
         console.error("Pomade challenge request failed during password reset initiation")
@@ -84,16 +92,16 @@
     <div class="flex justify-between gap-2">
       <div class="flex max-w-full gap-3">
         <div class="py-1">
-          <ProfileCircle pubkey={$pubkey!} size={10} />
+          <ProfileCircle pubkey={$user.pubkey} size={10} />
         </div>
         <div class="flex min-w-0 flex-col">
           <div class="flex items-center gap-2">
             <div class="text-bold overflow-hidden text-ellipsis">
-              {displayProfile($profile, pubkeyDisplay)}
+              {$profile?.display(pubkeyDisplay) ?? pubkeyDisplay}
             </div>
           </div>
           <div class="overflow-hidden text-ellipsis text-sm opacity-75">
-            {$profile?.nip05 ? displayNip05($profile.nip05) : pubkeyDisplay}
+            {$profile?.nip05() ? displayNip05($profile.nip05()!) : pubkeyDisplay}
           </div>
         </div>
       </div>
@@ -103,12 +111,10 @@
         <Icon icon={PenNewSquare} />
       </Button>
     </div>
-    {#key $profile?.about}
-      <ContentMinimal event={{content: $profile?.about || "", tags: []}} />
-    {/key}
+    <ProfileAbout pubkey={$user.pubkey} />
   </div>
   <div class="card flex flex-col gap-4 shadow-md">
-    {#if $session?.method === SessionMethod.Pomade}
+    {#if pomadeEmail}
       <FieldInline>
         {#snippet label()}
           <Icon icon={Letter} />
@@ -117,7 +123,7 @@
         {#snippet input()}
           <label class="input flex w-full items-center gap-2">
             <Icon icon={UserRounded} />
-            <input readonly value={$session.email} class="grow" />
+            <input readonly value={pomadeEmail} class="grow" />
           </label>
         {/snippet}
       </FieldInline>
@@ -158,7 +164,7 @@
         {#snippet input()}
           <label class="input flex w-full items-center gap-2">
             <Icon icon={LinkRound} />
-            <input readonly value={$session.secret} class="grow" type="password" />
+            <input readonly value={nip01Secret} class="grow" type="password" />
             <Button class="flex items-center" onclick={copyNsec}>
               <Icon icon={Copy} />
             </Button>
@@ -170,7 +176,7 @@
       </FieldInline>
     {/if}
     <SignerStatus />
-    {#if $session?.method === SessionMethod.Pomade}
+    {#if pomadeEmail}
       <div class="flex flex-col lg:flex-row gap-4 lg:gap-2 justify-end">
         <Button class="button button-neutral" onclick={startPasswordReset}>
           <Spinner {loading}>Update your password</Spinner>

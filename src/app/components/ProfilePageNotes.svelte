@@ -3,14 +3,14 @@
   import {derived, writable} from "svelte/store"
   import type {Writable} from "svelte/store"
   import {sortBy, uniqBy, now} from "@welshman/lib"
-  import {NOTE, getReplyTags, getListTags, getEventTagValues} from "@welshman/util"
+  import {NOTE, outbox} from "@welshman/util"
   import type {TrustedEvent} from "@welshman/util"
-  import {derivePinList} from "@welshman/app"
-  import {Router} from "@welshman/router"
-  import {load} from "@welshman/net"
+  import {getReplyTags} from "@welshman/domain"
+  import {PinLists} from "@welshman/app"
   import {fly} from "@lib/transition"
   import Spinner from "@lib/components/Spinner.svelte"
   import NoteItem from "@app/components/NoteItem.svelte"
+  import {app, network, router} from "@app/core"
   import {makeFeed} from "@app/feeds"
 
   type Props = {
@@ -19,19 +19,21 @@
 
   const {pubkey}: Props = $props()
 
-  const pinList = derivePinList(pubkey)
-  const pinnedIds = derived(pinList, $pinList => getEventTagValues(getListTags($pinList)))
+  const relays = $router.resolver.relays([outbox(pubkey)])
+  const pinnedIds = derived($app.use(PinLists).one(pubkey), $pinList => $pinList?.ids() ?? [])
 
   $effect(() => {
     if ($pinnedIds.length > 0) {
       const controller = new AbortController()
 
-      load({
-        relays: Router.get().FromPubkeys([pubkey]).getUrls(),
-        filters: [{ids: $pinnedIds}],
-        signal: controller.signal,
-        onEvent: e => events.update($events => uniqBy(e => e.id, $events.concat(e))),
-      })
+      relays.then($relays =>
+        $network.load({
+          relays: $relays,
+          filters: [{ids: $pinnedIds}],
+          signal: controller.signal,
+          onEvent: e => events.update($events => uniqBy(e => e.id, $events.concat(e))),
+        }),
+      )
 
       return () => controller.abort()
     }
@@ -49,18 +51,23 @@
   )
 
   onMount(() => {
-    const feed = makeFeed({
-      relays: Router.get().FromPubkeys([pubkey]).getUrls(),
-      element: element!,
-      filters: [{kinds: [NOTE], authors: [pubkey]}],
-      onBackwardExhausted: () => {
-        exhausted = true
-      },
+    let cleanup: (() => void) | undefined
+
+    relays.then($relays => {
+      const feed = makeFeed({
+        relays: $relays,
+        element: element!,
+        filters: [{kinds: [NOTE], authors: [pubkey]}],
+        onBackwardExhausted: () => {
+          exhausted = true
+        },
+      })
+
+      events = feed.events
+      cleanup = feed.cleanup
     })
 
-    events = feed.events
-
-    return () => feed.cleanup()
+    return () => cleanup?.()
   })
 </script>
 

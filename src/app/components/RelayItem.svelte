@@ -1,17 +1,18 @@
 <script lang="ts">
+  import {displayUrl} from "@welshman/lib"
+  import {displayRelayUrl} from "@welshman/util"
+  import {RelayStats} from "@welshman/app"
   import Server from "@assets/icons/server.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Card from "@lib/components/Card.svelte"
   import Link from "@lib/components/Link.svelte"
   import ContentMinimal from "@app/components/ContentMinimal.svelte"
-  import {displayUrl} from "@welshman/lib"
-  import {displayRelayUrl} from "@welshman/util"
-  import {deriveRelay, deriveRelayStats} from "@welshman/app"
+  import {app, relays} from "@app/core"
 
   const {url, children} = $props()
 
-  const relay = deriveRelay(url)
-  const relayStats = deriveRelayStats(url)
+  const relay = $relays.one(url)
+  const relayStats = $app.use(RelayStats).one(url)
   const connections = $derived($relayStats?.open_count || 0)
 </script>
 

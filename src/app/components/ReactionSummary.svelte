@@ -1,34 +1,47 @@
 <script lang="ts">
   import cx from "classnames"
   import {onMount} from "svelte"
+  import {derived} from "svelte/store"
   import type {Snippet} from "svelte"
-  import {groupBy, map, sum, uniq, uniqBy, batch, displayList} from "@welshman/lib"
+  import {
+    batch,
+    call,
+    displayList,
+    groupBy,
+    map,
+    removeUndefined,
+    spec,
+    sum,
+    uniq,
+    uniqBy,
+  } from "@welshman/lib"
   import {
     REPORT,
     REACTION,
-    ZAP_RESPONSE,
+    ZAP_RECEIPT,
     getReplyFilters,
-    getEmojiTags,
-    getEmojiTag,
     fromMsats,
-    getTag,
+    matchTag,
+    tagSpec,
+    userInbox,
     DELETE,
   } from "@welshman/util"
-  import type {TrustedEvent, EventContent, Zap} from "@welshman/util"
-  import {deriveArray, deriveEventsById, deriveItemsByKey} from "@welshman/store"
-  import {load} from "@welshman/net"
-  import {Router} from "@welshman/router"
-  import {pubkey, repository, getValidZap, displayProfileByPubkey} from "@welshman/app"
+  import type {TrustedEvent, EventContent} from "@welshman/util"
+  import {getEmojis} from "@welshman/domain"
+  import type {Zap} from "@welshman/domain"
+  import {Zappers} from "@welshman/app"
   import {isMobile, stopPropagation} from "@lib/html"
   import Danger from "@assets/icons/danger-triangle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
+  import {deriveEvents} from "@app/repository"
   import Reaction from "@app/components/Reaction.svelte"
   import ReportDetails from "@app/components/ReportDetails.svelte"
   import ProfileList from "@app/components/ProfileList.svelte"
   import ZapModal from "@app/components/Zap.svelte"
   import {REACTION_KINDS} from "@app/content"
-  import {deriveUserIsSpaceAdmin} from "@app/members"
+  import {app, network, profiles, router, user} from "@app/core"
+  import {deriveUserIsSpaceAdmin} from "@app/management"
   import {pushModal} from "@app/modal"
 
   interface Props {
@@ -55,44 +68,40 @@
 
   const eventIds = innerEvent ? [event.id, innerEvent.id] : [event.id]
 
-  const reports = deriveArray(
-    deriveEventsById({repository, filters: [{kinds: [REPORT], "#e": [event.id]}]}),
-  )
+  const reports = deriveEvents([{kinds: [REPORT], "#e": [event.id]}])
 
-  const reactions = deriveArray(
-    deriveEventsById({repository, filters: [{kinds: [REACTION], "#e": eventIds}]}),
-  )
+  const reactions = deriveEvents([{kinds: [REACTION], "#e": eventIds}])
 
-  const zaps = deriveArray(
-    deriveItemsByKey<Zap>({
-      repository,
-      getKey: zap => zap.response.id,
-      filters: [{kinds: [ZAP_RESPONSE], "#e": eventIds}],
-      eventToItem: (response: TrustedEvent) => {
-        const zap = getValidZap(response, event)
+  const receipts = deriveEvents([{kinds: [ZAP_RECEIPT], "#e": eventIds}])
 
-        if (zap) {
-          return zap
-        }
-
-        if (innerEvent) {
-          return getValidZap(response, innerEvent)
-        }
-      },
-    }),
+  // A receipt can be a zap of either the event or the one it wraps
+  const zaps = derived<typeof receipts, Zap[]>(
+    receipts,
+    ($receipts, set) =>
+      derived(
+        removeUndefined([event, innerEvent]).map(
+          parent => $app.use(Zappers).validZapReceipts($receipts, parent).$,
+        ),
+        (zapsByParent: Zap[][]) => uniqBy(zap => zap.response.id, zapsByParent.flat()),
+      ).subscribe(set),
+    [],
   )
 
   const toggleReaction = (events: TrustedEvent[]) => {
-    const reaction = events.find(e => e.pubkey === $pubkey)
+    const reaction = events.find(spec({pubkey: $user.pubkey}))
 
     if (reaction) {
       deleteReaction(reaction)
     } else {
       const [event] = events
 
+      const shortcode = event.content.replace(/:/g, "")
+
       createReaction({
         content: event.content,
-        tags: getEmojiTags(event.content.replace(/:/g, ""), event.tags),
+        tags: getEmojis(event)
+          .filter(spec({shortcode}))
+          .map(emoji => ["emoji", emoji.shortcode, emoji.url]),
       })
     }
   }
@@ -121,9 +130,16 @@
 
   const onReportClick = () => pushModal(ReportDetails, {url, event})
 
-  const reportReasons = $derived(uniq(map(e => getTag("e", e.tags)?.[2], $reports.values())))
+  const reportReasons = $derived(
+    uniq(map(e => matchTag(tagSpec("e"), e.tags)?.[2], $reports.values())),
+  )
 
-  const getReactionKey = (e: TrustedEvent) => getEmojiTag(e.content, e.tags)?.join("") || e.content
+  const getReactionKey = (e: TrustedEvent) => {
+    const shortcode = e.content.replace(/:/g, "")
+    const emoji = getEmojis(e).find(spec({shortcode}))
+
+    return emoji ? `emoji${emoji.shortcode}${emoji.url}` : e.content
+  }
 
   const groupedReactions = $derived(
     groupBy(
@@ -136,21 +152,24 @@
 
   onMount(() => {
     const controller = new AbortController()
-    const relays = url ? [url] : Router.get().ForUser().getUrls()
 
-    if (relays.length > 0) {
-      load({
-        relays,
-        signal: controller.signal,
-        filters: getReplyFilters([event], {kinds: REACTION_KINDS}),
-        onEvent: batch(300, (events: TrustedEvent[]) => {
-          load({
-            relays,
-            filters: getReplyFilters(events, {kinds: [DELETE]}),
-          })
-        }),
-      })
-    }
+    call(async () => {
+      const relays = url ? [url] : await $router.resolver.relays([userInbox()])
+
+      if (relays.length > 0) {
+        $network.load({
+          relays,
+          signal: controller.signal,
+          filters: getReplyFilters([event], {kinds: REACTION_KINDS}),
+          onEvent: batch(300, (events: TrustedEvent[]) => {
+            $network.load({
+              relays,
+              filters: getReplyFilters(events, {kinds: [DELETE]}),
+            })
+          }),
+        })
+      }
+    })
 
     return () => {
       controller.abort()
@@ -177,8 +196,8 @@
     {#each groupedZaps.entries() as [key, zaps]}
       {@const amount = fromMsats(sum(zaps.map(zap => zap.invoiceAmount)))}
       {@const pubkeys = uniq(zaps.map(zap => zap.request.pubkey))}
-      {@const isOwn = $pubkey && pubkeys.includes($pubkey)}
-      {@const info = displayList(pubkeys.map(pubkey => displayProfileByPubkey(pubkey)))}
+      {@const isOwn = pubkeys.includes($user.pubkey)}
+      {@const info = displayList(pubkeys.map(pubkey => $profiles.display(pubkey).get()))}
       {@const tooltip = `${info} zapped`}
       {@const onZapClickHandler = () => onZapClick(pubkeys, tooltip)}
       <Button
@@ -199,8 +218,8 @@
     {/each}
     {#each groupedReactions.entries() as [key, events]}
       {@const pubkeys = events.map(e => e.pubkey)}
-      {@const isOwn = $pubkey && pubkeys.includes($pubkey)}
-      {@const info = displayList(pubkeys.map(pubkey => displayProfileByPubkey(pubkey)))}
+      {@const isOwn = pubkeys.includes($user.pubkey)}
+      {@const info = displayList(pubkeys.map(pubkey => $profiles.display(pubkey).get()))}
       {@const tooltip = `${info} reacted`}
       {@const onClick = () => onReactionClick(events, pubkeys, info)}
       <Button

@@ -3,11 +3,11 @@
   import {flip} from "svelte/animate"
   import {cubicOut} from "svelte/easing"
   import {derived as _derived} from "svelte/store"
-  import {dec, insertAt, removeAt, sleep} from "@welshman/lib"
-  import type {RelayProfile} from "@welshman/util"
+  import {addToMapKey, dec, insertAt, removeAt, sleep, spec} from "@welshman/lib"
   import {ROOMS} from "@welshman/util"
+  import type {Relay} from "@welshman/domain"
   import {throttled} from "@welshman/store"
-  import {pull, relays, createSearch} from "@welshman/app"
+  import {Sync, createSearch, publish} from "@welshman/app"
   import {createScroller, isMobile} from "@lib/html"
   import {fly} from "@lib/transition"
   import DragHandle from "@assets/icons/drag-handle.svg?dataurl"
@@ -26,7 +26,8 @@
   import SpaceAdd from "@app/components/SpaceAdd.svelte"
   import SpaceInviteAccept from "@app/components/SpaceInviteAccept.svelte"
   import SpaceJoin from "@app/components/SpaceJoin.svelte"
-  import {userSpaceUrls, loadUserGroupList, groupListPubkeysByUrl, setSpaces} from "@app/groups"
+  import {app, relays, roomLists, user} from "@app/core"
+  import {userSpaceUrls} from "@app/rooms"
   import {PLATFORM_RELAYS, DEFAULT_RELAYS} from "@app/env"
   import {bootstrapPubkeys} from "@app/social"
   import {parseInviteLink} from "@app/access"
@@ -36,24 +37,43 @@
 
   const addSpace = () => pushModal(SpaceAdd)
 
-  const relaySearch = _derived(throttled(1000, relays), $relays => {
-    const options = $relays.filter(r => $groupListPubkeysByUrl.has(r.url))
+  const userSpacesLoaded = $roomLists.load($user.pubkey)
 
-    return createSearch(options, {
-      getValue: (relay: RelayProfile) => relay.url,
-      sortFn: ({score, item}) => {
-        if (score && score > 0.1) return -score!
+  // How many people list each space, used both to limit search to spaces someone
+  // has joined and to rank them.
+  const spacePubkeysByUrl = _derived($roomLists.all.$, $roomLists => {
+    const result = new Map<string, Set<string>>()
 
-        const wotScore = $groupListPubkeysByUrl.get(item.url)?.size || 0
+    for (const roomList of $roomLists) {
+      for (const url of roomList.urls()) {
+        addToMapKey(result, url, roomList.author())
+      }
+    }
 
-        return score ? dec(score) * wotScore : -wotScore
-      },
-      fuseOptions: {
-        keys: ["url", "name", {name: "description", weight: 0.3}],
-        shouldSort: false,
-      },
-    })
+    return result
   })
+
+  const relaySearch = _derived(
+    [throttled(1000, $relays.all.$), spacePubkeysByUrl],
+    ([$relays, $spacePubkeysByUrl]) => {
+      const options = $relays.filter(r => $spacePubkeysByUrl.has(r.url))
+
+      return createSearch(options, {
+        getValue: (relay: Relay) => relay.url,
+        sortFn: ({score, item}) => {
+          if (score && score > 0.1) return -score!
+
+          const wotScore = $spacePubkeysByUrl.get(item.url)?.size || 0
+
+          return score ? dec(score) * wotScore : -wotScore
+        },
+        fuseOptions: {
+          keys: ["url", "name", {name: "description", weight: 0.3}],
+          shouldSort: false,
+        },
+      })
+    },
+  )
 
   const openSpace = (url: string, claim = "") => {
     if ($userSpaceUrls.includes(url)) {
@@ -128,7 +148,7 @@
     lastDragTarget = undefined
 
     if (dragStartOrder && !isSameOrder(dragStartOrder, orderedSpaceUrls)) {
-      void setSpaces(orderedSpaceUrls).catch(console.error)
+      void $roomLists.setRelays(orderedSpaceUrls).then(publish).catch(console.error)
     }
 
     dragStartOrder = undefined
@@ -166,9 +186,7 @@
   const searchResults = $derived($relaySearch.searchOptions(term))
   const userSpaceSet = $derived(new Set($userSpaceUrls))
   const filteredUserUrls = $derived(
-    term
-      ? orderedSpaceUrls.filter(url => searchResults.some(r => r.url === url))
-      : orderedSpaceUrls,
+    term ? orderedSpaceUrls.filter(url => searchResults.some(spec({url}))) : orderedSpaceUrls,
   )
   const otherSpaces = $derived(
     searchResults.filter(r => !userSpaceSet.has(r.url) && r.url !== inviteData?.url),
@@ -182,7 +200,7 @@
       },
     })
 
-    pull({
+    $app.use(Sync).pull({
       filters: [{kinds: [ROOMS], authors: $bootstrapPubkeys}],
       relays: DEFAULT_RELAYS,
     })
@@ -231,7 +249,7 @@
               <RelaySummary {url} />
             </Button>
           {:else}
-            {#await loadUserGroupList()}
+            {#await userSpacesLoaded}
               <div class="flex items-center justify-center py-20">
                 <Spinner size="sm" class="mr-3" />
                 Loading your spaces...

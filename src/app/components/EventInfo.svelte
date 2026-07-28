@@ -1,10 +1,9 @@
 <script lang="ts">
+  import {onMount} from "svelte"
   import * as nip19 from "nostr-tools/nip19"
-  import {Router} from "@welshman/router"
   import {LOCALE, secondsToDate} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {displayRelayUrl, toNostrURI} from "@welshman/util"
-  import {tracker} from "@welshman/app"
+  import {displayRelayUrl, seen, toNostrURI} from "@welshman/util"
   import FileText from "@assets/icons/file-text.svg?dataurl"
   import Copy from "@assets/icons/copy.svg?dataurl"
   import UserCircle from "@assets/icons/user-circle.svg?dataurl"
@@ -18,6 +17,7 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
+  import {app, router} from "@app/core"
   import {clip} from "@app/toast"
 
   type Props = {
@@ -27,9 +27,7 @@
 
   const {url, event}: Props = $props()
 
-  const relays = url ? [url] : Router.get().Event(event).getUrls()
-  const nevent1 = toNostrURI(nip19.neventEncode({...event, relays}))
-  const seenOn = tracker.getRelays(event.id)
+  const seenOn = $app.tracker.getRelays(event.id)
   const npub1 = nip19.npubEncode(event.pubkey)
   const json = JSON.stringify(event, null, 2)
   const copyLink = () => clip(nevent1)
@@ -40,6 +38,14 @@
   const formatter = new Intl.DateTimeFormat(LOCALE, {
     dateStyle: "long",
     timeStyle: "long",
+  })
+
+  let nevent1 = $state("")
+
+  onMount(async () => {
+    const relays = url ? [url] : await $router.resolver.relays([seen(event)])
+
+    nevent1 = toNostrURI(nip19.neventEncode({...event, relays}))
   })
 </script>
 

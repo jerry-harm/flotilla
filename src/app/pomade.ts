@@ -1,13 +1,30 @@
-import {get} from "svelte/store"
 import {Client, type SessionItem, type ClientOptions} from "@pomade/core"
 import {ifLet, reject, spec} from "@welshman/lib"
-import {session, isPomadeSession, loginWithPomade as _loginWithPomade} from "@welshman/app"
+import type {Maybe} from "@welshman/lib"
+import {pomade, toSession} from "@welshman/app"
+import type {Session} from "@welshman/app"
+import {login, session} from "@app/core"
+
+export type PomadeSession = Session<"pomade", {clientOptions: ClientOptions; email: string}>
+
+export const isPomadeSession = ($session: Maybe<Session>): $session is PomadeSession =>
+  $session?.method === pomade.method
+
+// The pomade-only screens are only reachable from a pomade session, so narrow rather than
+// thread undefined through every field they read off it.
+export const requirePomadeSession = ($session: Maybe<Session>) => {
+  if (!isPomadeSession($session)) {
+    throw new Error("This action requires an email login")
+  }
+
+  return $session
+}
 
 export const getPomadeClient = async () => {
-  const $session = get(session)
+  const $session = session.get()
 
   if (isPomadeSession($session)) {
-    return new Client($session.clientOptions)
+    return new Client($session.data.clientOptions)
   }
 }
 
@@ -75,7 +92,7 @@ export const deleteDeactivatedPomadeSessions = async () => {
 }
 
 export const loginWithPomade = (clientOptions: ClientOptions, email: string) =>
-  _loginWithPomade(clientOptions.group.group_pk.slice(2), email, clientOptions)
+  login(toSession(pomade, {clientOptions, email}))
 
 export const POMADE_INVALID_LOGIN_MESSAGE = "Invalid login information"
 export const POMADE_NETWORK_ERROR_MESSAGE = "Network error, please try again"

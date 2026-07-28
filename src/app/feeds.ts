@@ -1,12 +1,12 @@
-import {repository, tracker} from "@welshman/app"
 import {writable} from "svelte/store"
 import {batch, between, call, int, now, on, sortBy, uniqBy, MONTH, YEAR} from "@welshman/lib"
-import {EVENT_TIME, getAddress, getTagValue, matchFilters} from "@welshman/util"
+import {EVENT_TIME, getAddress, matchFilters, tagSpec, tagValue} from "@welshman/util"
 import type {Filter, TrustedEvent} from "@welshman/util"
-import {mergeRepositoryUpdates, request} from "@welshman/net"
+import {mergeRepositoryUpdates} from "@welshman/net"
 import type {RepositoryUpdate} from "@welshman/net"
 import {createScroller} from "@lib/html"
 import {daysBetween} from "@lib/util"
+import {app, network} from "@app/core"
 import {getEventsForUrl} from "@app/repository"
 
 export const makeFeed = ({
@@ -101,7 +101,7 @@ export const makeFeed = ({
     const matching: TrustedEvent[] = []
 
     for (const id of new Set(ids)) {
-      const event = repository.getEvent(id)
+      const event = app.get().repository.getEvent(id)
 
       if (event && matchFilters(filters, event)) {
         matching.push(event)
@@ -115,7 +115,7 @@ export const makeFeed = ({
 
   const unsubscribers = [
     on(
-      repository,
+      app.get().repository,
       "update",
       batch(150, (updates: RepositoryUpdate[]) => {
         const {added, removed} = mergeRepositoryUpdates(updates)
@@ -132,7 +132,7 @@ export const makeFeed = ({
         const matching = added.filter(
           event =>
             matchFilters(filters, event) &&
-            relays.some(url => tracker.getRelays(event.id).has(url)),
+            relays.some(url => app.get().tracker.getRelays(event.id).has(url)),
         )
 
         if (matching.length > 0) {
@@ -140,7 +140,7 @@ export const makeFeed = ({
         }
       }),
     ),
-    on(tracker, "add", (id: string, url: string) => {
+    on(app.get().tracker, "add", (id: string, url: string) => {
       if (relays.includes(url)) {
         onTrackedId(id)
       }
@@ -148,7 +148,7 @@ export const makeFeed = ({
   ]
 
   const loadTimeframe = async (since: number, until: number) => {
-    const events = await request({
+    const events = await network.get().request({
       relays,
       autoClose: true,
       signal: controller.signal,
@@ -238,9 +238,9 @@ export const makeCalendarFeed = ({
   let backwardWindow = [now() - interval, now()]
   let forwardWindow = [now(), now() + interval]
 
-  const getStart = (event: TrustedEvent) => parseInt(getTagValue("start", event.tags) || "")
+  const getStart = (event: TrustedEvent) => parseInt(tagValue(tagSpec("start"), event.tags) || "")
 
-  const getEnd = (event: TrustedEvent) => parseInt(getTagValue("end", event.tags) || "")
+  const getEnd = (event: TrustedEvent) => parseInt(tagValue(tagSpec("end"), event.tags) || "")
 
   const events = writable(
     sortBy(
@@ -291,7 +291,7 @@ export const makeCalendarFeed = ({
     const matching: TrustedEvent[] = []
 
     for (const id of new Set(ids)) {
-      const event = repository.getEvent(id)
+      const event = app.get().repository.getEvent(id)
 
       if (event && matchFilters(filters, event)) {
         matching.push(event)
@@ -305,7 +305,7 @@ export const makeCalendarFeed = ({
 
   const unsubscribers = [
     on(
-      repository,
+      app.get().repository,
       "update",
       batch(150, (updates: RepositoryUpdate[]) => {
         const {added, removed} = mergeRepositoryUpdates(updates)
@@ -325,7 +325,7 @@ export const makeCalendarFeed = ({
         }
       }),
     ),
-    on(tracker, "add", (id: string, url: string) => {
+    on(app.get().tracker, "add", (id: string, url: string) => {
       if (relays.includes(url)) {
         onTrackedId(id)
       }
@@ -335,7 +335,7 @@ export const makeCalendarFeed = ({
   const loadTimeframe = (since: number, until: number) => {
     const hashes = daysBetween(since, until).map(String)
 
-    request({
+    network.get().request({
       relays,
       autoClose: true,
       signal: controller.signal,

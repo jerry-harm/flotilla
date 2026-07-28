@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {deriveRoom} from "@app/groups"
+  import {rooms} from "@app/core"
 
   type Props = {
     url: string
@@ -9,9 +9,9 @@
 
   const {url, h, ...props}: Props = $props()
 
-  const room = deriveRoom(url, h)
+  const room = $rooms.forRoom(url, h)
 </script>
 
 <span class="truncate min-w-0 {props.class}">
-  {$room?.name || h}
+  {$room?.meta?.name() || h}
 </span>

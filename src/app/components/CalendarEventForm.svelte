@@ -2,10 +2,9 @@
   import type {Snippet} from "svelte"
   import {writable} from "svelte/store"
   import {randomId} from "@welshman/lib"
-  import {makeEvent, EVENT_TIME} from "@welshman/util"
-  import {publishThunk, waitForThunkError} from "@welshman/app"
+  import {publish} from "@welshman/app"
+  import {TimeEvent} from "@welshman/domain"
   import {preventDefault} from "@lib/html"
-  import {daysBetween} from "@lib/util"
   import GallerySend from "@assets/icons/gallery-send.svg?dataurl"
   import MapPoint from "@assets/icons/map-point.svg?dataurl"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
@@ -18,11 +17,11 @@
   import ModalBody from "@lib/components/ModalBody.svelte"
   import DateTimeRangeInput from "@lib/components/DateTimeRangeInput.svelte"
   import EditorContent from "@app/editor/EditorContent.svelte"
-  import {PROTECTED, publishRoomQuote} from "@app/groups"
+  import {publishRoomQuote} from "@app/rooms"
   import {makeEditor} from "@app/editor"
   import {DraftKey} from "@app/drafts"
   import {pushToast} from "@app/toast"
-  import {canEnforceNip70} from "@app/relays"
+  import {command, relays, writer} from "@app/core"
 
   type Values = {
     d: string
@@ -49,7 +48,7 @@
     initialValues = draftKey.get()
   }
 
-  const shouldProtect = canEnforceNip70(url)
+  const shouldProtect = $relays.hasNip(url, 70)
 
   const uploading = writable(false)
 
@@ -83,32 +82,29 @@
 
     const ed = await editor
     const content = ed.getText({blockSeparator: "\n"}).trim()
-    const tags = [
-      ["d", d],
-      ["title", title],
-      ["location", location],
-      ["start", start.toString()],
-      ["end", end.toString()],
-      ...daysBetween(start, end).map(D => ["D", D.toString()]),
-      ...ed.storage.nostr.getEditorTags(),
-    ]
 
     loading = true
 
     try {
       const protect = await shouldProtect
-
-      if (protect) {
-        tags.push(PROTECTED)
-      }
+      const eventWriter = writer(TimeEvent)
+        .setIdentifier(d)
+        .setTitle(title)
+        .setLocation(location)
+        .setStart(start)
+        .setEnd(end)
+        .setContent(content)
+        .setProtected(protect)
+        .addTags(...ed.storage.nostr.getEditorTags())
 
       if (h) {
-        tags.push(["h", h])
+        eventWriter.setRoom(url, h)
+      } else {
+        eventWriter.forceRelays(url)
       }
 
-      const event = makeEvent(EVENT_TIME, {content, tags})
-      const calendarThunk = publishThunk({event, relays: [url]})
-      const error = await waitForThunkError(calendarThunk)
+      const calendarThunk = await command(eventWriter).then(publish)
+      const error = await calendarThunk.waitForError()
 
       if (error) {
         return pushToast({theme: "error", message: error})

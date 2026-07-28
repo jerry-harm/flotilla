@@ -1,8 +1,9 @@
 import {on} from "@welshman/lib"
+import type {Maybe} from "@welshman/lib"
 import {isRelayUrl, normalizeRelayUrl} from "@welshman/util"
 import type {TrustedEvent} from "@welshman/util"
-import {AbstractAdapter, AdapterEvent, LocalAdapter, Repository, netContext} from "@welshman/net"
-import type {ClientMessage, NetContext, RelayMessage} from "@welshman/net"
+import {AbstractAdapter, AdapterEvent, LocalAdapter, Repository} from "@welshman/net"
+import type {AdapterFactory, ClientMessage, RelayMessage} from "@welshman/net"
 
 // The window key Playwright writes the mock config to (see e2e/support/relayMocks.ts). Keep it in
 // sync with the literal duplicated there.
@@ -50,10 +51,10 @@ class FixtureAdapter extends AbstractAdapter {
   }
 }
 
-// Override netContext.getAdapter so every real relay url is served from memory and no websocket is
-// ever created for it. Non-relay urls (e.g. the local:// repository relay) fall through to
-// welshman's default handling.
-export const installRelayMocks = (config: RelayMockConfig) => {
+// An adapter factory serving every real relay url from memory, so no websocket is ever created for
+// one. Non-relay urls (e.g. the local:// repository relay) fall through to welshman's default
+// handling by returning undefined.
+export const makeRelayMockAdapter = (config: RelayMockConfig): AdapterFactory => {
   const reposByUrl = new Map<string, Repository>()
 
   for (const [url, events] of Object.entries(config.relays ?? {})) {
@@ -63,29 +64,20 @@ export const installRelayMocks = (config: RelayMockConfig) => {
   }
 
   const emptyRepository = new Repository()
-  const fallback = netContext.getAdapter
 
-  netContext.getAdapter = ((url: string, context: NetContext) => {
-    if (!isRelayUrl(url)) {
-      return fallback ? fallback(url, context) : undefined
+  return (url: string) => {
+    if (isRelayUrl(url)) {
+      return new FixtureAdapter(url, reposByUrl.get(normalizeRelayUrl(url)) ?? emptyRepository)
     }
-
-    const repository = reposByUrl.get(normalizeRelayUrl(url)) ?? emptyRepository
-
-    return new FixtureAdapter(url, repository)
-  }) as NetContext["getAdapter"]
+  }
 }
 
-// Called once on app startup. Installs the mocks only when Playwright has injected a config, so it
-// is a no-op for real users.
-export const maybeInstallRelayMocks = () => {
-  const config = (globalThis as Record<string, unknown>)[RELAY_MOCKS_KEY] as
-    | RelayMockConfig
-    | undefined
+// Called when the app is created. Yields an adapter factory only when Playwright has injected a
+// config, so it is a no-op for real users.
+export const maybeMakeRelayMockAdapter = (): Maybe<AdapterFactory> => {
+  const config = (globalThis as {[RELAY_MOCKS_KEY]?: RelayMockConfig})[RELAY_MOCKS_KEY]
 
   if (config) {
-    installRelayMocks(config)
+    return makeRelayMockAdapter(config)
   }
-
-  return Boolean(config)
 }

@@ -1,9 +1,9 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
-  import {load} from "@welshman/net"
   import {NOTE} from "@welshman/util"
   import Spinner from "@lib/components/Spinner.svelte"
   import NoteItem from "@app/components/NoteItem.svelte"
+  import {network} from "@app/core"
 
   interface Props {
     url: string
@@ -14,7 +14,7 @@
 
   const {url, pubkey, limit = 1, fallback}: Props = $props()
 
-  const events = load({
+  const events = $network.load({
     relays: [url],
     filters: [{authors: [pubkey], kinds: [NOTE], limit}],
   })

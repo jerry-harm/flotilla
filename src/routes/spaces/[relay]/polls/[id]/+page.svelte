@@ -4,9 +4,7 @@
   import {sleep} from "@welshman/lib"
   import type {MakeNonOptional} from "@welshman/lib"
   import {COMMENT, POLL, POLL_RESPONSE} from "@welshman/util"
-  import {repository} from "@welshman/app"
-  import {request} from "@welshman/net"
-  import {deriveEventsById, deriveEventsAsc} from "@welshman/store"
+  import {deriveEventsAsc} from "@welshman/store"
   import SortVertical from "@assets/icons/sort-vertical.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import PageContent from "@lib/components/PageContent.svelte"
@@ -17,14 +15,15 @@
   import NoteContent from "@app/components/NoteContent.svelte"
   import CommentActions from "@app/components/CommentActions.svelte"
   import EventReply from "@app/components/EventReply.svelte"
-  import {deriveEvent} from "@app/repository"
+  import {network} from "@app/core"
+  import {deriveEvent, deriveEventsById} from "@app/repository"
   import {decodeRelay} from "@app/relays"
 
   const {relay, id} = $page.params as MakeNonOptional<typeof $page.params>
   const url = decodeRelay(relay)
   const event = deriveEvent(id, [url])
   const filters = [{kinds: [COMMENT], "#E": [id]}]
-  const comments = deriveEventsAsc(deriveEventsById({repository, filters}))
+  const comments = deriveEventsAsc(deriveEventsById(filters))
 
   const back = () => history.back()
 
@@ -46,7 +45,7 @@
   onMount(() => {
     const controller = new AbortController()
 
-    request({
+    $network.request({
       relays: [url],
       filters: [{kinds: [POLL], ids: [id]}, {kinds: [POLL_RESPONSE], "#e": [id]}, ...filters],
       signal: controller.signal,

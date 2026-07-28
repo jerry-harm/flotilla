@@ -3,27 +3,28 @@ import {get} from "svelte/store"
 import * as nip19 from "nostr-tools/nip19"
 import {goto} from "$app/navigation"
 import {page} from "$app/stores"
-import type {TrustedEvent} from "@welshman/util"
-import {getAddress} from "@welshman/util"
-import {tracker, userMessagingRelayList, getRelay} from "@welshman/app"
 import {identity} from "@welshman/lib"
+import type {TrustedEvent} from "@welshman/util"
 import {
-  getTagValue,
-  MESSAGE,
-  THREAD,
   CLASSIFIED,
-  ZAP_GOAL,
   EVENT_TIME,
+  MESSAGE,
+  PINBOARD,
   POLL,
-  getPubkeyTagValues,
-  getRelaysFromList,
+  THREAD,
+  ZAP_GOAL,
+  getAddress,
+  hexTags,
+  tagSpec,
+  tagValue,
+  tagValues,
 } from "@welshman/util"
+import {app, messagingRelayLists, relays, user} from "@app/core"
 import {makeChatId} from "@app/chats"
 import {entityLink, PLATFORM_URL, PLATFORM_RELAYS} from "@app/env"
-import {encodeRelay, hasNip29} from "@app/relays"
+import {encodeRelay} from "@app/relays"
 import {DM_KINDS} from "@app/content"
-import {ROOM} from "@app/groups"
-import {BOARD} from "@app/pinboards"
+import {ROOM} from "@app/rooms"
 import {pushModal} from "@app/modal"
 import ChatEnable from "@app/components/ChatEnable.svelte"
 
@@ -57,7 +58,7 @@ export const makeRoomPath = (url: string, h: string) => `/spaces/${encodeRelay(u
 export const makeSpaceChatPath = (url: string) => makeRoomPath(url, "chat")
 
 export const goToChat = (pubkeys: string[] = []) => {
-  if (getRelaysFromList(get(userMessagingRelayList)).length === 0) {
+  if (messagingRelayLists.get().urls(user.get().pubkey).get().length === 0) {
     pushModal(ChatEnable, {next: () => goToChat(pubkeys)})
   } else if (pubkeys.length === 0) {
     goto(lastChatUrl ?? "/chat")
@@ -90,7 +91,7 @@ export const goToSpace = (url: string, hash = "") => {
     return goto(prevPath + hash, {replaceState: true})
   }
 
-  if (!hasNip29(getRelay(url))) {
+  if (!relays.get().get(url)?.hasNip(29)) {
     return goto(makeSpaceChatPath(url) + hash, {replaceState: true})
   }
 
@@ -115,7 +116,7 @@ export const goToHome = () => {
 // Content types, events
 
 export const makeMessagePath = (url: string, event: TrustedEvent) => {
-  const h = getTagValue(ROOM, event.tags)
+  const h = tagValue(tagSpec(ROOM), event.tags)
   const path = h ? makeRoomPath(url, h) : makeSpaceChatPath(url)
   const qp = new URLSearchParams({at: String(event.created_at)})
 
@@ -157,7 +158,7 @@ export const scrollToEvent = (id: string) => {
 }
 
 export const goToEvent = (event: TrustedEvent, options: Record<string, any> = {}) => {
-  const urls = Array.from(tracker.getRelays(event.id))
+  const urls = Array.from(app.get().tracker.getRelays(event.id))
   const path = getEventPath(event, urls)
 
   if (path.includes("://")) {
@@ -171,7 +172,7 @@ export const goToEvent = (event: TrustedEvent, options: Record<string, any> = {}
 
 export const getEventPath = (event: TrustedEvent, urls: string[]) => {
   if (DM_KINDS.includes(event.kind)) {
-    return makeChatPath([event.pubkey, ...getPubkeyTagValues(event.tags)])
+    return makeChatPath([event.pubkey, ...tagValues(hexTags("p"), event.tags)])
   }
 
   if (urls.length > 0) {
@@ -193,7 +194,7 @@ export const getEventPath = (event: TrustedEvent, urls: string[]) => {
       return makeCalendarPath(url, getAddress(event))
     }
 
-    if (event.kind === BOARD) {
+    if (event.kind === PINBOARD) {
       return makeLibraryPath(url, getAddress(event))
     }
 
@@ -205,9 +206,9 @@ export const getEventPath = (event: TrustedEvent, urls: string[]) => {
       return makeMessagePath(url, event)
     }
 
-    const address = getTagValue("A", event.tags)
-    const kind = getTagValue("K", event.tags)
-    const id = getTagValue("E", event.tags)
+    const address = tagValue(tagSpec("A"), event.tags)
+    const kind = tagValue(tagSpec("K"), event.tags)
+    const id = tagValue(tagSpec("E"), event.tags)
 
     if (id && kind) {
       if (parseInt(kind) === ZAP_GOAL) {
@@ -238,7 +239,7 @@ export const getEventPath = (event: TrustedEvent, urls: string[]) => {
 }
 
 export const makeEventPermalink = (event: TrustedEvent, url?: string) => {
-  const urls = url ? [url] : Array.from(tracker.getRelays(event.id))
+  const urls = url ? [url] : Array.from(app.get().tracker.getRelays(event.id))
   const path = getEventPath(event, urls)
 
   if (path.includes("://")) {
@@ -258,7 +259,7 @@ export const getRoomItemPath = (url: string, event: TrustedEvent) => {
       return makeGoalPath(url, event.id)
     case EVENT_TIME:
       return makeCalendarPath(url, getAddress(event))
-    case BOARD:
+    case PINBOARD:
       return makeLibraryPath(url, getAddress(event))
     case POLL:
       return makePollPath(url, event.id)

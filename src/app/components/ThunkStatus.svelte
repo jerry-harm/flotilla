@@ -1,19 +1,18 @@
 <script lang="ts">
-  import type {AbstractThunk} from "@welshman/app"
-  import {thunkIsComplete, getFailedThunkUrls} from "@welshman/app"
+  import {BaseThunk} from "@welshman/app"
   import ThunkFailure from "@app/components/ThunkFailure.svelte"
   import ThunkPending from "@app/components/ThunkPending.svelte"
 
   interface Props {
-    thunk: AbstractThunk
+    thunk: BaseThunk
     showToastOnRetry?: boolean
     class?: string
   }
 
   const {thunk, showToastOnRetry, ...restProps}: Props = $props()
 
-  const showFailure = $derived(thunkIsComplete($thunk) && getFailedThunkUrls($thunk).length > 0)
-  const showPending = $derived(!thunkIsComplete($thunk))
+  const showFailure = $derived($thunk.isComplete() && $thunk.getFailedUrls().length > 0)
+  const showPending = $derived(!$thunk.isComplete())
 </script>
 
 {#if showFailure}

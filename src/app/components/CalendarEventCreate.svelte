@@ -17,7 +17,7 @@
   {#snippet header()}
     <ModalHeader>
       <ModalTitle>Create an Event</ModalTitle>
-      <ModalSubtitle>Invite other group members to events online or in real life.</ModalSubtitle>
+      <ModalSubtitle>Invite other room members to events online or in real life.</ModalSubtitle>
     </ModalHeader>
   {/snippet}
 </CalendarEventForm>

@@ -1,9 +1,9 @@
 import {get, writable} from "svelte/store"
-import {on, call, dissoc, assoc, uniq} from "@welshman/lib"
-import {RelayMode} from "@welshman/util"
+import {on, call, dissoc, assoc, noop, uniq} from "@welshman/lib"
+import {isDVMKind, isEphemeralKind, verifyEvent} from "@welshman/util"
 import type {Socket, RelayMessage, ClientMessage} from "@welshman/net"
 import {
-  makeSocketPolicyAuth,
+  AuthStatus,
   SocketEvent,
   isRelayEvent,
   isRelayOk,
@@ -15,10 +15,19 @@ import {
   isClientNegOpen,
   isClientNegClose,
 } from "@welshman/net"
-import {sign, pubkey, thunks, getPubkeyRelays} from "@welshman/app"
+import {merged} from "@welshman/store"
+import {
+  BlockedRelayLists,
+  MessagingRelayLists,
+  RelayLists,
+  RoomLists,
+  Thunks,
+  makeAppPolicyAuth,
+} from "@welshman/app"
+import type {AppPolicy, IApp} from "@welshman/app"
+import {app, appPolicies} from "@app/core"
 import {BLOCKED_RELAYS} from "@app/env"
 import {userSettingsValues, getSetting, RelayAuthMode} from "@app/settings"
-import {userSpaceUrls} from "@app/groups"
 
 // Relays sending events with empty signatures that the user has to choose to trust
 export const relaysPendingTrust = writable<string[]>([])
@@ -26,31 +35,52 @@ export const relaysPendingTrust = writable<string[]>([])
 // Relays that mostly send restricted responses to requests and events
 export const relaysMostlyRestricted = writable<Record<string, string>>({})
 
-export const authPolicy = makeSocketPolicyAuth({
-  sign,
-  shouldAuth: (socket: Socket) => {
-    const $pubkey = pubkey.get()
-    const mode = getSetting<RelayAuthMode>("relay_auth")
+// Welshman's default ingest policy drops anything that fails signature verification, but relays
+// the user has explicitly trusted are allowed to send events with an empty signature.
+export const ingestPolicy: AppPolicy = app =>
+  app.pool.subscribe(socket => {
+    const onReceive = (message: RelayMessage) => {
+      if (isRelayEvent(message)) {
+        const event = message[2]
+        const trusted = getSetting("trusted_relays").includes(socket.url)
 
-    if (!$pubkey) return false
-    if (mode === RelayAuthMode.Aggressive) return true
-    if (get(userSpaceUrls).includes(socket.url)) return true
-    if (getPubkeyRelays($pubkey).includes(socket.url)) return true
-    if (get(thunks).some(t => t.options.relays.includes(socket.url))) return true
-    if (getPubkeyRelays($pubkey, RelayMode.Messaging).includes(socket.url)) return true
+        if (isDVMKind(event.kind) || isEphemeralKind(event.kind)) return
+        if (!trusted && !verifyEvent(event)) return
 
-    return false
-  },
+        app.tracker.track(event.id, socket.url)
+        app.repository.publish(event)
+      }
+    }
+
+    socket.on(SocketEvent.Receive, onReceive)
+
+    return () => socket.off(SocketEvent.Receive, onReceive)
+  })
+
+// Welshman's appPolicyAuthUnlessBlocked, plus the conservative mode: only identify to relays
+// the user already has a relationship with.
+export const authPolicy = makeAppPolicyAuth((socket, $app) => {
+  const $pubkey = app.get().user?.pubkey
+
+  if (!$pubkey) return false
+  if ($app.use(BlockedRelayLists).urls($pubkey).get().includes(socket.url)) return false
+  if (getSetting("relay_auth") === RelayAuthMode.Aggressive) return true
+  if ($app.use(RoomLists).urls($pubkey).get().includes(socket.url)) return true
+  if ($app.use(RelayLists).urls($pubkey).get().includes(socket.url)) return true
+  if (get($app.use(Thunks).history).some(t => t.options.relays.includes(socket.url))) return true
+  if ($app.use(MessagingRelayLists).urls($pubkey).get().includes(socket.url)) return true
+
+  return false
 })
 
-export const blockPolicy = (socket: Socket) => {
+const makeBlockPolicy = ($app: IApp) => (socket: Socket) => {
   const previousOpen = socket.open
 
   socket.open = () => {
-    const $pubkey = pubkey.get()
+    const $pubkey = $app.user?.pubkey
 
     if (BLOCKED_RELAYS.includes(socket.url)) return
-    if ($pubkey && getPubkeyRelays($pubkey, RelayMode.Blocked).includes(socket.url)) return
+    if ($pubkey && $app.use(BlockedRelayLists).urls($pubkey).get().includes(socket.url)) return
 
     previousOpen()
   }
@@ -60,7 +90,7 @@ export const blockPolicy = (socket: Socket) => {
   }
 }
 
-export const trustPolicy = (socket: Socket) => {
+const trustPolicy = (socket: Socket) => {
   const buffer: RelayMessage[] = []
 
   const unsubscribers = [
@@ -76,7 +106,7 @@ export const trustPolicy = (socket: Socket) => {
     // the receive queue. If trust status is undefined, buffer it for later.
     on(socket, SocketEvent.Receiving, (message: RelayMessage) => {
       if (isRelayEvent(message) && !message[2]?.sig) {
-        const isTrusted = getSetting<string[]>("trusted_relays").includes(socket.url)
+        const isTrusted = getSetting("trusted_relays").includes(socket.url)
 
         if (!isTrusted) {
           buffer.push(message)
@@ -92,7 +122,7 @@ export const trustPolicy = (socket: Socket) => {
   }
 }
 
-export const mostlyRestrictedPolicy = (socket: Socket) => {
+const mostlyRestrictedPolicy = (socket: Socket) => {
   let total = 0
   let restricted = 0
 
@@ -173,3 +203,17 @@ export const mostlyRestrictedPolicy = (socket: Socket) => {
     unsubscribers.forEach(call)
   }
 }
+
+// Socket policies are installed on the pool rather than the app, so wrap them in an app policy
+// to get the same construction/cleanup lifecycle as everything else.
+export const socketPolicy: AppPolicy = $app => {
+  const policies = [makeBlockPolicy($app), trustPolicy, mostlyRestrictedPolicy]
+
+  $app.pool.socketPolicies.push(...policies)
+
+  return () => {
+    $app.pool.socketPolicies = $app.pool.socketPolicies.filter(p => !policies.includes(p))
+  }
+}
+
+appPolicies.push(ingestPolicy, authPolicy, socketPolicy)

@@ -1,13 +1,12 @@
 <script lang="ts">
   import {derived} from "svelte/store"
-  import {RELAY_ADD_MEMBER, RELAY_JOIN, getPubkeyTagValues} from "@welshman/util"
-  import {deriveRelay} from "@welshman/app"
+  import {RELAY_ADD_MEMBER, RELAY_JOIN, hexTags, tagValues} from "@welshman/util"
   import UsersGroup from "@assets/icons/users-group-rounded.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Link from "@lib/components/Link.svelte"
   import Profile from "@app/components/Profile.svelte"
-  import {deriveSpaceMembers} from "@app/members"
+  import {relayMemberLists, relays} from "@app/core"
   import {deriveEventsForUrl} from "@app/repository"
   import {makeSpacePath} from "@app/routes"
 
@@ -17,8 +16,8 @@
 
   const {url}: Props = $props()
 
-  const relay = deriveRelay(url)
-  const members = deriveSpaceMembers(url)
+  const relay = $relays.one(url)
+  const members = $relayMemberLists.forUrl(url)
   const memberEvents = deriveEventsForUrl(url, [{kinds: [RELAY_ADD_MEMBER, RELAY_JOIN]}])
 
   const admins = $derived($relay?.pubkey ? [$relay.pubkey] : [])
@@ -33,14 +32,15 @@
       const joinedAt = new Map<string, number>()
 
       for (const event of $memberEvents) {
-        const pubkeys = event.kind === RELAY_JOIN ? [event.pubkey] : getPubkeyTagValues(event.tags)
+        const pubkeys =
+          event.kind === RELAY_JOIN ? [event.pubkey] : tagValues(hexTags("p"), event.tags)
 
         for (const pubkey of pubkeys) {
           joinedAt.set(pubkey, Math.max(joinedAt.get(pubkey) || 0, event.created_at))
         }
       }
 
-      return $members
+      return ($members?.pubkeys() ?? [])
         .filter(pubkey => !adminSet.has(pubkey))
         .sort((a, b) => (joinedAt.get(b) || 0) - (joinedAt.get(a) || 0))
         .slice(0, 5)

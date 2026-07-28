@@ -2,34 +2,35 @@
   import {onMount, onDestroy} from "svelte"
   import {displayUrl, once} from "@welshman/lib"
   import {
-    getTags,
     getBlob,
     decryptFile,
-    getTagValue,
-    tagsFromIMeta,
     makeBlossomAuthEvent,
+    matchTags,
+    tagSpec,
+    tagValue,
   } from "@welshman/util"
-  import {signer} from "@welshman/app"
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
+  import {user} from "@app/core"
 
   const {value, event, ...props} = $props()
 
   const url = value.url.toString()
+  // An imeta tag packs its own tags into space-separated values, so unpack the one for this url.
   const meta =
-    getTags("imeta", event.tags)
-      .map(tagsFromIMeta)
-      .find(meta => getTagValue("url", meta) === url) || event.tags
+    matchTags(tagSpec("imeta"), event.tags)
+      .map(([, ...values]: string[]) => values.map(value => value.split(" ")))
+      .find(meta => tagValue(tagSpec("url"), meta) === url) || event.tags
 
   // Fallback to filename if hash was omitted from the message for interoperability
-  const hash = getTagValue("x", meta) || url.split(/[\/\.]/).slice(-2)[0]
-  const key = getTagValue("decryption-key", meta)
-  const nonce = getTagValue("decryption-nonce", meta)
-  const algorithm = getTagValue("encryption-algorithm", meta)
-  const mime = getTagValue("m", meta)
+  const hash = tagValue(tagSpec("x"), meta) || url.split(/[\/\.]/).slice(-2)[0]
+  const key = tagValue(tagSpec("decryption-key"), meta)
+  const nonce = tagValue(tagSpec("decryption-nonce"), meta)
+  const algorithm = tagValue(tagSpec("encryption-algorithm"), meta)
+  const mime = tagValue(tagSpec("m"), meta)
   const fileName =
-    getTagValue("filename", meta) ||
-    getTagValue("name", meta) ||
+    tagValue(tagSpec("filename"), meta) ||
+    tagValue(tagSpec("name"), meta) ||
     decodeURIComponent(new URL(url).pathname.split("/").filter(Boolean).at(-1) || "image")
 
   const revokeSrc = () => {
@@ -45,10 +46,10 @@
 
   const onError = once(async () => {
     // If the image failed to load, try authenticating
-    if (hash && $signer) {
+    if (hash) {
       const server = new URL(url).origin
       const template = makeBlossomAuthEvent({action: "get", server, hashes: [hash]})
-      const authEvent = await $signer.sign(template)
+      const authEvent = await $user.signer.sign(template)
       const res = await getBlob(server, hash, {authEvent})
 
       if (res.status === 200) {

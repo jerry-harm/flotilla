@@ -1,12 +1,16 @@
 <script lang="ts">
+  import {derived} from "svelte/store"
   import {now, DAY, uniq, sum} from "@welshman/lib"
-  import type {Zap, TrustedEvent} from "@welshman/util"
-  import {getTagValue, fromMsats, ZAP_RESPONSE} from "@welshman/util"
-  import {deriveItemsByKey, deriveArray} from "@welshman/store"
-  import {repository, getValidZap} from "@welshman/app"
+  import type {TrustedEvent} from "@welshman/util"
+  import {fromMsats, ZAP_RECEIPT} from "@welshman/util"
+  import {ZapGoal} from "@welshman/domain"
+  import type {Zap} from "@welshman/domain"
+  import {Zappers} from "@welshman/app"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
+  import {deriveEvents} from "@app/repository"
   import ZapButton from "@app/components/ZapButton.svelte"
+  import {app, reader} from "@app/core"
 
   type Props = {
     url?: string
@@ -16,18 +20,23 @@
 
   const {url, event, ...props}: Props = $props()
 
-  const zaps = deriveArray(
-    deriveItemsByKey<Zap>({
-      repository,
-      getKey: zap => zap.response.id,
-      filters: [{kinds: [ZAP_RESPONSE], "#e": [event.id]}],
-      eventToItem: (response: TrustedEvent) => getValidZap(response, event),
-    }),
+  const receipts = deriveEvents([{kinds: [ZAP_RECEIPT], "#e": [event.id]}])
+
+  const zaps = derived<typeof receipts, Zap[]>(
+    receipts,
+    ($receipts, set) => $app.use(Zappers).validZapReceipts($receipts, event).$.subscribe(set),
+    [],
   )
 
-  const goalAmount = parseInt(getTagValue("amount", event.tags) || "0")
-  const zapAmount = $derived(fromMsats(sum($zaps.map(zap => zap.invoiceAmount))))
-  const contributorsCount = $derived(uniq($zaps.map(zap => zap.request.pubkey)).length)
+  const goal = reader(ZapGoal)(event)
+
+  const goalAmount = goal.amount() ?? 0
+  const closedAt = goal.closedAt()
+
+  // NIP-75: receipts published after closed_at don't count toward the goal.
+  const counted = $derived($zaps.filter(zap => !closedAt || zap.response.created_at <= closedAt))
+  const zapAmount = $derived(fromMsats(sum(counted.map(zap => zap.invoiceAmount))))
+  const contributorsCount = $derived(uniq(counted.map(zap => zap.request.pubkey)).length)
   const daysOld = Math.ceil((now() - event.created_at) / DAY)
 </script>
 

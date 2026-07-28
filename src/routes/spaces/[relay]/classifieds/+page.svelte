@@ -5,7 +5,7 @@
   import {page} from "$app/stores"
   import {sortBy, partition, spec, max, pushToMapKey} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {CLASSIFIED, getTagValue} from "@welshman/util"
+  import {CLASSIFIED, tagSpec, tagValue} from "@welshman/util"
   import {fly} from "@lib/transition"
   import CaseMinimalistic from "@assets/icons/case-minimalistic.svg?dataurl"
   import Add from "@assets/icons/add.svg?dataurl"
@@ -34,7 +34,7 @@
     const [goals, comments] = partition(spec({kind: CLASSIFIED}), $events)
 
     for (const comment of comments) {
-      const id = getTagValue("E", comment.tags)
+      const id = tagValue(tagSpec("E"), comment.tags)
 
       if (id) {
         pushToMapKey(scores, id, comment.created_at)

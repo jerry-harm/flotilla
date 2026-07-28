@@ -1,29 +1,28 @@
 <script lang="ts">
-  import {ManagementMethod} from "@welshman/util"
-  import {displayProfileByPubkey} from "@welshman/app"
+  import type {RelayRoleReader} from "@welshman/domain"
   import MenuButton from "@lib/components/MenuButton.svelte"
   import Profile from "@app/components/Profile.svelte"
   import ProfileAbout from "@app/components/ProfileAbout.svelte"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
   import SpaceMemberMenu from "@app/components/SpaceMemberMenu.svelte"
   import RoleBadge from "@app/components/RoleBadge.svelte"
-  import {type SpaceRole} from "@app/members"
-  import {deriveSupportedMethods} from "@app/relays"
+  import {deriveSpaceSupportedMethods} from "@app/management"
   import {pushModal} from "@app/modal"
+  import {profiles} from "@app/core"
 
   interface Props {
     url: string
     pubkey: string
-    roles?: SpaceRole[]
+    roles?: RelayRoleReader[]
   }
 
   const {url, pubkey, roles = []}: Props = $props()
 
-  const supportedMethods = deriveSupportedMethods(url)
-  const canUnallow = $derived($supportedMethods.includes(ManagementMethod.UnallowPubkey))
-  const canBan = $derived($supportedMethods.includes(ManagementMethod.BanPubkey))
-  const canAssign = $derived($supportedMethods.some(m => (m as string) === "assignrole"))
-  const canUnassign = $derived($supportedMethods.some(m => (m as string) === "unassignrole"))
+  const supportedMethods = deriveSpaceSupportedMethods(url)
+  const canUnallow = $derived($supportedMethods.includes("unallowpubkey"))
+  const canBan = $derived($supportedMethods.includes("banpubkey"))
+  const canAssign = $derived($supportedMethods.includes("assignrole"))
+  const canUnassign = $derived($supportedMethods.includes("unassignrole"))
 
   const openProfile = () => pushModal(ProfileDetail, {pubkey, url})
 </script>
@@ -32,7 +31,7 @@
   <button
     type="button"
     class="absolute inset-0 cursor-pointer rounded-2xl"
-    aria-label="View {displayProfileByPubkey(pubkey)}'s profile"
+    aria-label="View {$profiles.display(pubkey).get()}'s profile"
     onclick={openProfile}>
   </button>
   <div class="pointer-events-none relative flex items-start justify-between gap-2">
@@ -40,7 +39,7 @@
       <Profile {pubkey} {url} inert />
       {#if roles.length > 0}
         <div class="flex flex-wrap gap-x-3 gap-y-1">
-          {#each roles as role (role.id)}
+          {#each roles as role (role.identifier())}
             <RoleBadge {role} />
           {/each}
         </div>

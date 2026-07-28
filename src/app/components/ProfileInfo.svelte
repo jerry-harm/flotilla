@@ -1,10 +1,9 @@
 <script lang="ts">
   import * as nip19 from "nostr-tools/nip19"
-  import {Router} from "@welshman/router"
+  import {onMount} from "svelte"
   import {call, LOCALE, secondsToDate} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {displayRelayUrl, toNostrURI} from "@welshman/util"
-  import {tracker} from "@welshman/app"
+  import {displayRelayUrl, outbox, toNostrURI} from "@welshman/util"
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import Copy from "@assets/icons/copy.svg?dataurl"
   import UserId from "@assets/icons/user-id.svg?dataurl"
@@ -18,6 +17,7 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
+  import {app, router} from "@app/core"
   import {clip} from "@app/toast"
 
   type Props = {
@@ -27,10 +27,8 @@
 
   const {url, event}: Props = $props()
 
-  const relays = url ? [url] : Router.get().FromPubkeys([event.pubkey]).getUrls()
-  const nprofile1 = toNostrURI(nip19.nprofileEncode({pubkey: event.pubkey, relays}))
   const npub1 = nip19.npubEncode(event.pubkey)
-  const seenOn = tracker.getRelays(event.id)
+  const seenOn = $app.tracker.getRelays(event.id)
   const json = call(() => {
     try {
       return JSON.stringify(JSON.parse(event.content), null, 2)
@@ -46,6 +44,14 @@
   const formatter = new Intl.DateTimeFormat(LOCALE, {
     dateStyle: "long",
     timeStyle: "long",
+  })
+
+  let nprofile1 = $state("")
+
+  onMount(async () => {
+    const relays = url ? [url] : await $router.resolver.relays([outbox(event.pubkey)])
+
+    nprofile1 = toNostrURI(nip19.nprofileEncode({pubkey: event.pubkey, relays}))
   })
 </script>
 
@@ -98,9 +104,9 @@
         {/snippet}
         {#snippet input()}
           <div class="flex flex-wrap gap-2">
-            {#each seenOn as url, i (url)}
+            {#each seenOn as seenUrl (seenUrl)}
               <Badge class="bg-surface flex gap-1">
-                {displayRelayUrl(url)}
+                {displayRelayUrl(seenUrl)}
               </Badge>
             {/each}
           </div>

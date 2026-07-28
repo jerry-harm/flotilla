@@ -3,7 +3,7 @@
   import type {Writable} from "svelte/store"
   import type {Instance} from "tippy.js"
   import {remove, reject, spec, uniq} from "@welshman/lib"
-  import {createSearch, topics} from "@welshman/app"
+  import {Topics, createSearch} from "@welshman/app"
   import {normalizeTopic} from "@lib/util"
   import Suggestions from "@lib/components/Suggestions.svelte"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
@@ -12,13 +12,16 @@
   import Tippy from "@lib/components/Tippy.svelte"
   import Button from "@lib/components/Button.svelte"
   import TopicSuggestion from "@app/components/TopicSuggestion.svelte"
+  import {app} from "@app/core"
 
-  interface Props {
+  type Props = {
     value: string[]
     term?: Writable<string>
   }
 
   let {value = $bindable(), term = writable("")}: Props = $props()
+
+  const topics = $app.use(Topics).all.$
 
   const topicSearch = $derived.by(() =>
     createSearch(reject(spec({name: value}), $topics), {

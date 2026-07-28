@@ -7,8 +7,8 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import RelayIcon from "@app/components/RelayIcon.svelte"
   import RelayName from "@app/components/RelayName.svelte"
+  import {roomLists} from "@app/core"
   import {makeSpacePath} from "@app/routes"
-  import {deriveGroupList, getSpaceUrlsFromGroupList} from "@app/groups"
 
   type Props = {
     pubkey: string
@@ -16,14 +16,13 @@
 
   const {pubkey}: Props = $props()
 
-  const groupList = deriveGroupList(pubkey)
-  const spaceUrls = $derived(getSpaceUrlsFromGroupList($groupList))
+  const spaceUrls = $roomLists.urls(pubkey).$
 
   const back = () => history.back()
 </script>
 
 <div class="flex flex-col gap-2">
-  {#each spaceUrls as url (url)}
+  {#each $spaceUrls as url (url)}
     <div class="card flex flex-row items-center gap-2">
       <div class="shrink-0">
         <RelayIcon {url} size={12} />

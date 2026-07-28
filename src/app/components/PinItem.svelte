@@ -2,16 +2,17 @@
   import * as nip19 from "nostr-tools/nip19"
   import {removeUndefined} from "@welshman/lib"
   import {Address} from "@welshman/util"
+  import type {PinReader} from "@welshman/domain"
   import Badge from "@lib/components/Badge.svelte"
   import MenuButton from "@lib/components/MenuButton.svelte"
   import Content from "@app/components/Content.svelte"
   import PinContentEvent from "@app/components/PinContentEvent.svelte"
   import PinMenu from "@app/components/PinMenu.svelte"
-  import {type PublishedPin} from "@app/pinboards"
+  import {pinToReference} from "@app/pinboards"
 
   type Props = {
     url: string
-    pin: PublishedPin
+    pin: PinReader
     minimal?: boolean
     class?: string
   }
@@ -20,20 +21,20 @@
 
   // Encode nostr references as nostr: entities (i tags are already urls) so
   // Content parses them into rich embeds rather than rendering raw ids/coords.
+  const reference = $derived(pin.reference())
+
   const content = $derived.by(() => {
-    const [type, data = ""] = pin.value
+    if (reference?.type === "event") {
+      return "nostr:" + nip19.neventEncode({id: reference.id, relays: [url]})
+    }
 
-    if (type === "e") return "nostr:" + nip19.neventEncode({id: data, relays: [url]})
-
-    if (type === "p") return "nostr:" + nip19.nprofileEncode({pubkey: data, relays: [url]})
-
-    if (type === "a") {
-      const {kind, pubkey, identifier} = Address.from(data)
+    if (reference?.type === "address") {
+      const {kind, pubkey, identifier} = Address.from(reference.address)
 
       return "nostr:" + nip19.naddrEncode({kind, pubkey, identifier, relays: [url]})
     }
 
-    return data
+    return pinToReference(pin)
   })
 </script>
 
@@ -48,20 +49,23 @@
         componentProps={{url, pin}} />
     </div>
   {/if}
-  {#if pin.title}
-    <strong class="truncate min-w-0 pr-8">{pin.title}</strong>
+  {#if pin.title()}
+    <strong class="truncate min-w-0 pr-8">{pin.title()}</strong>
   {/if}
-  {#if pin.description}
-    <Content event={{content: pin.description, tags: []}} {url} />
+  {#if pin.content()}
+    <Content event={{content: pin.content(), tags: []}} {url} />
   {/if}
-  {#if pin.value[0] === "e" || pin.value[0] === "a"}
-    <PinContentEvent {url} value={pin.value[1]} relays={removeUndefined([pin.value[2], url])} />
+  {#if reference?.type === "event" || reference?.type === "address"}
+    <PinContentEvent
+      {url}
+      value={reference.type === "event" ? reference.id : reference.address}
+      relays={removeUndefined([reference.relay, url])} />
   {:else}
     <Content event={{content, tags: []}} {url} />
   {/if}
-  {#if !minimal && pin.topics.length > 0}
+  {#if !minimal && pin.topics().length > 0}
     <div class="mt-auto flex flex-wrap gap-1">
-      {#each pin.topics as topic (topic)}
+      {#each pin.topics() as topic (topic)}
         <Badge>#{topic}</Badge>
       {/each}
     </div>

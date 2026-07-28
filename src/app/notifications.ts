@@ -1,26 +1,26 @@
 import {derived, get, writable} from "svelte/store"
 import {Badge} from "@capawesome/capacitor-badge"
-import {synced, throttled, withGetter} from "@welshman/store"
-import {pubkey, signer, tracker, repository, relaysByUrl} from "@welshman/app"
+import {page} from "$app/stores"
 import {assoc, prop, first, identity, groupBy, now, throttle, parseJson, gt} from "@welshman/lib"
 import type {SignedEvent, TrustedEvent} from "@welshman/util"
-import {deriveEventsByIdByUrl} from "@welshman/store"
 import {
   sortEventsDesc,
-  getTagValue,
+  tagSpec,
+  tagValue,
   MESSAGE,
   makeHttpAuth,
   makeHttpAuthHeader,
 } from "@welshman/util"
+import {synced, throttled, withGetter} from "@welshman/store"
+import {Relays, RoomLists} from "@welshman/app"
+import {deriveEventsByIdByUrl} from "@app/repository"
+import {app, fromApp} from "@app/core"
 import {makeSpacePath, makeRoomPath, makeSpaceChatPath, makeChatPath} from "@app/routes"
 import {CONTENT_KINDS, makeCommentFilter} from "@app/content"
 import {notificationSettings} from "@app/settings"
 import {chatsById} from "@app/chats"
-import {userGroupList, getSpaceUrlsFromGroupList} from "@app/groups"
-import {hasNip29} from "@app/relays"
 import {dufflepud, DUFFLEPUD_URL, PLATFORM_RELAYS} from "@app/env"
 import {kv} from "@app/storage"
-import {page} from "$app/stores"
 
 // Checked state
 
@@ -84,7 +84,7 @@ const NIP98_MAX_AGE = 23 * 60 * 60
 let nip98Auth: SignedEvent | undefined
 
 const nip98Header = async () => {
-  const $signer = signer.get()
+  const $signer = app.get().user?.signer
 
   if (!$signer) {
     return undefined
@@ -148,11 +148,11 @@ const pushCheckedRemote = throttle(3000, async () => {
 export const syncCheckedRemote = () => {
   let ready = false
 
-  const unsubscribePubkey = pubkey.subscribe($pubkey => {
+  const unsubscribeUser = app.subscribe($app => {
     ready = false
     nip98Auth = undefined
 
-    if ($pubkey) {
+    if ($app.user) {
       pullCheckedRemote().then(() => {
         ready = true
         pushCheckedRemote()
@@ -161,13 +161,13 @@ export const syncCheckedRemote = () => {
   })
 
   const unsubscribeChecked = checked.subscribe(() => {
-    if (ready && pubkey.get()) {
+    if (ready && app.get().user?.pubkey) {
       pushCheckedRemote()
     }
   })
 
   return () => {
-    unsubscribePubkey()
+    unsubscribeUser()
     unsubscribeChecked()
   }
 }
@@ -179,23 +179,22 @@ export const allNotifications = derived(
     1000,
     derived(
       [
-        pubkey,
+        app,
         checked,
         chatsById,
-        relaysByUrl,
-        userGroupList,
-        deriveEventsByIdByUrl({
-          tracker,
-          repository,
-          filters: [{kinds: [MESSAGE, ...CONTENT_KINDS]}, makeCommentFilter(CONTENT_KINDS)],
-        }),
+        fromApp($app => $app.use(Relays).index.$),
+        fromApp($app => $app.use(RoomLists).index.$),
+        deriveEventsByIdByUrl([
+          {kinds: [MESSAGE, ...CONTENT_KINDS]},
+          makeCommentFilter(CONTENT_KINDS),
+        ]),
       ],
       identity,
     ),
   ),
-  ([$pubkey, $checked, $chatsById, $relaysByUrl, $userGroupList, eventsByIdByUrl]) => {
+  ([$app, $checked, $chatsById, $relays, $roomLists, eventsByIdByUrl]) => {
     const hasNotification = (path: string, latestEvent?: TrustedEvent) => {
-      if (!latestEvent || latestEvent.pubkey === $pubkey) {
+      if (!latestEvent || latestEvent.pubkey === $app.user?.pubkey) {
         return false
       }
 
@@ -224,15 +223,15 @@ export const allNotifications = derived(
       }
     }
 
-    const urls =
-      PLATFORM_RELAYS.length > 0 ? PLATFORM_RELAYS : getSpaceUrlsFromGroupList($userGroupList)
+    const roomList = $app.user?.pubkey ? $roomLists.get($app.user?.pubkey) : undefined
+    const urls = PLATFORM_RELAYS.length > 0 ? PLATFORM_RELAYS : (roomList?.urls() ?? [])
 
     for (const url of urls) {
       const spacePath = makeSpacePath(url)
       const events = sortEventsDesc((eventsByIdByUrl.get(url) || new Map()).values())
 
-      if (hasNip29($relaysByUrl.get(url))) {
-        for (const [h, [latestEvent]] of groupBy(e => getTagValue("h", e.tags), events)) {
+      if ($relays.get(url)?.hasNip(29)) {
+        for (const [h, [latestEvent]] of groupBy(e => tagValue(tagSpec("h"), e.tags), events)) {
           if (h) {
             const roomPath = makeRoomPath(url, h)
 

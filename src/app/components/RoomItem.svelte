@@ -1,6 +1,6 @@
 <script lang="ts">
   import cx from "classnames"
-  import {readable} from "svelte/store"
+  import {get, readable} from "svelte/store"
   import {
     hash,
     gte,
@@ -10,14 +10,7 @@
     formatTimestampAsDate,
   } from "@welshman/lib"
   import type {TrustedEvent, EventContent} from "@welshman/util"
-  import {MESSAGE, COMMENT, getTag} from "@welshman/util"
-  import {
-    thunks,
-    pubkey,
-    mergeThunks,
-    deriveProfileDisplay,
-    displayProfileByPubkey,
-  } from "@welshman/app"
+  import {MESSAGE, COMMENT, matchTag, tagSpec, tagValue} from "@welshman/util"
   import {isMobile} from "@lib/html"
   import Pen from "@assets/icons/pen.svg?dataurl"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
@@ -27,6 +20,7 @@
   import Link from "@lib/components/Link.svelte"
   import Button from "@lib/components/Button.svelte"
   import ThunkFailure from "@app/components/ThunkFailure.svelte"
+  import {publishReaction, retractReaction} from "@app/reactions"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
@@ -35,16 +29,14 @@
   import RoomItemMenuButton from "@app/components/RoomItemMenuButton.svelte"
   import RoomItemMenuMobile from "@app/components/RoomItemMenuMobile.svelte"
   import RoomItemContent from "@app/components/RoomItemContent.svelte"
+  import {profiles, thunks, user} from "@app/core"
   import {colors} from "@app/theme"
   import {ENABLE_ZAPS} from "@app/env"
-  import {deriveEventsForUrl, deriveEvent} from "@app/repository"
-  import {publishDelete} from "@app/deletes"
-  import {publishReaction} from "@app/reactions"
-  import {canEnforceNip70} from "@app/relays"
+  import {deriveEvent, deriveEventsForUrl} from "@app/repository"
   import {getRoomItemPath} from "@app/routes"
   import {pushModal} from "@app/modal"
 
-  interface Props {
+  type Props = {
     url: string
     event: TrustedEvent
     replyTo?: (event: TrustedEvent) => void
@@ -56,13 +48,13 @@
   const {url, event, replyTo = undefined, showPubkey = false, canEdit, onEdit}: Props = $props()
 
   const path = getRoomItemPath(url, event)
-  const shouldProtect = canEnforceNip70(url)
+  const h = tagValue(tagSpec("h"), event.tags)
   const today = formatTimestampAsDate(now())
-  const profileDisplay = deriveProfileDisplay(event.pubkey, [url])
-  const thunk = mergeThunks($thunks.filter(t => t.event.id === event.id))
+  const profileDisplay = $profiles.display(event.pubkey, [url]).$
+  const thunk = $thunks.merge(get($thunks.history).filter(t => t.event.id === event.id))
   const [_, colorValue] = colors[hash(event.pubkey) % colors.length]
 
-  const qTag = getTag("q", event.tags)
+  const qTag = matchTag(tagSpec("q"), event.tags)
   const isQuoteOnly = Boolean(
     gte(qTag?.length, 2) && event.content.trim().match(/^nostr:n(event|addr)1\w+\s*$/),
   )
@@ -78,11 +70,9 @@
 
   const openProfile = () => pushModal(ProfileDetail, {pubkey: event.pubkey, url})
 
-  const deleteReaction = async (event: TrustedEvent) =>
-    publishDelete({relays: [url], event, protect: await shouldProtect})
+  const deleteReaction = (reaction: TrustedEvent) => retractReaction(reaction, {url, h})
 
-  const createReaction = async (template: EventContent) =>
-    publishReaction({...template, event, relays: [url], protect: await shouldProtect})
+  const createReaction = (values: EventContent) => publishReaction(event, values, {url, h})
 </script>
 
 <TapTarget
@@ -138,8 +128,8 @@
       innerEvent={$innerEvent} />
     {#if path && $innerComments.length > 0}
       {@const pubkeys = $innerComments.map(e => e.pubkey)}
-      {@const isOwn = $pubkey && pubkeys.includes($pubkey)}
-      {@const info = displayList(pubkeys.map(pubkey => displayProfileByPubkey(pubkey)))}
+      {@const isOwn = pubkeys.includes($user.pubkey)}
+      {@const info = displayList(pubkeys.map(pk => $profiles.display(pk).get()))}
       {@const tooltip = `${info} commented`}
       <div data-tip={tooltip} class="tip tip-right flex">
         <Link

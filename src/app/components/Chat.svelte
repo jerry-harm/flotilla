@@ -18,22 +18,9 @@
     formatTimestampAsDate,
   } from "@welshman/lib"
   import type {TrustedEvent, EventTemplate, EventContent} from "@welshman/util"
+  import {makeEvent, DIRECT_MESSAGE, DIRECT_MESSAGE_FILE} from "@welshman/util"
   import {parse, isLink} from "@welshman/content"
-  import {
-    makeEvent,
-    tagsFromIMeta,
-    getTags,
-    DIRECT_MESSAGE,
-    DIRECT_MESSAGE_FILE,
-  } from "@welshman/util"
-  import {
-    pubkey,
-    tagPubkey,
-    sendWrapped,
-    mergeThunks,
-    loadMessagingRelayList,
-    messagingRelayListsByPubkey,
-  } from "@welshman/app"
+  import {MessagingRelayLists, Thunks} from "@welshman/app"
   import Danger from "@assets/icons/danger-triangle.svg?dataurl"
   import ArrowLeft from "@assets/icons/arrow-left.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -52,12 +39,12 @@
   import ChatComposeEdit from "@app/components/ChatComposeEdit.svelte"
   import ChatComposeParent from "@app/components/ChatComposeParent.svelte"
   import ThunkToast from "@app/components/ThunkToast.svelte"
+  import {app, deletes, user, wraps} from "@app/core"
   import {userSettingsValues} from "@app/settings"
   import {deriveChat, makeChatId} from "@app/chats"
   import {pushModal} from "@app/modal"
   import {DraftKey} from "@app/drafts"
-  import {makeDelete} from "@app/deletes"
-  import {prependParent} from "@app/groups"
+  import {prependParent} from "@app/rooms"
   import {pushToast} from "@app/toast"
 
   type Props = {
@@ -70,8 +57,9 @@
   const chatId = makeChatId(pubkeys)
   const chat = deriveChat(chatId)
   const draftKey = new DraftKey<{content?: string | object}>(`dm:${chatId}`)
-  const others = remove($pubkey!, pubkeys)
-  const missingRelayLists = $derived(others.filter(pk => !$messagingRelayListsByPubkey.has(pk)))
+  const others = remove($user.pubkey, pubkeys)
+  const messagingRelayLists = $app.use(MessagingRelayLists).index.$
+  const missingRelayLists = $derived(others.filter(pk => !$messagingRelayLists.has(pk)))
 
   const showMembers = () =>
     others.length === 1
@@ -95,28 +83,26 @@
 
   const onSubmit = async (params: EventContent) => {
     try {
-      const ptags = remove($pubkey!, pubkeys).map(tagPubkey)
+      const ptags = others.map(pk => ["p", pk])
 
       // Remove p tags since they result in forking the conversation
       params.tags = params.tags.filter(nthNe(0, "p"))
 
       // Add our reply quote to content
-      params = prependParent(parent, params)
+      params = await prependParent(parent, params)
 
       if (eventToEdit) {
         if (eventToEdit.content === params.content) {
           return
         }
 
-        await sendWrapped({
-          event: makeDelete({event: eventToEdit, protect: false}),
-          recipients: pubkeys,
-          pow: 16,
-        })
+        const command = await $deletes.deleteEvent(eventToEdit)
+
+        await $wraps.publish({event: command.event, recipients: pubkeys, pow: 16})
       }
 
       const [imetaTags, tags] = partition(nthEq(0, "imeta"), params.tags)
-      const imetas = getTags("imeta", imetaTags).map(tagsFromIMeta)
+      const imetas = imetaTags.map(tag => tag.slice(1).map(entry => entry.split(" ")))
       const templates: EventTemplate[] = []
       const buffer = []
 
@@ -141,11 +127,7 @@
 
         if (isLink(p) && imeta) {
           addTemplate(DIRECT_MESSAGE, buffer.splice(0).join(""), tags)
-          addTemplate(
-            DIRECT_MESSAGE_FILE,
-            p.value.url.toString(),
-            imeta.slice(1).filter(nthNe(0, "url")),
-          )
+          addTemplate(DIRECT_MESSAGE_FILE, p.value.url.toString(), imeta.filter(nthNe(0, "url")))
         } else {
           buffer.push(p.raw)
         }
@@ -157,7 +139,7 @@
       // Sleep 1 second between each one to make sure timestamps are distinct
       const thunks = await Promise.all(
         Array.from(enumerate(templates)).map(([i, event]) =>
-          sendWrapped({
+          $wraps.publish({
             event,
             recipients: pubkeys,
             delay: $userSettingsValues.send_delay + ms(i),
@@ -170,7 +152,7 @@
         timeout: 30_000,
         children: {
           component: ThunkToast,
-          props: {thunk: mergeThunks(thunks)},
+          props: {thunk: $app.use(Thunks).merge(thunks)},
         },
       })
     } finally {
@@ -185,7 +167,7 @@
   }
 
   const canEditEvent = (event: TrustedEvent) =>
-    event.pubkey === $pubkey &&
+    event.pubkey === $user.pubkey &&
     event.kind === DIRECT_MESSAGE &&
     event.created_at >= ago(500, MINUTE)
 
@@ -233,7 +215,7 @@
 
   onMount(() => {
     for (const pubkey of others) {
-      loadMessagingRelayList(pubkey)
+      $app.use(MessagingRelayLists).load(pubkey)
     }
   })
 
@@ -252,8 +234,8 @@
         <Button class="flex flex-col gap-1 sm:flex-row sm:gap-2" onclick={showMembers}>
           {#if others.length === 0}
             <div class="flex gap-2">
-              <ProfileCircle pubkey={$pubkey!} size={5} />
-              <ProfileName pubkey={$pubkey!} />
+              <ProfileCircle pubkey={$user.pubkey} size={5} />
+              <ProfileName pubkey={$user.pubkey} />
             </div>
           {:else if others.length === 1}
             <div class="flex gap-2">
@@ -294,7 +276,7 @@
           {#each missingRelayLists as pubkey (pubkey)}
             <ProfileLink {pubkey} />
           {/each}
-          to enable direct messaging by opening this conversation in their app.
+          to enable direct messaging by opening this conversation in their $app.
         </p>
       </div>
     </div>

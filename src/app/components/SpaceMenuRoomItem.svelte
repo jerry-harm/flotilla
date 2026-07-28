@@ -5,7 +5,8 @@
   import SecondaryNavItem from "@lib/components/SecondaryNavItem.svelte"
   import RoomNameWithImage from "@app/components/RoomNameWithImage.svelte"
   import VoiceRoomItem from "@app/components/VoiceRoomItem.svelte"
-  import {deriveRoom, getRoomType, RoomType} from "@app/groups"
+  import {rooms} from "@app/core"
+  import {RoomType, getRoomType} from "@app/rooms"
   import {deriveShouldNotify} from "@app/settings"
   import {notifications} from "@app/notifications"
   import {makeRoomPath} from "@app/routes"
@@ -19,14 +20,14 @@
 
   const {url, h, replaceState = false, tooltip = true}: Props = $props()
 
-  const room = deriveRoom(url, h)
+  const room = $rooms.forRoom(url, h)
   const roomType = $derived(getRoomType($room))
   const path = makeRoomPath(url, h)
   const shouldNotifyForSpace = deriveShouldNotify(url)
   const shouldNotifyForRoom = deriveShouldNotify(url, h)
   const showDifferenceIcon = $derived($shouldNotifyForRoom !== $shouldNotifyForSpace)
   const notification = $derived($shouldNotifyForRoom ? $notifications.has(path) : false)
-  const roomName = $derived($room?.name || h)
+  const roomName = $derived($room?.meta?.name() || h)
 </script>
 
 {#if roomType === RoomType.Voice}

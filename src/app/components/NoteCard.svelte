@@ -11,14 +11,7 @@
   import {goToEvent} from "@app/routes"
   import {isEventMuted} from "@app/social"
 
-  const {
-    event,
-    children,
-    minimal = false,
-    hideProfile = false,
-    url,
-    ...restProps
-  }: {
+  type Props = {
     event: TrustedEvent
     children?: Snippet
     minimal?: boolean
@@ -26,11 +19,15 @@
     url?: string
     class?: string
     style?: string
-  } = $props()
+  }
+
+  const {event, children, minimal = false, hideProfile = false, url, ...restProps}: Props = $props()
 
   const ignoreMute = () => {
     muted = false
   }
+
+  const goToNote = () => goToEvent(event)
 
   let muted = $state($isEventMuted(event))
 </script>
@@ -55,7 +52,7 @@
       {/if}
       <Button
         class={cx("text-sm opacity-75 @max-sm:hidden", {"text-xs": minimal})}
-        onclick={() => goToEvent(event)}>
+        onclick={goToNote}>
         {formatTimestamp(event.created_at)}
       </Button>
     </div>

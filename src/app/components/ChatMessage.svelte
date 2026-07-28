@@ -3,7 +3,7 @@
   import {type Instance} from "tippy.js"
   import {hash, formatTimestampAsTime} from "@welshman/lib"
   import type {TrustedEvent, EventContent} from "@welshman/util"
-  import {thunks, mergeThunks, pubkey, deriveProfileDisplay, sendWrapped} from "@welshman/app"
+  import {Thunks} from "@welshman/app"
   import {isMobile} from "@lib/html"
   import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -11,15 +11,15 @@
   import Tippy from "@lib/components/Tippy.svelte"
   import TapTarget from "@lib/components/TapTarget.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
+  import {publishWrappedReaction, retractWrappedReaction} from "@app/reactions"
   import Content from "@app/components/Content.svelte"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
   import ThunkFailure from "@app/components/ThunkFailure.svelte"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
   import ChatMessageMenu from "@app/components/ChatMessageMenu.svelte"
   import ChatMessageMenuMobile from "@app/components/ChatMessageMenuMobile.svelte"
+  import {app, profiles, user} from "@app/core"
   import {colors} from "@app/theme"
-  import {makeDelete} from "@app/deletes"
-  import {makeReaction} from "@app/reactions"
   import {pushModal} from "@app/modal"
 
   interface Props {
@@ -33,23 +33,18 @@
 
   const {event, replyTo, canEdit, onEdit, pubkeys, showPubkey = false}: Props = $props()
 
-  const isOwn = event.pubkey === $pubkey
-  const profileDisplay = deriveProfileDisplay(event.pubkey)
-  const thunk = mergeThunks($thunks.filter(t => t.event.id === event.id))
+  const isOwn = event.pubkey === $user.pubkey
+  const profileDisplay = $profiles.display(event.pubkey).$
+  const thunks = $app.use(Thunks).history
+  const thunk = $app.use(Thunks).merge($thunks.filter(t => t.event.id === event.id))
   const [_, colorValue] = colors[hash(event.pubkey) % colors.length]
 
   const reply = () => replyTo(event)
   const edit = canEdit?.(event) ? () => onEdit?.(event) : undefined
 
-  const deleteReaction = (event: TrustedEvent) =>
-    sendWrapped({event: makeDelete({event, protect: false}), recipients: pubkeys, pow: 16})
+  const deleteReaction = (reaction: TrustedEvent) => retractWrappedReaction(reaction, pubkeys)
 
-  const createReaction = (template: EventContent) =>
-    sendWrapped({
-      event: makeReaction({event, protect: false, ...template}),
-      recipients: pubkeys,
-      pow: 16,
-    })
+  const createReaction = (values: EventContent) => publishWrappedReaction(event, values, pubkeys)
 
   const openProfile = () => pushModal(ProfileDetail, {pubkey: event.pubkey})
 
@@ -67,9 +62,7 @@
   let popoverIsVisible = $state(false)
 </script>
 
-{#if thunk}
-  <ThunkFailure showToastOnRetry {thunk} class="mt-1" />
-{/if}
+<ThunkFailure showToastOnRetry {thunk} class="mt-1" />
 <div
   data-event={event.id}
   class={cx("group flex items-center justify-end gap-1 px-2", {"flex-row-reverse": !isOwn})}>

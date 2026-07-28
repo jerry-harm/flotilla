@@ -3,7 +3,6 @@
   import type {Writable} from "svelte/store"
   import {type Instance} from "tippy.js"
   import {append, remove, uniq} from "@welshman/lib"
-  import {profileSearch} from "@welshman/app"
   import {decodePubkey} from "@lib/util"
   import Suggestions from "@lib/components/Suggestions.svelte"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
@@ -15,15 +14,18 @@
   import ProfileSuggestion from "@app/editor/ProfileSuggestion.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
+  import {profiles} from "@app/core"
   import {pushModal} from "@app/modal"
 
-  interface Props {
+  type Props = {
     value: string[]
     autofocus?: boolean
     term?: Writable<string>
   }
 
   let {value = $bindable(), term = writable(""), autofocus = false}: Props = $props()
+
+  const profileSearch = $profiles.profileSearch
 
   const search = (term: string) => $profileSearch.searchValues(term)
 

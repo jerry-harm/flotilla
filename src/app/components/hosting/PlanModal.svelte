@@ -13,9 +13,9 @@
   import PricingTable from "@app/components/hosting/PricingTable.svelte"
   import PaymentDialog from "@app/components/hosting/PaymentDialog.svelte"
   import PaymentSetup from "@app/components/hosting/PaymentSetup.svelte"
+  import {user} from "@app/core"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
-  import {pubkey} from "@welshman/app"
   import {
     autopayConfigured,
     derivePlans,
@@ -25,12 +25,12 @@
     reconcileTenant,
     selectPayableInvoice,
     updateRelay,
-    type Relay,
+    type HostedRelay,
   } from "@app/hosting"
 
   type Props = {
-    relay: Relay
-    onUpdate?: (relay: Relay) => void
+    relay: HostedRelay
+    onUpdate?: (relay: HostedRelay) => void
   }
 
   const {relay, onUpdate}: Props = $props()
@@ -70,14 +70,14 @@
         return
       }
 
-      await reconcileTenant($pubkey!)
+      await reconcileTenant($user.pubkey)
 
-      const tenant = await getTenant($pubkey!)
+      const tenant = await getTenant($user.pubkey)
 
       if (autopayConfigured(tenant)) {
         back()
       } else {
-        const invoice = selectPayableInvoice(await listTenantInvoices($pubkey!))
+        const invoice = selectPayableInvoice(await listTenantInvoices($user.pubkey))
 
         if (invoice) {
           pushModal(PaymentDialog, {invoice}, {replaceState: true})

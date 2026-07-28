@@ -1,7 +1,7 @@
 <script lang="ts">
-  import {bytesToHex} from "@welshman/lib"
-  import {loginWithNip01} from "@welshman/app"
   import {decrypt} from "nostr-tools/nip49"
+  import {bytesToHex} from "@welshman/lib"
+  import {nip01, toSession} from "@welshman/app"
   import {preventDefault} from "@lib/html"
   import {nsecDecode} from "@lib/util"
   import Spinner from "@lib/components/Spinner.svelte"
@@ -19,6 +19,7 @@
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
+  import {login} from "@app/core"
   import {clearModals} from "@app/modal"
   import {setChecked} from "@app/notifications"
   import {pushToast} from "@app/toast"
@@ -56,7 +57,7 @@
         })
       }
 
-      loginWithNip01(secret)
+      await login(toSession(nip01, {secret}))
       setChecked("*")
       clearModals()
     } catch (e) {

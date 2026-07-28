@@ -1,16 +1,17 @@
 <script lang="ts">
   import type {ComponentProps} from "svelte"
+  import {Pinboard} from "@welshman/domain"
   import Content from "@app/components/Content.svelte"
-  import {readBoard} from "@app/pinboards"
+  import {reader} from "@app/core"
 
   const props: ComponentProps<typeof Content> = $props()
 
-  const board = readBoard(props.event)
+  const board = reader(Pinboard)(props.event)
 </script>
 
 <div class="flex flex-col">
-  <strong class="text-lg">{board.title || "Untitled shelf"}</strong>
-  {#if board.description}
-    <span class="text-sm opacity-70">{board.description}</span>
+  <strong class="text-lg">{board?.title() || "Untitled shelf"}</strong>
+  {#if board?.description()}
+    <span class="text-sm opacity-70">{board.description()}</span>
   {/if}
 </div>

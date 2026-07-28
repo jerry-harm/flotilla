@@ -3,18 +3,18 @@
   import type {Instance} from "tippy.js"
   import type {NativeEmoji} from "emoji-picker-element/shared"
   import type {TrustedEvent} from "@welshman/util"
+  import {tagSpec, tagValue} from "@welshman/util"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
   import SmileCircle from "@assets/icons/smile-circle.svg?dataurl"
   import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
   import Button from "@lib/components/Button.svelte"
-  import ZapButton from "@app/components/ZapButton.svelte"
   import EmojiButton from "@lib/components/EmojiButton.svelte"
+  import ZapButton from "@app/components/ZapButton.svelte"
   import EventMenu from "@app/components/EventMenu.svelte"
+  import {reactions, relays} from "@app/core"
   import {ENABLE_ZAPS} from "@app/env"
-  import {publishReaction} from "@app/reactions"
-  import {canEnforceNip70} from "@app/relays"
 
   type Props = {
     url: string
@@ -26,19 +26,26 @@
 
   const {url, noun, event, hideZap, customActions}: Props = $props()
 
-  const shouldProtect = canEnforceNip70(url)
+  const shouldProtect = $relays.hasNip(url, 70)
 
   const showPopover = () => popover?.show()
 
   const hidePopover = () => popover?.hide()
 
-  const onEmoji = async (emoji: NativeEmoji) =>
-    publishReaction({
-      event,
-      content: emoji.unicode,
-      relays: [url],
-      protect: await shouldProtect,
+  const onEmoji = async (emoji: NativeEmoji) => {
+    const protect = await shouldProtect
+    const room = tagValue(tagSpec("h"), event.tags)
+
+    const command = await $reactions.react(event, emoji.unicode, writer => {
+      writer.setProtected(protect)
+
+      if (room) {
+        writer.setRoom(url, room)
+      }
     })
+
+    return command.publishToRelays([url])
+  }
 
   let popover: Instance | undefined = $state()
 </script>

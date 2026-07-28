@@ -9,131 +9,48 @@
   import {dev} from "$app/environment"
   import {goto} from "$app/navigation"
   import {page} from "$app/stores"
-  import {sync, throttled} from "@welshman/store"
-  import {always, call} from "@welshman/lib"
-  import {defaultSocketPolicies, netContext, Pool} from "@welshman/net"
-  import {appContext, pubkey, sessions, signerLog, shouldUnwrap} from "@welshman/app"
-  import {routerContext} from "@welshman/router"
-  import {verifyEvent} from "@welshman/util"
-  import type {TrustedEvent} from "@welshman/util"
   import {context as pomadeContext} from "@pomade/core"
-  import * as lib from "@welshman/lib"
+  import {sync, throttled} from "@welshman/store"
+  import * as domain from "@welshman/domain"
   import * as util from "@welshman/util"
-  import * as feeds from "@welshman/feeds"
-  import * as router from "@welshman/router"
-  import * as store from "@welshman/store"
-  import * as welshmanSigner from "@welshman/signer"
-  import * as net from "@welshman/net"
-  import * as app from "@welshman/app"
+  import * as lib from "@welshman/lib"
+  import {Logger} from "@welshman/app"
   import {isMobile} from "@lib/html"
-  import * as implicit from "@lib/implicit"
-  import {maybeInstallRelayMocks} from "@lib/test/relayMocks"
   import AppContainer from "@app/components/AppContainer.svelte"
   import ModalContainer from "@app/components/ModalContainer.svelte"
+  import {app} from "@app/core"
   import {setupHistory} from "@app/routes"
   import {setupAnalytics} from "@app/analytics"
-  import {authPolicy, blockPolicy, trustPolicy, mostlyRestrictedPolicy} from "@app/policies"
-  import {db, kv, ss} from "@app/storage"
+  import "@app/policies"
+  import {restoreSession} from "@app/session"
+  import {signerRequests} from "@app/signer"
+  import {wallet} from "@app/lightning"
+  import {kv, ss, storage} from "@app/storage"
   import {device} from "@app/device"
-  import {getSetting, userSettings, notificationSettings} from "@app/settings"
-  import {DUFFLEPUD_URL, DEFAULT_RELAYS, INDEXER_RELAYS, POMADE_SIGNERS} from "@app/env"
-  import {pushState} from "@app/push/adapters/common"
-  import {syncApplicationData} from "@app/sync"
-  import * as groups from "@app/groups"
-  import * as comments from "@app/comments"
-  import * as deletes from "@app/deletes"
-  import * as reactions from "@app/reactions"
-  import * as profiles from "@app/profiles"
-  import * as lightning from "@app/lightning"
-  import * as uploads from "@app/uploads"
-  import * as appPolls from "@app/polls"
-  import * as pinboards from "@app/pinboards"
-  import * as reports from "@app/reports"
-  import * as relays from "@app/relays"
-  import * as settings from "@app/settings"
-  import * as members from "@app/members"
-  import * as chats from "@app/chats"
-  import * as content from "@app/content"
+  import {userSettingsValues, notificationSettings} from "@app/settings"
+  import {shouldUnwrap, syncApplicationData} from "@app/sync"
   import * as env from "@app/env"
-  import * as repository from "@app/repository"
-  import * as social from "@app/social"
-  import * as appDevice from "@app/device"
-  import * as actionItems from "@app/actionItems"
-  import * as appFeeds from "@app/feeds"
-  import * as access from "@app/access"
-  import * as healthChecks from "@app/healthChecks"
   import {theme} from "@app/theme"
   import {toast, pushToast} from "@app/toast"
   import * as notifications from "@app/notifications"
   import {Push} from "@app/push"
-  import {onPushNotificationAction} from "@app/push/adapters/common"
-  import * as storage from "@app/storage"
+  import {onPushNotificationAction, pushState} from "@app/push/adapters/common"
   import {syncKeyboard} from "@app/keyboard"
   import {getPageTitle} from "@app/title"
   import NewNotificationSound from "@src/app/components/NewNotificationSound.svelte"
 
   const {children} = $props()
 
-  // Test-only: when Playwright has injected window.__RELAY_MOCKS__, serve relays from in-memory
-  // fixtures instead of the network. No-op for real users; stripped from production builds.
-  if (import.meta.env.DEV) {
-    maybeInstallRelayMocks()
-  }
-
   // Do this asap to avoid a font size flash
   // @ts-ignore
   document.documentElement.style["font-size"] = `${localStorage.getItem("font-size") || 1.1}rem`
 
-  const policies = [authPolicy, blockPolicy, trustPolicy, mostlyRestrictedPolicy]
-
   // Add stuff to window for convenience
-  Object.assign(window, {
-    get,
-    nip19,
-    theme,
-    ...lib,
-    ...implicit,
-    ...welshmanSigner,
-    ...router,
-    ...store,
-    ...util,
-    ...feeds,
-    ...net,
-    ...app,
-    ...groups,
-    ...relays,
-    ...settings,
-    ...members,
-    ...chats,
-    ...content,
-    ...env,
-    ...repository,
-    ...social,
-    ...appDevice,
-    ...actionItems,
-    ...appFeeds,
-    ...access,
-    ...healthChecks,
-    ...comments,
-    ...deletes,
-    ...reactions,
-    ...profiles,
-    ...lightning,
-    ...uploads,
-    ...appPolls,
-    ...pinboards,
-    ...reports,
-    ...notifications,
-  })
+  Object.assign(window, {get, nip19, theme, app, domain, Logger, ...lib, ...util})
 
   // Set up context for various modules
-  pomadeContext.setSignerUrls(POMADE_SIGNERS)
+  pomadeContext.setSignerUrls(env.POMADE_SIGNERS)
   pomadeContext.setArgonWorker(import("@pomade/core/argon-worker.js?worker"))
-  appContext.dufflepudUrl = DUFFLEPUD_URL
-  routerContext.getIndexerRelays = always(INDEXER_RELAYS)
-  routerContext.getDefaultRelays = always(DEFAULT_RELAYS)
-  netContext.isEventValid = (event: TrustedEvent, url: string) =>
-    getSetting<string[]>("trusted_relays").includes(url) || verifyEvent(event)
 
   // Handle a deep link (universal/app link or custom scheme). Used for both
   // warm-start links (via the appUrlOpen event) and cold-start links (via
@@ -182,11 +99,16 @@
     }
   })
 
-  // Cleanup on page close
-  window.addEventListener("beforeunload", () => db.close())
+  const closeStorage = () => storage.get()?.close()
 
-  const unsubscribe = call(async () => {
+  // Cleanup on page close
+  window.addEventListener("beforeunload", closeStorage)
+
+  const unsubscribe = lib.call(async () => {
     const unsubscribers: Unsubscriber[] = []
+
+    // Attach the user before anything reads or decrypts on their behalf
+    unsubscribers.push(await restoreSession())
 
     // Sync stuff to storage
     await Promise.all([
@@ -196,19 +118,14 @@
         storage: kv,
       }),
       sync({
-        key: "pubkey",
-        store: pubkey,
-        storage: kv,
-      }),
-      sync({
-        key: "sessions",
-        store: sessions,
-        storage: ss,
-      }),
-      sync({
         key: "shouldUnwrap",
         store: shouldUnwrap,
         storage: kv,
+      }),
+      sync({
+        key: "wallet",
+        store: wallet,
+        storage: ss,
       }),
       sync({
         key: "notificationSettings",
@@ -222,12 +139,8 @@
       }),
     ])
 
-    const storageSync = storage.sync()
-
-    unsubscribers.push(storageSync.unsubscribe)
-
     // Wait for critical storage data only
-    await storageSync.ready
+    await storage.get()?.ready
 
     // Handle cold-start deep links. When a link launches the app from a killed
     // state the intent arrives via onCreate, so Capacitor never emits
@@ -241,13 +154,7 @@
     }
 
     // Close the database connection on reload
-    unsubscribers.push(() => db.close())
-
-    // Add our extra policies now that we're set up
-    defaultSocketPolicies.push(...policies)
-
-    // Remove policies when we're done
-    unsubscribers.push(() => defaultSocketPolicies.splice(-policies.length))
+    unsubscribers.push(closeStorage)
 
     // History, navigation, application data
     unsubscribers.push(setupHistory(), setupAnalytics(), syncApplicationData())
@@ -267,14 +174,14 @@
     // Initialize background notifications
     unsubscribers.push(Push.sync())
 
-    // When the user logs in, drop connections opened anonymously and sync again
-    let lastPubkey = pubkey.get()
+    // Logging in swaps in a fresh app — its policies rebind themselves, we just have to sync
+    // application data against the new identity's relays.
+    let currentApp = app.get()
 
     unsubscribers.push(
-      pubkey.subscribe($pubkey => {
-        if ($pubkey !== lastPubkey) {
-          lastPubkey = $pubkey
-          Pool.get().clear()
+      app.subscribe($app => {
+        if ($app !== currentApp) {
+          currentApp = $app
           syncApplicationData()
         }
       }),
@@ -282,15 +189,15 @@
 
     // Listen for signer errors, report to user via toast
     unsubscribers.push(
-      throttled(10_000, signerLog).subscribe($log => {
+      throttled(10_000, signerRequests).subscribe($requests => {
         if ($toast) return
 
         const longCutoff = Date.now() - 30_000
         const shortCutoff = Date.now() - 10_000
-        const pending = $log.filter(x => !x.finished_at && x.started_at < longCutoff)
-        const completed = $log.filter(x => x.finished_at && x.finished_at > shortCutoff)
+        const pending = $requests.filter(r => !r.finishedAt && r.startedAt < longCutoff)
+        const completed = $requests.filter(r => r.finishedAt && r.finishedAt > shortCutoff)
         const showPendingError = pending.length > 10
-        const showCompletedError = completed.length > 5 && completed.filter(x => x.ok).length === 0
+        const showCompletedError = completed.length > 5 && completed.filter(r => r.ok).length === 0
 
         if (showPendingError || showCompletedError) {
           pushToast({
@@ -312,29 +219,27 @@
         document.body.setAttribute("data-theme", $theme)
         document.body.setAttribute("data-fl-theme", env.FL_THEME)
       }),
-      userSettings.subscribe(
-        debounce(100, $userSettings => {
-          if ($userSettings) {
-            localStorage.setItem("font-size", $userSettings.values.font_size)
+      userSettingsValues.subscribe(
+        debounce(100, $settings => {
+          localStorage.setItem("font-size", String($settings.font_size))
 
-            // @ts-ignore
-            document.documentElement.style["font-size"] = `${$userSettings.values.font_size}rem`
-          }
+          // @ts-ignore
+          document.documentElement.style["font-size"] = `${$settings.font_size}rem`
         }),
       ),
     )
 
-    return () => unsubscribers.forEach(call)
+    return () => unsubscribers.forEach(lib.call)
   })
 
   // Cleanup on hot reload
   import.meta.hot?.dispose(() => {
     App.removeAllListeners()
-    unsubscribe.then(call)
+    unsubscribe.then(lib.call)
   })
 
   $effect(() => {
-    document.title = getPageTitle({page: $page, pubkey: $pubkey})
+    document.title = getPageTitle({page: $page, pubkey: $app.user?.pubkey})
   })
 </script>
 

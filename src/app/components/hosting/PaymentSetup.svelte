@@ -1,6 +1,6 @@
 <script lang="ts">
   import cx from "classnames"
-  import {pubkey, session} from "@welshman/app"
+  import {WalletType} from "@welshman/util"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
   import Card from "@assets/icons/card.svg?dataurl"
   import CheckCircle from "@assets/icons/check-circle.svg?dataurl"
@@ -16,8 +16,9 @@
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
+  import {user} from "@app/core"
   import {pushToast} from "@app/toast"
-  import {getNwcClient} from "@app/lightning"
+  import {getNwcClient, wallet} from "@app/lightning"
   import {updateTenant, createPortalSession} from "@app/hosting"
 
   type Tab = "nwc" | "card"
@@ -50,7 +51,7 @@
   // Offer to reuse the app's spending wallet instead of re-pasting its NWC url.
   // The two wallets stay separate records, this just reuses the same connection.
   const spendingWalletUrl =
-    $session?.wallet?.type === "nwc" ? getNwcClient().nostrWalletConnectUrl : undefined
+    $wallet?.type === WalletType.NWC ? getNwcClient().nostrWalletConnectUrl : undefined
 
   // The tenant's autopay wallet (a backend NWC, write-only), distinct from the
   // app's own wallet.
@@ -60,7 +61,7 @@
     saving = true
 
     try {
-      await updateTenant($pubkey!, {nwc_url: url})
+      await updateTenant($user.pubkey, {nwc_url: url})
       saved = true
       onSaved?.()
     } catch (e) {
@@ -83,7 +84,7 @@
     saving = true
 
     try {
-      await updateTenant($pubkey!, {nwc_url: ""})
+      await updateTenant($user.pubkey, {nwc_url: ""})
       onSaved?.()
       pushToast({message: "Lightning wallet disconnected."})
       back()
@@ -101,7 +102,7 @@
     redirecting = true
 
     try {
-      const {url} = await createPortalSession($pubkey!)
+      const {url} = await createPortalSession($user.pubkey)
 
       window.location.href = url
     } catch (e) {

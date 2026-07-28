@@ -1,6 +1,6 @@
 <script lang="ts">
   import {formatTimestamp} from "@welshman/lib"
-  import {getTag, getIdFilters} from "@welshman/util"
+  import {getIdFilters, matchTag, tagSpec} from "@welshman/util"
   import {load, LOCAL_RELAY_URL} from "@welshman/net"
   import type {TrustedEvent} from "@welshman/util"
   import Card from "@lib/components/Card.svelte"
@@ -21,8 +21,8 @@
 
   const {url, event, onResolved}: Props = $props()
 
-  const etag = getTag("e", event.tags)
-  const ptag = getTag("p", event.tags)
+  const etag = matchTag(tagSpec("e"), event.tags)
+  const ptag = matchTag(tagSpec("p"), event.tags)
   const reason = etag?.[2] || ptag?.[2]
 
   const onClick = (e: Event, event: TrustedEvent) => {

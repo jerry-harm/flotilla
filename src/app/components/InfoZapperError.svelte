@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {deriveZapperForPubkey} from "@welshman/app"
+  import {Zappers} from "@welshman/app"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -9,10 +9,15 @@
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import ProfileLink from "@app/components/ProfileLink.svelte"
+  import {app} from "@app/core"
 
-  const {pubkey} = $props()
+  type Props = {
+    pubkey: string
+  }
 
-  const zapper = deriveZapperForPubkey(pubkey)
+  const {pubkey}: Props = $props()
+
+  const zapper = $app.use(Zappers).forPubkey(pubkey).$
 
   const back = () => history.back()
 </script>

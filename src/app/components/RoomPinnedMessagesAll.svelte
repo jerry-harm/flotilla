@@ -10,18 +10,13 @@
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
+  import {roomPinLists} from "@app/core"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
   import RoomItemContent from "@app/components/RoomItemContent.svelte"
   import RoomName from "@app/components/RoomName.svelte"
-  import {deriveUserIsRoomAdmin} from "@app/members"
-  import {
-    deriveRoomPinIds,
-    deriveRoomPinnedEvents,
-    loadRoomPinList,
-    loadRoomPinnedMessages,
-    unpinRoomMessage,
-  } from "@app/pins"
+  import {deriveUserIsRoomAdmin} from "@app/rooms"
+  import {deriveRoomPinnedEvents} from "@app/roomPins"
   import {goToEvent} from "@app/routes"
   import {pushToast} from "@app/toast"
 
@@ -32,8 +27,8 @@
 
   const {url, h}: Props = $props()
 
-  const pinIds = deriveRoomPinIds(url, h)
-  const pinnedEvents = deriveRoomPinnedEvents(url, pinIds)
+  const pinIds = $roomPinLists.pins(url, h).$
+  const pinnedEvents = deriveRoomPinnedEvents(url, h)
   const userIsAdmin = deriveUserIsRoomAdmin(url, h)
 
   const back = () => history.back()
@@ -44,7 +39,12 @@
   }
 
   const unpin = async (event: TrustedEvent) => {
-    const error = await unpinRoomMessage(url, h, event.id, $pinIds)
+    const command = await $roomPinLists.setPins(
+      url,
+      h,
+      $pinIds.filter(pin => pin !== event.id),
+    )
+    const error = await command.publishToRelays([url]).waitForError()
 
     if (error) {
       pushToast({theme: "error", message: error})
@@ -52,16 +52,6 @@
       pushToast({message: "Message unpinned"})
     }
   }
-
-  $effect(() => {
-    const ids = $pinIds
-    const controller = new AbortController()
-
-    loadRoomPinList(url, h, controller.signal)
-    loadRoomPinnedMessages(url, ids, controller.signal)
-
-    return () => controller.abort()
-  })
 </script>
 
 <Modal>

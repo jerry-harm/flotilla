@@ -5,7 +5,7 @@
   import {page} from "$app/stores"
   import {sortBy, partition, spec, pushToMapKey, max} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {getTagValue, POLL} from "@welshman/util"
+  import {POLL, tagValue, tagSpec} from "@welshman/util"
   import {fly} from "@lib/transition"
   import PollIcon from "@assets/icons/revote.svg?dataurl"
   import Add from "@assets/icons/add.svg?dataurl"
@@ -34,7 +34,7 @@
     const [polls, comments] = partition(spec({kind: POLL}), $events)
 
     for (const comment of comments) {
-      const id = getTagValue("E", comment.tags)
+      const id = tagValue(tagSpec("E"), comment.tags)
 
       if (id) {
         pushToMapKey(scores, id, comment.created_at)

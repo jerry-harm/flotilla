@@ -11,9 +11,19 @@ minimumReleaseAgeExclude:
   - '@welshman/feeds'
   - '@welshman/lib'
   - '@welshman/net'
-  - '@welshman/router'
+  - '@welshman/domain'
   - '@welshman/signer'
   - '@welshman/store'
   - '@welshman/util'
 overrides:
+  '@welshman/app': link:../welshman/packages/app
+  '@welshman/content': link:../welshman/packages/content
+  '@welshman/domain': link:../welshman/packages/domain
+  '@welshman/editor': link:../welshman/packages/editor
+  '@welshman/feeds': link:../welshman/packages/feeds
+  '@welshman/lib': link:../welshman/packages/lib
+  '@welshman/net': link:../welshman/packages/net
+  '@welshman/signer': link:../welshman/packages/signer
+  '@welshman/store': link:../welshman/packages/store
+  '@welshman/util': link:../welshman/packages/util
   sharp: ^0.35.3

@@ -1,19 +1,18 @@
 <script lang="ts">
   import {stopPropagation} from "svelte/legacy"
   import {PublishStatus} from "@welshman/net"
-  import type {AbstractThunk} from "@welshman/app"
-  import {abortThunk, thunkHasStatus} from "@welshman/app"
+  import type {BaseThunk} from "@welshman/app"
 
-  interface Props {
-    thunk: AbstractThunk
+  type Props = {
+    thunk: BaseThunk
     class?: string
   }
 
   const {thunk, ...restProps}: Props = $props()
 
-  const abort = () => abortThunk(thunk)
+  const abort = () => thunk.abort()
 
-  const isSending = $derived(thunkHasStatus(PublishStatus.Sending, $thunk))
+  const isSending = $derived($thunk.hasStatus(PublishStatus.Sending))
 </script>
 
 <div class="flex w-full justify-end px-1 text-xs {restProps.class}">

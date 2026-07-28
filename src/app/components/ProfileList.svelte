@@ -8,14 +8,14 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import Profile from "@app/components/Profile.svelte"
 
-  interface Props {
-    title: any
-    pubkeys: any
+  type Props = {
+    title: string
+    pubkeys: string[]
     subtitle?: string
     url?: string
   }
 
-  const {subtitle = "", pubkeys, url, ...restProps}: Props = $props()
+  const {title, subtitle = "", pubkeys, url}: Props = $props()
 
   const back = () => history.back()
 </script>
@@ -23,7 +23,7 @@
 <Modal>
   <ModalBody>
     <ModalHeader>
-      <ModalTitle>{restProps.title}</ModalTitle>
+      <ModalTitle>{title}</ModalTitle>
       <ModalSubtitle>{subtitle}</ModalSubtitle>
     </ModalHeader>
     {#each pubkeys as pubkey (pubkey)}

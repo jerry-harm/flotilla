@@ -1,8 +1,7 @@
-import {normalizeRelayUrl} from "@welshman/util"
 import {Capacitor} from "@capacitor/core"
-import {Router} from "@welshman/router"
 import * as nip19 from "nostr-tools/nip19"
 import {identity} from "@welshman/lib"
+import {normalizeRelayUrl} from "@welshman/util"
 
 const fromCsv = (s: string) => (s || "").split(",").filter(identity)
 
@@ -19,6 +18,10 @@ export const BLOCKED_RELAYS = fromCsv(import.meta.env.VITE_BLOCKED_RELAYS).map(n
 export const INDEXER_RELAYS = fromCsv(import.meta.env.VITE_INDEXER_RELAYS).map(normalizeRelayUrl)
 
 export const DEFAULT_RELAYS = fromCsv(import.meta.env.VITE_DEFAULT_RELAYS).map(normalizeRelayUrl)
+
+export const DEFAULT_SEARCH_RELAYS = fromCsv(import.meta.env.VITE_DEFAULT_SEARCH_RELAYS).map(
+  normalizeRelayUrl,
+)
 
 export const DEFAULT_MESSAGING_RELAYS = fromCsv(import.meta.env.VITE_DEFAULT_MESSAGING_RELAYS).map(
   normalizeRelayUrl,
@@ -67,5 +70,5 @@ export const dufflepud = (path: string) => DUFFLEPUD_URL + "/" + path
 
 export const entityLink = (entity: string) => `https://coracle.social/${entity}`
 
-export const pubkeyLink = (pubkey: string, relays = Router.get().FromPubkeys([pubkey]).getUrls()) =>
+export const pubkeyLink = (pubkey: string, relays: string[] = []) =>
   entityLink(nip19.nprofileEncode({pubkey, relays}))

@@ -1,6 +1,9 @@
 <script lang="ts">
+  import {Pin} from "@welshman/domain"
+  import {publishAsRelay} from "@welshman/app"
   import PinForm, {type PinFormValues} from "@app/components/PinForm.svelte"
-  import {createPin, referenceToPin} from "@app/pinboards"
+  import {command, writer} from "@app/core"
+  import {setPinReference} from "@app/pinboards"
 
   type Props = {
     url: string
@@ -11,11 +14,17 @@
   const {url, address, reference}: Props = $props()
 
   const submit = async ({title, topics, value, content}: PinFormValues) => {
-    const params = referenceToPin(value)
+    const eventWriter = writer(Pin).setIdentifier().addBoard(address)
 
-    if (!params) return "Please enter a valid URL or nostr link."
+    if (!setPinReference(eventWriter, value)) {
+      return "Please enter a valid URL or nostr link."
+    }
 
-    return createPin(url, {...params, boards: [address], title, topics, description: content})
+    eventWriter.setTitle(title).setTopics(topics).setContent(content)
+
+    const thunk = await command(eventWriter).then(publishAsRelay(url))
+
+    return thunk.waitForError()
   }
 </script>
 

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import {Report} from "@welshman/domain"
+  import {publishToRelays} from "@welshman/app"
   import {preventDefault} from "@lib/html"
   import Spinner from "@lib/components/Spinner.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -12,8 +14,8 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
+  import {command, writer} from "@app/core"
   import {pushToast} from "@app/toast"
-  import {publishReport} from "@app/reports"
 
   const {url, event} = $props()
 
@@ -29,7 +31,13 @@
 
     loading = true
 
-    await publishReport({event, reason: reason.toLowerCase(), content, relays: [url]})
+    const eventWriter = writer(Report)
+      .setPubkey(event.pubkey)
+      .setEventId(event.id)
+      .setReason(reason.toLowerCase())
+      .setContent(content)
+
+    await command(eventWriter).then(publishToRelays([url]))
 
     loading = false
     history.back()

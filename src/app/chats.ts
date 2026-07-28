@@ -1,12 +1,14 @@
-import {DELETE, PROFILE, getPubkeyTagValues} from "@welshman/util"
-import type {TrustedEvent} from "@welshman/util"
+import {derived, readable} from "svelte/store"
 import {append, call, on, reject, remove, sort, sortBy, spec, uniq, uniqBy} from "@welshman/lib"
 import type {Override} from "@welshman/lib"
-import {createSearch, displayProfileByPubkey, pubkey, repository} from "@welshman/app"
-import {derived, readable} from "svelte/store"
-import {DM_KINDS} from "@app/content"
+import {DELETE, PROFILE, hexTags, tagValues} from "@welshman/util"
+import type {TrustedEvent} from "@welshman/util"
 import type {RepositoryUpdate} from "@welshman/net"
 import {makeDeriveItem, throttled} from "@welshman/store"
+import {createSearch} from "@welshman/app"
+import {app, profiles, user} from "@app/core"
+import {DM_KINDS} from "@app/content"
+
 export type Chat = {
   id: string
   pubkeys: string[]
@@ -15,13 +17,13 @@ export type Chat = {
   search_text: string
 }
 
-export const getChatPubkeys = (pubkeys: string[]) => sort(uniq(append(pubkey.get()!, pubkeys)))
+export const getChatPubkeys = (pubkeys: string[]) => sort(uniq(append(user.get().pubkey, pubkeys)))
 
 export const getChatPubkeysFromEvent = (event: TrustedEvent) =>
-  getChatPubkeys(getPubkeyTagValues(event.tags).concat(event.pubkey))
+  getChatPubkeys(tagValues(hexTags("p"), event.tags).concat(event.pubkey))
 
 export const makeChatId = (pubkeys: string[]) => {
-  const userPubkey = pubkey.get()!
+  const userPubkey = user.get().pubkey
   const otherPubkeys = remove(userPubkey, uniq(pubkeys))
   const visiblePubkeys = otherPubkeys.length === 0 ? [userPubkey] : otherPubkeys
 
@@ -34,11 +36,13 @@ export const chatsById = call(() => {
   const chatsById = new Map<string, Chat>()
   const chatsByPubkey = new Map<string, string[]>()
 
+  const displayProfile = (pubkey: string) => profiles.get().display(pubkey).get()
+
   const addSearchText = (chat: Override<Chat, {search_text?: string}>) => {
     chat.search_text =
       chat.pubkeys.length === 1
-        ? displayProfileByPubkey(chat.pubkeys[0]) + " note to self"
-        : remove(pubkey.get()!, chat.pubkeys).map(displayProfileByPubkey).join(" ")
+        ? displayProfile(chat.pubkeys[0]) + " note to self"
+        : remove(user.get().pubkey, chat.pubkeys).map(displayProfile).join(" ")
 
     return chat as Chat
   }
@@ -91,7 +95,7 @@ export const chatsById = call(() => {
       let dirty = false
 
       for (const id of removed) {
-        const event = repository.getEvent(id)
+        const event = app.get().repository.getEvent(id)
 
         if (event && DM_KINDS.includes(event.kind)) {
           for (const chatId of chatsByPubkey.get(event.pubkey) || []) {
@@ -110,10 +114,10 @@ export const chatsById = call(() => {
       }
     }
 
-    addEvents(repository.query([{kinds: [...DM_KINDS, DELETE, PROFILE]}]))
+    addEvents(app.get().repository.query([{kinds: [...DM_KINDS, DELETE, PROFILE]}]))
 
     const unsubscribers = [
-      on(repository, "update", ({added, removed}: RepositoryUpdate) => {
+      on(app.get().repository, "update", ({added, removed}: RepositoryUpdate) => {
         // Do this async so that profiles are populated
         setTimeout(() => {
           addEvents(added)

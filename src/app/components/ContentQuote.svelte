@@ -1,13 +1,16 @@
 <script lang="ts">
   import * as nip19 from "nostr-tools/nip19"
-  import {Router} from "@welshman/router"
+  import {derived, writable} from "svelte/store"
+  import {removeUndefined} from "@welshman/lib"
+  import type {Maybe} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {Address, MESSAGE} from "@welshman/util"
+  import {Address, MESSAGE, eventOutbox, relays as relaySelections, seen} from "@welshman/util"
   import Button from "@lib/components/Button.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import NoteCard from "@app/components/NoteCard.svelte"
   import NoteContent from "@app/components/NoteContent.svelte"
   import NoteContentMinimal from "@app/components/NoteContentMinimal.svelte"
+  import {router} from "@app/core"
   import {deriveEvent} from "@app/repository"
   import {entityLink} from "@app/env"
   import {goToEvent} from "@app/routes"
@@ -22,22 +25,37 @@
 
   const {id, identifier, kind, pubkey, relays = []} = value
   const idOrAddress = id || new Address(kind, pubkey, identifier).toString()
-  const mergedRelays = Router.get().Quote(event, idOrAddress, relays).getUrls()
+  const ref = {id, pubkey, kind, identifier, relays}
 
-  if (url) {
-    mergedRelays.push(url)
-  }
+  // Start with the hints we were handed, then widen to everything the router can work out:
+  // where the quoted event has been seen, its author's outbox, and — since whoever quoted it
+  // must have seen it — the relays the quoting event came from.
+  const mergedRelays = writable(removeUndefined([...relays, url]))
 
-  const quote = deriveEvent(idOrAddress, mergedRelays)
-  const entity = id
-    ? nip19.neventEncode({id, relays: mergedRelays})
-    : new Address(kind, pubkey, identifier, mergedRelays).toNaddr()
+  $router.resolver
+    .relays([
+      ...relaySelections(removeUndefined([url])),
+      seen(ref),
+      eventOutbox(ref),
+      seen(event, 0.5),
+    ])
+    .then(urls => mergedRelays.set(urls))
+
+  const quote = derived(mergedRelays, ($mergedRelays, set: (event: Maybe<TrustedEvent>) => void) =>
+    deriveEvent(idOrAddress, $mergedRelays).subscribe(set),
+  )
+
+  const entity = derived(mergedRelays, $mergedRelays =>
+    id
+      ? nip19.neventEncode({id, relays: $mergedRelays})
+      : new Address(kind, pubkey, identifier, $mergedRelays).toNaddr(),
+  )
 
   const onclick = () => {
     if ($quote) {
       goToEvent($quote)
     } else {
-      window.open(entityLink(entity))
+      window.open(entityLink($entity))
     }
   }
 </script>

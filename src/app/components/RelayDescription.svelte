@@ -1,6 +1,6 @@
 <script lang="ts">
-  import {deriveRelay} from "@welshman/app"
   import Content from "@app/components/Content.svelte"
+  import {relays} from "@app/core"
 
   type Props = {
     url: string
@@ -8,7 +8,7 @@
 
   const {url}: Props = $props()
 
-  const relay = deriveRelay(url)
+  const relay = $relays.one(url)
 </script>
 
 {#if $relay?.description}

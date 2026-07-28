@@ -134,8 +134,8 @@ class AndroidPushFallbackWorker(context: Context, params: WorkerParameters) : Wo
     val session = state.optJSONObject("session") ?: return SessionInfo("anonymous", "", JSONObject())
     return SessionInfo(
       session.optString("method", "anonymous"),
-      session.optString("pubkey", ""),
-      session,
+      state.optString("pubkey", ""),
+      session.optJSONObject("data") ?: JSONObject(),
     )
   }
 
@@ -537,7 +537,7 @@ class AndroidPushFallbackWorker(context: Context, params: WorkerParameters) : Wo
   private data class SessionInfo(
     val method: String,
     val pubkey: String,
-    val session: JSONObject,
+    val data: JSONObject,
   )
 
   private data class Subscription(
@@ -699,24 +699,23 @@ class AndroidPushFallbackWorker(context: Context, params: WorkerParameters) : Wo
     }
 
     private fun tryNip01Auth(webSocket: WebSocket, challenge: String): Boolean {
-      val secret = sessionInfo.session.optString("secret", "")
+      val secret = sessionInfo.data.optString("secret", "")
       if (secret.isEmpty()) return false
       val signed = signWithNip01Secret(secret, buildAuthEvent(challenge).toString(), sessionInfo.pubkey)
       return sendAuthMessage(webSocket, signed)
     }
 
     private fun tryNip55Auth(webSocket: WebSocket, challenge: String): Boolean {
-      val signerPackage = sessionInfo.session.optString("signer", "")
+      val signerPackage = sessionInfo.data.optString("signer", "")
       if (signerPackage.isEmpty()) return false
       val signed = signWithNip55ContentResolver(signerPackage, buildAuthEvent(challenge).toString(), sessionInfo.pubkey)
       return sendAuthMessage(webSocket, signed)
     }
 
     private fun tryNip46Auth(webSocket: WebSocket, challenge: String): Boolean {
-      val handler = sessionInfo.session.optJSONObject("handler") ?: return false
-      val clientSecret = sessionInfo.session.optString("secret", "")
-      val signerPubkey = handler.optString("pubkey", "")
-      val relays = handler.optJSONArray("relays")
+      val clientSecret = sessionInfo.data.optString("clientSecret", "")
+      val signerPubkey = sessionInfo.data.optString("signerPubkey", "")
+      val relays = sessionInfo.data.optJSONArray("relays")
 
       if (clientSecret.isEmpty() || signerPubkey.isEmpty() || relays == null || relays.length() == 0) return false
 

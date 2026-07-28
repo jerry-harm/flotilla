@@ -45,8 +45,9 @@ Example:
 ```typescript
 import {derived} from "svelte/store"
 import {throttle} from "throttle-debounce"
+import {Profiles} from "@welshman/app"
 import {Dialog} from "$lib/components"
-import {repository} from "$app/core/state"
+import {app} from "@app/core"
 ```
 
 ## Cleanup Pass
@@ -67,9 +68,19 @@ Conventions below.
 **Core Principles:**
 
 - Use Svelte 4 **stores** for all state (NOT runes outside UI components)
-- Most global state flows through Welshman's `repository` (unidirectional)
-- Query state using `deriveEventsMapped` or `deriveProfile` etc
-- Update state by publishing events via `publishThunk`
+- Everything hangs off the single `App` instance in `app/core.ts`. There are no welshman globals —
+  reach features with `app.use(Plugin)`, which is memoized per app and cheap to call inline.
+- `app/core.ts` also exports `pubkey`, `signer`, `user` and `session` stores (all with `.get()`),
+  `login`, and `deriveUserItem(plugin)` for the current user's entry in a keyed collection.
+- Most global state flows through the app's `repository` (unidirectional)
+- Query state with a plugin's `one(key)` / `index` / `all`, or `deriveEventsById` /
+  `deriveItemsByKey` from `@welshman/store` against `app.repository`
+- Update state by building a domain writer and publishing the resulting `Command`
+
+**Projections:**
+
+A `Projection<T>` is `{get(): T, $: Readable<T>}` — bind `.$` in markup, call `.get()` in
+callbacks and hot paths.
 
 **Thunks:**
 
@@ -82,12 +93,12 @@ Conventions below.
 
 **Welshman Library Suite:**
 
-- `@welshman/app` - High-level state (pubkey, signer, repository, tracker)
-- `@welshman/net` - Network layer (Pool, Socket, load, pull, request)
-- `@welshman/store` - Svelte integration (deriveEventsMapped, etc.)
-- `@welshman/util` - Event utilities (kinds, tags, validation)
+- `@welshman/app` - The `App` instance and its plugins (Profiles, Rooms, Thunks, Router, …)
+- `@welshman/domain` - A typed Reader/Writer pair per event kind, plus `Relay` and `Zapper`
+- `@welshman/net` - Network layer (Pool, Socket, adapters, request/publish/pull)
+- `@welshman/store` - Svelte integration (deriveEventsById, deriveItemsByKey, etc.)
+- `@welshman/util` - Event utilities (kinds, tags, validation, the RelaySelection routing DSL)
 - `@welshman/signer` - Signing abstraction (NIP-01, NIP-07, NIP-46)
-- `@welshman/router` - Relay routing (inbox/outbox model)
 - `@welshman/editor` - Rich text editor with Nostr
 - `@welshman/content` - Content parsing
 - `@welshman/feeds` - Feed management
@@ -124,12 +135,13 @@ Conventions below.
 - Do not define svelte event handlers inline, instead name them and put them in the script section of templates
 - Write a `{#if}`/`{:else if}` chain rather than hoisting display strings into a lookup `Record` in the script section.
 - Avoid using `as`, except where necessary. Instead, annotate function parameters, and ensure upstream values are typed correctly.
-- To read a tag, use `getTagValue(tagName, event.tags)` (or `getTagValues` for all matches) rather than reaching into the tag array yourself — that means no `getTag(tagName, event.tags)?.[1] || ""` and no `event.tags.find(nthEq(0, tagName))?.[1]`. `getTagValue` is exactly the latter, so the replacement is behavior-preserving, `undefined` included. Reserve `nthEq` for cases with no `getTag*` equivalent, such as `partition(nthEq(0, "imeta"), tags)`.
-- Do not render a profile's `about` directly (e.g. `profile.about`); use the `ProfileAbout` component instead.
+- To read a tag, prefer the domain reader's getter (`note.content()`, `roomMeta.name()`) over touching tags at all. Where there's no reader, use `tagValue(spec, tags)` / `tagValues(spec, tags)` from `@welshman/util` rather than reaching into the tag array yourself — that means no `tags.find(nthEq(0, name))?.[1]`. Build the spec with the narrowest helper that fits: `hexTags("p")`, `relayTags(["r", "relay"])`, `addressTags("a")`, `kindTags("k")`, `topicTags("t")`, or plain `tagSpec("h")` when the value needs no validation. Reserve `nthEq` for cases with no spec equivalent, such as `partition(nthEq(0, "imeta"), tags)`.
+- Do not render a profile's `about` directly (e.g. `profile.about()`); use the `ProfileAbout` component instead.
 - Use `type Props` instead of interface when defining props for svelte components.
 - When a component's value/prop shape mirrors a subset of an existing type, derive it with `Pick`/`Partial` and `export` that type from the component's `<script module>` (e.g. a `Values` type) for callers to import, instead of re-enumerating its sub-properties.
 - Avoid pass-through functions except when the wrapper is part of an abstraction. `x => y()` is not ok, but `x => this.impl.y()` is ok, for example.
 - Use `call` from `@welshman/lib` instead of an IIFE: `const x = call(() => {...})`, not `const x = (() => {...})()`. It reads left-to-right and drops the wrapping parens and the leading-semicolon hazard. `call` ignores extra arguments, so it also works directly as a callback — `unsubscribers.forEach(call)`.
+- To match on field equality, use `spec` from `@welshman/lib` rather than an arrow comparing properties: `.filter(spec({shortcode}))`, not `.filter(emoji => emoji.shortcode === shortcode)`. It takes an object of key/value pairs and matches when every pair is equal, so it covers multi-key checks too (`spec({kind, pubkey})`), and it accepts an array for positional matching on tags (`spec(["p", pubkey])`). Keep an explicit arrow when the predicate isn't plain equality — ranges, negation, or a comparison joined with `&&`.
 - For durations and timestamps, use `@welshman/lib`'s time helpers and constants (`MINUTE`, `HOUR`, `DAY`, `WEEK`, `MONTH`, `YEAR`) rather than raw milliseconds: `int(5, MINUTE)` for a duration in seconds, `ago(5, MINUTE)` for a past timestamp, `now()` for the current one, and `ms()`/`ms(int(...))` only where a browser API needs milliseconds. So `checkedAt < ago(5, MINUTE)` instead of `checkedAt < Date.now() - 300_000`. Write these count-first (`int(3, MONTH)`, `ago(2, WEEK)`) — the declared parameter order is `(unit, count)`, but the product is the same either way and every call site in this repo reads count-first. Nostr timestamps are seconds, so prefer `now()` over `Date.now()` for anything stored on an event.
 - When declaring variables in a svelte component, the order should generally be: props, constants derived from props/state, functions declared with `const`, mutable variables declared with `let`, effects, onMount. This order may vary due to dependencies, but should generally be adhered to.
 
@@ -161,20 +173,23 @@ Conventions below.
 
 ### Loading Data from Network
 
-1. Use utilities from `app/core/requests.ts`
-2. Or create derived stores in `app/core/state.ts`
-3. Use `load`, `pull`, or `request` from `@welshman/net`
+1. Prefer a plugin's `one(key)` / `load(key)`, which handle outbox routing and caching
+2. For anything else use `app.use(Network).load/request` or `app.use(Sync).pull/push` — the bare
+   `load`/`request`/`publish` from `@welshman/net` throw without a context
 
 ### Publishing Events
 
-1. Create `make*` function to build event template
-2. Create `publish*` function using `publishThunk`
-3. Display thunk status to user (for cancel/error handling)
-4. These go in in `app/core/commands.ts`
+1. Build a writer: `app.use(Domain).writer(Kind, reader?)`, then chain its setters
+2. Wrap it: `const command = await app.use(Domain).command(writer)`
+3. Publish it: `command.publish()`, `.publishToRelays(urls)`, or `.publishAsRelay(url)`
+4. Display thunk status to user (for cancel/error handling)
+
+Plugin mutators (`app.use(FollowLists).follow(...)`, `app.use(Rooms).joinRoom(...)`, …) already
+return a `Command`, so `.then(publish)` is usually all you need.
 
 ### Managing Modals/Toasts
 
-- Import from `app/util/modal.ts` or `app/util/toast.ts`
+- Import from `app/modal.ts` or `app/toast.ts`
 - Pass component objects with parameters
 - Use `$state.snapshot` if calling component might unmount
 

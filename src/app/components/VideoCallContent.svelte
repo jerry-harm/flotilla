@@ -1,7 +1,8 @@
 <script lang="ts">
+  import {spec} from "@welshman/lib"
   import cx from "classnames"
   import {Track} from "livekit-client"
-  import {displayProfileByPubkey, loadProfile} from "@welshman/app"
+  import {get} from "svelte/store"
   import Pin from "@assets/icons/pin.svg?dataurl"
   import Button from "@lib/components/Button.svelte"
   import Icon from "@lib/components/Icon.svelte"
@@ -9,7 +10,6 @@
   import VideoCallTile from "@app/components/VideoCallTile.svelte"
   import VoiceWidget from "@app/components/VoiceWidget.svelte"
   import VoiceParticipantMediaBadges from "@app/components/VoiceParticipantMediaBadges.svelte"
-  import {get} from "svelte/store"
   import {
     VideoCallLayout,
     isDesktopLayout,
@@ -25,6 +25,7 @@
     pubkeyFromLiveKitIdentity,
     videoTrackRevision,
   } from "@app/call"
+  import {profiles} from "@app/core"
 
   type Props = {
     layout: VideoCallLayout
@@ -132,7 +133,7 @@
           source: Track.Source.ScreenShare,
         })
       }
-      if (!videoTiles.some(t => t.liveKitIdentity === rp.identity)) {
+      if (!videoTiles.some(spec({liveKitIdentity: rp.identity}))) {
         videoTiles.push({
           liveKitIdentity: rp.identity,
           isLocal: false,
@@ -143,7 +144,7 @@
       }
     }
 
-    if (!videoTiles.some(t => t.liveKitIdentity === user.identity)) {
+    if (!videoTiles.some(spec({liveKitIdentity: user.identity}))) {
       videoTiles.push({
         liveKitIdentity: user.identity,
         isLocal: true,
@@ -189,13 +190,13 @@
   $effect(() => {
     for (const t of videoTiles) {
       const pk = pubkeyFromLiveKitIdentity(t.liveKitIdentity)
-      if (pk) loadProfile(pk)
+      if (pk) $profiles.load(pk)
     }
   })
 
   const labelFor = (liveKitIdentity: string, source: VideoTileData["source"]) => {
     const pk = pubkeyFromLiveKitIdentity(liveKitIdentity)
-    const name = pk ? displayProfileByPubkey(pk) : "Unknown"
+    const name = pk ? $profiles.display(pk).get() : "Unknown"
     return source === Track.Source.ScreenShare ? `${name} · screen` : name
   }
 

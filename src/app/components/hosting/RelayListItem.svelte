@@ -4,11 +4,11 @@
   import Badge from "@lib/components/Badge.svelte"
   import ImageIcon from "@lib/components/ImageIcon.svelte"
   import Link from "@lib/components/Link.svelte"
-  import {canonicalRelayHost, getHostedRelayUrl, type Relay} from "@app/hosting"
+  import {canonicalRelayHost, getHostedRelayUrl, type HostedRelay} from "@app/hosting"
   import {makeSpacePath} from "@app/routes"
 
   type Props = {
-    relay: Relay
+    relay: HostedRelay
   }
 
   const {relay}: Props = $props()

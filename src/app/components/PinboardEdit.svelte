@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {goto} from "$app/navigation"
+  import {getAddress} from "@welshman/util"
+  import {publishAsRelay} from "@welshman/app"
+  import {Pinboard} from "@welshman/domain"
+  import type {PinboardReader} from "@welshman/domain"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import Spinner from "@lib/components/Spinner.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -10,23 +15,17 @@
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
-  import {goto} from "$app/navigation"
   import RelayName from "@app/components/RelayName.svelte"
-  import {editBoard, type Board} from "@app/pinboards"
+  import {command, writer} from "@app/core"
   import {makeLibraryPath} from "@app/routes"
   import {pushToast} from "@app/toast"
 
   type Props = {
     url: string
-    board: Board
-    isNew?: boolean
+    board?: PinboardReader
   }
 
-  const {url, board, isNew = false}: Props = $props()
-
-  let title = $state(board.title)
-  let description = $state(board.description)
-  let loading = $state(false)
+  const {url, board}: Props = $props()
 
   const back = () => history.back()
 
@@ -34,30 +33,41 @@
     loading = true
 
     try {
-      const error = await editBoard(url, {...board, title, description})
+      const eventWriter = writer(Pinboard, board).setTitle(title).setDescription(description)
+
+      if (!board) {
+        eventWriter.setIdentifier()
+      }
+
+      const thunk = await command(eventWriter).then(publishAsRelay(url))
+      const error = await thunk.waitForError()
 
       if (error) {
         pushToast({theme: "error", message: error})
+      } else if (board) {
+        pushToast({message: "Shelf updated!"})
+        back()
       } else {
-        pushToast({message: isNew ? "Shelf created!" : "Shelf updated!"})
-
-        // Navigate to a freshly created board; otherwise just close the modal.
-        if (isNew) {
-          goto(makeLibraryPath(url, board.address))
-        } else {
-          back()
-        }
+        pushToast({message: "Shelf created!"})
+        goto(makeLibraryPath(url, getAddress(thunk.event)))
       }
+    } catch (e) {
+      console.error(e)
+      pushToast({theme: "error", message: "This space refused to save the shelf."})
     } finally {
       loading = false
     }
   }
+
+  let title = $state(board?.title() ?? "")
+  let description = $state(board?.description() ?? "")
+  let loading = $state(false)
 </script>
 
 <Modal>
   <ModalBody>
     <ModalHeader>
-      <ModalTitle>{isNew ? "Create Shelf" : "Edit Shelf"}</ModalTitle>
+      <ModalTitle>{board ? "Edit Shelf" : "Create Shelf"}</ModalTitle>
       <ModalSubtitle>on <RelayName {url} class="text-primary" /></ModalSubtitle>
     </ModalHeader>
     <Field>

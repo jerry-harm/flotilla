@@ -1,11 +1,14 @@
 <script lang="ts">
   import type {ComponentProps} from "svelte"
-  import {getTagValue} from "@welshman/util"
+  import {Classified} from "@welshman/domain"
+  import {reader} from "@app/core"
   import ContentMinimal from "@app/components/ContentMinimal.svelte"
 
   const props: ComponentProps<typeof ContentMinimal> = $props()
 
-  const title = getTagValue("title", props.event.tags)
+  const classified = reader(Classified)(props.event)
+
+  const title = classified.title()
 </script>
 
 {#if title}

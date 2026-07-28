@@ -1,6 +1,22 @@
+<script module lang="ts">
+  export type ProfileValues = {
+    name?: string
+    about?: string
+    picture?: string
+    banner?: string
+    website?: string
+    nip05?: string
+    lud06?: string
+    lud16?: string
+  }
+
+  export type Values = {
+    profile: ProfileValues
+  }
+</script>
+
 <script lang="ts">
   import type {Snippet} from "svelte"
-  import type {Profile} from "@welshman/util"
   import {preventDefault} from "@lib/html"
   import UserCircle from "@assets/icons/user-circle.svg?dataurl"
   import MapPoint from "@assets/icons/map-point.svg?dataurl"
@@ -14,10 +30,6 @@
   import InputProfilePicture from "@app/components/InputProfilePicture.svelte"
   import InfoHandle from "@app/components/InfoHandle.svelte"
   import {pushModal} from "@app/modal"
-
-  type Values = {
-    profile: Profile
-  }
 
   type Props = {
     initialValues: Values

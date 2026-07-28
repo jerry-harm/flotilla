@@ -1,11 +1,11 @@
 <script lang="ts">
-  import type {Profile} from "@welshman/util"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
   import {getKey, setKey} from "@lib/implicit"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import ProfileEditForm from "@app/components/ProfileEditForm.svelte"
+  import type {Values} from "@app/components/ProfileEditForm.svelte"
   import ProgressBar from "@app/components/ProgressBar.svelte"
 
   type Props = {
@@ -16,13 +16,13 @@
 
   const {next, step, totalSteps}: Props = $props()
 
-  const profile = getKey<Profile>("signup.profile")!
+  const profile = getKey<Values["profile"]>("signup.profile")!
 
   const initialValues = {profile}
 
   const back = () => history.back()
 
-  const onsubmit = ({profile}: {profile: Profile}) => {
+  const onsubmit = ({profile}: Values) => {
     setKey("signup.profile", profile)
     next()
   }

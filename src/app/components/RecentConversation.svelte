@@ -2,7 +2,7 @@
   import {goto} from "$app/navigation"
   import {formatTimestamp} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {getTagValue} from "@welshman/util"
+  import {tagValue, tagSpec} from "@welshman/util"
   import ChatRoundDots from "@assets/icons/chat-round-dots.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -20,7 +20,7 @@
 
   const {url, event, count}: Props = $props()
 
-  const h = getTagValue("h", event.tags)
+  const h = tagValue(tagSpec("h"), event.tags)
 
   const onClick = () => goto(h ? makeRoomPath(url, h) : makeSpaceChatPath(url))
 </script>

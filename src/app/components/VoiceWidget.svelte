@@ -4,7 +4,9 @@
   import {goto} from "$app/navigation"
   import {page} from "$app/stores"
   import cx from "classnames"
+  import {Capacitor} from "@capacitor/core"
   import {displayRelayUrl} from "@welshman/util"
+  import type {Room} from "@welshman/app"
   import Microphone from "@assets/icons/microphone.svg?dataurl"
   import MicrophoneOff from "@assets/icons/microphone-off.svg?dataurl"
   import VideocameraOff from "@assets/icons/videocamera-off.svg?dataurl"
@@ -15,15 +17,14 @@
   import ChatRound from "@assets/icons/chat-round.svg?dataurl"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
   import Settings from "@assets/icons/settings.svg?dataurl"
-  import {Capacitor} from "@capacitor/core"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import VoiceCallAudioSettingsDialog from "@app/components/VoiceCallAudioSettingsDialog.svelte"
   import VoiceRoomJoinDialog from "@app/components/VoiceRoomJoinDialog.svelte"
+  import {rooms} from "@app/core"
   import {decodeRelay} from "@app/relays"
-  import {deriveRoom, displayRoom, getRoomType, RoomType} from "@app/groups"
-  import type {Room} from "@app/groups"
+  import {RoomType, displayRoom, getRoomType} from "@app/rooms"
   import {pushModal} from "@app/modal"
   import {notifications} from "@app/notifications"
   import {makeRoomPath} from "@app/routes"
@@ -46,7 +47,7 @@
   const {relay, h} = $derived($page.params)
   const url = $derived(relay ? decodeRelay(relay) : undefined)
   const displayedRoomStore = $derived(
-    url && h && typeof h === "string" ? deriveRoom(url, h) : readable(undefined),
+    url && h && typeof h === "string" ? $rooms.forRoom(url, h) : readable(undefined),
   )
   const routeDisplayedRoom = $derived($displayedRoomStore)
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {spec} from "@welshman/lib"
   import {displayRelayUrl} from "@welshman/util"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import Volume from "@assets/icons/volume.svg?dataurl"
@@ -13,7 +14,7 @@
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import {AbortError, TimeoutError} from "$lib/util"
   import ProfileCircles from "@app/components/ProfileCircles.svelte"
-  import {displayRoom} from "@app/groups"
+  import {displayRoom} from "@app/rooms"
   import {deriveCallParticipants, joinVoiceRoom, loadCallParticipants} from "@app/call"
   import {popModal} from "@app/modal"
   import {pushToast} from "@app/toast"
@@ -37,7 +38,7 @@
     if (!navigator.mediaDevices?.enumerateDevices) return
     try {
       const devices = await navigator.mediaDevices.enumerateDevices()
-      audioInputs = devices.filter(d => d.kind === "audioinput")
+      audioInputs = devices.filter(spec({kind: "audioinput"}))
     } catch {
       audioInputs = []
     }

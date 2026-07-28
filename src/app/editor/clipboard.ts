@@ -1,3 +1,4 @@
+import {spec} from "@welshman/lib"
 import {Clipboard} from "@capacitor/clipboard"
 import {Capacitor} from "@capacitor/core"
 import {Extension} from "@tiptap/core"
@@ -13,7 +14,7 @@ const hasStandardPastePayload = (event: ClipboardEvent) => {
     return false
   }
 
-  if (Array.from(clipboardData.items).some(item => item.kind === "file")) {
+  if (Array.from(clipboardData.items).some(spec({kind: "file"}))) {
     return true
   }
 

@@ -9,46 +9,50 @@ export type IDBStore = {
 
 export type IDBOptions = {
   name: string
-  version: number
   stores: IDBStore[]
 }
 
 export class IDB {
-  connection: Maybe<Promise<IDBPDatabase>>
+  connection: Maybe<Promise<Maybe<IDBPDatabase>>>
   failedToConnect = false
 
   constructor(readonly options: IDBOptions) {}
 
+  // Object stores can only be created during a version change, and which stores we need depends
+  // on who is logged in, so open at whatever version exists and bump it to add missing ones.
+  private open = async () => {
+    const {name, stores} = this.options
+    const db = await openDB(name)
+    const missing = stores.filter(store => !db.objectStoreNames.contains(store.name))
+
+    if (missing.length === 0) {
+      return db
+    }
+
+    const version = db.version + 1
+
+    db.close()
+
+    return openDB(name, version, {
+      upgrade(idbDb: IDBPDatabase) {
+        for (const {name, keyPath} of missing) {
+          idbDb.createObjectStore(name, {keyPath})
+        }
+      },
+      blocked() {},
+      blocking() {},
+    })
+  }
+
   async connect() {
     if (!this.failedToConnect && !this.connection) {
-      const {name, version, stores} = this.options
-
-      try {
-        this.connection = openDB(name, version, {
-          upgrade(idbDb: IDBPDatabase) {
-            const names = new Set(stores.map(store => store.name))
-
-            for (const table of idbDb.objectStoreNames) {
-              if (!names.has(table)) {
-                idbDb.deleteObjectStore(table)
-              }
-            }
-
-            for (const {name, keyPath} of stores) {
-              try {
-                idbDb.createObjectStore(name, {keyPath})
-              } catch (e) {
-                console.warn(e)
-              }
-            }
-          },
-          blocked() {},
-          blocking() {},
-        })
-      } catch (e) {
+      this.connection = this.open().catch(e => {
         console.error("Failed to connect to indexeddb", e)
+
         this.failedToConnect = true
-      }
+
+        return undefined
+      })
     }
 
     return this.connection
@@ -104,12 +108,12 @@ export class IDB {
   }
 
   close = () => {
-    this.connection?.then(c => c.close())
+    this.connection?.then(c => c?.close())
     this.connection = undefined
   }
 
   clear = async () => {
-    await this.connection?.then(c => c.close())
+    await this.connection?.then(c => c?.close())
     await deleteDB(this.options.name, {
       blocked() {},
     })

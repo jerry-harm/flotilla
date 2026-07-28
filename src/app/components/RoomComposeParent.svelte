@@ -1,28 +1,28 @@
 <script lang="ts">
   import type {TrustedEvent} from "@welshman/util"
-  import {displayProfileByPubkey} from "@welshman/app"
   import {slide} from "@lib/transition"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import NoteContentMinimal from "@app/components/NoteContentMinimal.svelte"
+  import {profiles} from "@app/core"
 
-  const {
-    verb,
-    event,
-    clear,
-  }: {
+  type Props = {
     verb: string
     event: TrustedEvent
     clear: () => void
-  } = $props()
+  }
+
+  const {verb, event, clear}: Props = $props()
+
+  const display = $profiles.display(event.pubkey).$
 </script>
 
 <div
   class="relative border-l-2 border-solid bg-surface-more px-2 py-1 pr-8"
   style="border-color: var(--primary)"
   transition:slide>
-  <p class="text-xs text-primary">{verb} @{displayProfileByPubkey(event.pubkey)}</p>
+  <p class="text-xs text-primary">{verb} @{$display}</p>
   {#key event.id}
     <NoteContentMinimal trimParent {event} />
   {/key}

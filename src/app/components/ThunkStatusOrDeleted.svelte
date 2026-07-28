@@ -2,9 +2,9 @@
   import type {Snippet} from "svelte"
   import type {TrustedEvent} from "@welshman/util"
   import {PublishStatus} from "@welshman/net"
-  import {deriveIsDeleted} from "@welshman/store"
-  import {thunks, mergeThunks, thunkHasStatus, repository} from "@welshman/app"
+  import {deriveIsDeleted} from "@app/repository"
   import ThunkStatus from "@app/components/ThunkStatus.svelte"
+  import {thunks} from "@app/core"
 
   type Props = {
     event: TrustedEvent
@@ -13,13 +13,14 @@
 
   const {event, children}: Props = $props()
 
-  const deleted = deriveIsDeleted(repository, event)
-  const thunk = $derived(mergeThunks($thunks.filter(t => t.event.id === event.id)))
+  const deleted = deriveIsDeleted(event)
+  const history = $thunks.history
+  const thunk = $derived($thunks.merge($history.filter(t => t.event.id === event.id)))
 </script>
 
 {#if $deleted}
   <div class="button button-error button-xs rounded-full">Deleted</div>
-{:else if thunk.thunks.length > 0 && !thunkHasStatus(PublishStatus.Success, thunk)}
+{:else if thunk.thunks.length > 0 && !thunk.hasStatus(PublishStatus.Success)}
   <ThunkStatus {thunk} />
 {:else if children}
   {@render children?.()}

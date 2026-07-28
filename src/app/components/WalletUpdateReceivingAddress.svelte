@@ -1,6 +1,5 @@
 <script lang="ts">
   import {getWalletAddress} from "@welshman/util"
-  import {session, waitForThunkError, userProfile} from "@welshman/app"
   import {errorMessage} from "@lib/util"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -13,15 +12,16 @@
   import ModalBody from "@lib/components/ModalBody.svelte"
   import Wallet from "@assets/icons/wallet.svg?dataurl"
   import CheckCircle from "@assets/icons/check-circle.svg?dataurl"
-  import {updateProfile} from "@app/profiles"
   import {pushToast} from "@app/toast"
+  import {profiles, user} from "@app/core"
+  import {wallet} from "@app/lightning"
 
   const back = () => history.back()
 
-  let address = $state($userProfile?.lud16 || "")
-  let loading = $state(false)
+  const walletLud16 = $derived($wallet ? getWalletAddress($wallet) : undefined)
 
-  const walletLud16 = $derived($session?.wallet ? getWalletAddress($session.wallet) : undefined)
+  let address = $state($profiles.get($user.pubkey)?.lnurl() || "")
+  let loading = $state(false)
 
   const useWalletAddress = () => {
     if (walletLud16) {
@@ -33,15 +33,11 @@
     loading = true
 
     try {
-      const error = await waitForThunkError(
-        updateProfile({
-          profile: {
-            ...$userProfile,
-            lud06: undefined,
-            lud16: address.trim() || undefined,
-          },
-        }),
+      const command = await $profiles.update(writer =>
+        writer.update({lud06: undefined, lud16: address.trim() || undefined}),
       )
+
+      const error = await command.publish().waitForError()
 
       if (error) {
         pushToast({theme: "error", message: `Failed to update profile: ${errorMessage(error)}`})

@@ -1,16 +1,22 @@
+import {writable} from "svelte/store"
 import {nwc} from "@getalby/sdk"
-import {session} from "@welshman/app"
+import type {Maybe} from "@welshman/lib"
+import {isNWCWallet, isWebLNWallet} from "@welshman/util"
+import type {Wallet} from "@welshman/util"
+import {withGetter} from "@welshman/store"
+
+export const wallet = withGetter(writable<Maybe<Wallet>>(undefined))
 
 export const getWebLn = () => (window as any).webln
 
 export const getNwcClient = () => {
-  const $session = session.get()
+  const $wallet = wallet.get()
 
-  if (!$session?.wallet || $session.wallet.type !== "nwc") {
+  if (!$wallet || !isNWCWallet($wallet)) {
     throw new Error("No NWC wallet is connected")
   }
 
-  const {info} = $session.wallet
+  const {info} = $wallet
 
   if (info.nostrWalletConnectUrl) {
     return new nwc.NWCClient({nostrWalletConnectUrl: info.nostrWalletConnectUrl})
@@ -20,17 +26,17 @@ export const getNwcClient = () => {
 }
 
 export const payInvoice = async (invoice: string, msats?: number) => {
-  const $session = session.get()
+  const $wallet = wallet.get()
 
-  if (!$session?.wallet) {
+  if (!$wallet) {
     throw new Error("No wallet is connected")
   }
 
-  if ($session.wallet.type === "nwc") {
+  if (isNWCWallet($wallet)) {
     const params: {invoice: string; amount?: number} = {invoice}
     if (msats) params.amount = msats
     return getNwcClient().payInvoice(params)
-  } else if ($session.wallet.type === "webln") {
+  } else if (isWebLNWallet($wallet)) {
     if (msats) throw new Error("Unable to pay zero invoices with webln")
     return getWebLn()
       .enable()
@@ -47,9 +53,9 @@ export const createInvoice = async ({
   sats,
   description = "Receive via lightning",
 }: CreateInvoiceParams) => {
-  const $session = session.get()
+  const $wallet = wallet.get()
 
-  if (!$session?.wallet) {
+  if (!$wallet) {
     throw new Error("No wallet is connected")
   }
 
@@ -59,7 +65,7 @@ export const createInvoice = async ({
     throw new Error("Invalid satoshi amount")
   }
 
-  if ($session.wallet.type === "nwc") {
+  if (isNWCWallet($wallet)) {
     const createdInvoice = await getNwcClient().makeInvoice({
       amount: satAmount * 1000,
       description,
@@ -72,7 +78,7 @@ export const createInvoice = async ({
     return createdInvoice.invoice
   }
 
-  if ($session.wallet.type === "webln") {
+  if (isWebLNWallet($wallet)) {
     const webLn = getWebLn()
 
     if (!webLn) {

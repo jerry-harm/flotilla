@@ -14,10 +14,18 @@
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import RoomNameWithImage from "@app/components/RoomNameWithImage.svelte"
-  import {roomsByUrl} from "@app/groups"
   import {makeRoomPath} from "@app/routes"
+  import {rooms} from "@app/core"
 
-  const {url, noun, event}: {url: string; noun: string; event: TrustedEvent} = $props()
+  type Props = {
+    url: string
+    noun: string
+    event: TrustedEvent
+  }
+
+  const {url, noun, event}: Props = $props()
+
+  const spaceRooms = $rooms.forUrl(url).$
 
   const back = () => history.back()
 
@@ -40,14 +48,14 @@
       <ModalSubtitle>Which room would you like to share this event to?</ModalSubtitle>
     </ModalHeader>
     <div class="grid grid-cols-2 gap-2">
-      {#each $roomsByUrl.get(url) || [] as room (room.h)}
+      {#each $spaceRooms as room (room.h)}
         <Button
           type="button"
           class="flex justify-center button {selection === room.h
             ? 'button-primary'
             : 'button-neutral'}"
           onclick={() => toggleRoom(room.h)}>
-          <RoomNameWithImage {...room} />
+          <RoomNameWithImage {url} h={room.h} />
         </Button>
       {/each}
     </div>

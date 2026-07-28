@@ -1,15 +1,14 @@
 <script lang="ts">
   import type {TrustedEvent, EventContent} from "@welshman/util"
+  import {tagSpec, tagValue} from "@welshman/util"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
+  import {publishReaction, retractReaction} from "@app/reactions"
   import ThunkStatusOrDeleted from "@app/components/ThunkStatusOrDeleted.svelte"
   import EventActivity from "@app/components/EventActivity.svelte"
   import EventActions from "@app/components/EventActions.svelte"
-  import {publishDelete} from "@app/deletes"
-  import {publishReaction} from "@app/reactions"
-  import {canEnforceNip70} from "@app/relays"
   import {makeSpacePath} from "@app/routes"
 
-  interface Props {
+  type Props = {
     url: string
     event: TrustedEvent
     segment: string
@@ -18,15 +17,13 @@
 
   const {url, event, segment, showActivity = false}: Props = $props()
 
-  const shouldProtect = canEnforceNip70(url)
+  const h = tagValue(tagSpec("h"), event.tags)
 
   const path = makeSpacePath(url, segment, event.id)
 
-  const deleteReaction = async (event: TrustedEvent) =>
-    publishDelete({relays: [url], event, protect: await shouldProtect})
+  const deleteReaction = (reaction: TrustedEvent) => retractReaction(reaction, {url, h})
 
-  const createReaction = async (template: EventContent) =>
-    publishReaction({...template, event, relays: [url], protect: await shouldProtect})
+  const createReaction = (values: EventContent) => publishReaction(event, values, {url, h})
 </script>
 
 <div class="flex flex-wrap items-center justify-between gap-2">

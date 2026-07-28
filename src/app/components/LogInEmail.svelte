@@ -1,6 +1,6 @@
 <script lang="ts">
-  import {uniq} from "@welshman/lib"
   import {Client} from "@pomade/core"
+  import {uniq} from "@welshman/lib"
   import {preventDefault} from "@lib/html"
   import Spinner from "@lib/components/Spinner.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -24,7 +24,7 @@
   import {setChecked} from "@app/notifications"
   import {pushToast} from "@app/toast"
 
-  interface Props {
+  type Props = {
     email?: string
   }
 
@@ -56,7 +56,7 @@
         const {clientOptions, ...res} = await Client.selectLogin(clientSecret, client, peers)
 
         if (res.ok && clientOptions) {
-          loginWithPomade(clientOptions, email)
+          await loginWithPomade(clientOptions, email)
           deleteDeactivatedPomadeSessions()
           setChecked("*")
           clearModals()

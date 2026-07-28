@@ -1,20 +1,18 @@
 <script lang="ts">
   import type {TrustedEvent, EventContent} from "@welshman/util"
-  import {getTagValue, getAddress} from "@welshman/util"
-  import {pubkey} from "@welshman/app"
+  import {getAddress, tagSpec, tagValue} from "@welshman/util"
   import Pen2 from "@assets/icons/pen-2.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import Link from "@lib/components/Link.svelte"
   import RoomName from "@app/components/RoomName.svelte"
+  import {publishReaction, retractReaction} from "@app/reactions"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
   import ThunkStatusOrDeleted from "@app/components/ThunkStatusOrDeleted.svelte"
   import EventActivity from "@app/components/EventActivity.svelte"
   import EventActions from "@app/components/EventActions.svelte"
   import CalendarEventEdit from "@app/components/CalendarEventEdit.svelte"
-  import {publishDelete} from "@app/deletes"
-  import {publishReaction} from "@app/reactions"
-  import {canEnforceNip70} from "@app/relays"
+  import {user} from "@app/core"
   import {makeCalendarPath, makeSpacePath} from "@app/routes"
   import {pushModal} from "@app/modal"
 
@@ -27,17 +25,14 @@
 
   const {url, event, showRoom, showActivity}: Props = $props()
 
-  const h = getTagValue("h", event.tags)
+  const h = tagValue(tagSpec("h"), event.tags)
   const path = makeCalendarPath(url, getAddress(event))
-  const shouldProtect = canEnforceNip70(url)
 
   const editEvent = () => pushModal(CalendarEventEdit, {url, event})
 
-  const deleteReaction = async (event: TrustedEvent) =>
-    publishDelete({relays: [url], event, protect: await shouldProtect})
+  const deleteReaction = (reaction: TrustedEvent) => retractReaction(reaction, {url, h})
 
-  const createReaction = async (template: EventContent) =>
-    publishReaction({...template, event, relays: [url], protect: await shouldProtect})
+  const createReaction = (values: EventContent) => publishReaction(event, values, {url, h})
 </script>
 
 <div class="flex grow flex-wrap justify-end gap-2">
@@ -53,7 +48,7 @@
   {/if}
   <EventActions {url} {event} noun="Event">
     {#snippet customActions()}
-      {#if event.pubkey === $pubkey}
+      {#if event.pubkey === $user.pubkey}
         <li>
           <Button onclick={editEvent}>
             <Icon size={4} icon={Pen2} />

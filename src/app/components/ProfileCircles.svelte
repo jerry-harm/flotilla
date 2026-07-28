@@ -1,8 +1,8 @@
 <script lang="ts">
   import cx from "classnames"
-  import {loadProfile} from "@welshman/app"
   import {isMobile} from "@lib/html"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
+  import {profiles} from "@app/core"
 
   type Props = {
     pubkeys: string[]
@@ -24,7 +24,7 @@
 
   $effect(() => {
     for (const pk of pubkeys) {
-      loadProfile(pk)
+      $profiles.load(pk)
     }
   })
 

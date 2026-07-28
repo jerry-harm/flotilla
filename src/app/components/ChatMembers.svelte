@@ -7,7 +7,7 @@
   import ModalBody from "@lib/components/ModalBody.svelte"
   import Profile from "@app/components/Profile.svelte"
 
-  interface Props {
+  type Props = {
     pubkeys: string[]
   }
 

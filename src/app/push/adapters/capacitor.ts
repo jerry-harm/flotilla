@@ -1,21 +1,14 @@
-import {get} from "svelte/store"
 import {Capacitor} from "@capacitor/core"
 import {PushNotifications} from "@capacitor/push-notifications"
-import {
-  pubkey,
-  publishThunk,
-  loadRelay,
-  waitForThunkError,
-  userMessagingRelayList,
-} from "@welshman/app"
 import {assoc, hash, maybe} from "@welshman/lib"
 import type {Filter} from "@welshman/util"
-import {DELETE, getRelaysFromList, makeEvent, Address} from "@welshman/util"
+import {Address, DELETE, makeEvent} from "@welshman/util"
+import {Relays, User} from "@welshman/app"
 import {buildUrl} from "@lib/util"
+import {app, messagingRelayLists, roomLists, thunks} from "@app/core"
+import {device} from "@app/device"
 import {PUSH_BRIDGE, PUSH_SERVER} from "@app/env"
 import {pushState} from "@app/push/adapters/common"
-import {userSpaceUrls} from "@app/groups"
-import {device} from "@app/device"
 import type {IPushAdapter} from "@app/push/adapters/common"
 import {
   onPushNotificationAction,
@@ -84,9 +77,9 @@ export class CapacitorNotifications implements IPushAdapter {
 
   _getPushUrl = async (url: string) => {
     for (const candidate of [url, PUSH_BRIDGE]) {
-      const relay = await loadRelay(candidate)
+      const relay = await app.get().use(Relays).load(candidate)
 
-      if (relay?.supported_nips?.map(String)?.includes("9a")) {
+      if (relay?.hasNip("9a")) {
         return candidate
       }
     }
@@ -109,7 +102,7 @@ export class CapacitorNotifications implements IPushAdapter {
 
     const identifier = this._getSubscriptionIdentifier(relay, key)
 
-    const thunk = publishThunk({
+    const thunk = thunks.get().publish({
       relays: [url],
       event: makeEvent(30390, {
         tags: [
@@ -122,7 +115,7 @@ export class CapacitorNotifications implements IPushAdapter {
       }),
     })
 
-    const error = await waitForThunkError(thunk)
+    const error = await thunk.waitForError()
 
     if (error) {
       console.warn(`Failed to subscribe ${relay} to ${key} notifications:`, error)
@@ -139,9 +132,9 @@ export class CapacitorNotifications implements IPushAdapter {
 
     const relays = [url]
     const identifier = this._getSubscriptionIdentifier(relay, key)
-    const address = new Address(30390, pubkey.get()!, identifier).toString()
+    const address = new Address(30390, User.require(app.get()).pubkey, identifier).toString()
     const event = makeEvent(DELETE, {tags: [["a", address]]})
-    const error = await waitForThunkError(publishThunk({relays, event}))
+    const error = await thunks.get().publish({relays, event}).waitForError()
 
     if (error) {
       console.warn(`Failed to unsubscribe ${relay} from notifications:`, error)
@@ -192,10 +185,24 @@ export class CapacitorNotifications implements IPushAdapter {
 
     pushState.set({})
 
-    await Promise.all(get(userSpaceUrls).map(url => this._unsyncRelay(url, "spaces")))
+    const $pubkey = app.get().user?.pubkey
 
-    await Promise.all(
-      getRelaysFromList(get(userMessagingRelayList)).map(url => this._unsyncRelay(url, "messages")),
-    )
+    if ($pubkey) {
+      await Promise.all(
+        roomLists
+          .get()
+          .urls($pubkey)
+          .get()
+          .map(url => this._unsyncRelay(url, "spaces")),
+      )
+
+      await Promise.all(
+        messagingRelayLists
+          .get()
+          .urls($pubkey)
+          .get()
+          .map(url => this._unsyncRelay(url, "messages")),
+      )
+    }
   }
 }

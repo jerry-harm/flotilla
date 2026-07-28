@@ -1,36 +1,21 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import {Client} from "@pomade/core"
-  import {session, isPomadeSession} from "@welshman/app"
   import MenuButton from "@lib/components/MenuButton.svelte"
   import Badge from "@lib/components/Badge.svelte"
   import PomadeSessionMenu from "@app/components/PomadeSessionMenu.svelte"
   import {pushToast} from "@app/toast"
-  import {loadOtherPomadeSessions} from "@app/pomade"
+  import {deletePomadeSession, loadOtherPomadeSessions} from "@app/pomade"
   import type {PomadeSessionWithPeers} from "@app/pomade"
 
   let sessions = $state<PomadeSessionWithPeers[]>([])
 
   const deleteSession = async (sessionItem: PomadeSessionWithPeers) => {
-    if (!isPomadeSession($session)) return
-
     try {
-      const client = new Client($session.clientOptions)
-      const result = await client.deleteSession(sessionItem.client, sessionItem.peers)
+      await deletePomadeSession(sessionItem.client, sessionItem.peers)
 
-      if (result.ok) {
-        pushToast({
-          message: "Session deleted successfully",
-        })
+      pushToast({message: "Session deleted successfully"})
 
-        // Remove from local list
-        sessions = sessions.filter(s => s.client !== sessionItem.client)
-      } else {
-        pushToast({
-          theme: "error",
-          message: "Failed to delete session",
-        })
-      }
+      sessions = sessions.filter(s => s.client !== sessionItem.client)
     } catch (e) {
       console.error(e)
       pushToast({

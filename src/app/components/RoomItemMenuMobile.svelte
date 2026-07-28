@@ -1,8 +1,7 @@
 <script lang="ts">
   import type {NativeEmoji} from "emoji-picker-element/shared"
   import type {TrustedEvent} from "@welshman/util"
-  import {getTagValue} from "@welshman/util"
-  import {pubkey} from "@welshman/app"
+  import {tagSpec, tagValue} from "@welshman/util"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
@@ -19,12 +18,9 @@
   import ZapButton from "@app/components/ZapButton.svelte"
   import EventInfo from "@app/components/EventInfo.svelte"
   import EventDeleteConfirm from "@app/components/EventDeleteConfirm.svelte"
-  import {ROOM} from "@app/groups"
-  import {deriveUserIsRoomAdmin} from "@app/members"
-  import {deriveRoomPinIds, pinRoomMessage, unpinRoomMessage} from "@app/pins"
+  import {reactions, relays, roomPinLists, user} from "@app/core"
+  import {ROOM, deriveUserIsRoomAdmin} from "@app/rooms"
   import {ENABLE_ZAPS} from "@app/env"
-  import {publishReaction} from "@app/reactions"
-  import {canEnforceNip70} from "@app/relays"
   import {getRoomItemPath} from "@app/routes"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
@@ -37,23 +33,20 @@
 
   const {url, event, reply}: Props = $props()
 
-  const h = getTagValue(ROOM, event.tags) ?? ""
+  const h = tagValue(tagSpec(ROOM), event.tags) ?? ""
   const path = getRoomItemPath(url, event)
-  const pinIds = deriveRoomPinIds(url, h)
+  const pinIds = $roomPinLists.pins(url, h).$
   const userIsRoomAdmin = deriveUserIsRoomAdmin(url, h)
   const isPinned = $derived($pinIds.includes(event.id))
 
-  const shouldProtect = canEnforceNip70(url)
-
-  const onEmoji = (async (event: TrustedEvent, url: string, emoji: NativeEmoji) => {
+  const onEmoji = async (emoji: NativeEmoji) => {
     history.back()
-    publishReaction({
-      event,
-      relays: [url],
-      content: emoji.unicode,
-      protect: await shouldProtect,
-    })
-  }).bind(undefined, event, url)
+
+    const protect = await $relays.hasNip(url, 70)
+    const command = await $reactions.react(event, emoji.unicode, w => w.setProtected(protect))
+
+    command.publishToRelays([url])
+  }
 
   const showEmojiPicker = () => pushModal(EmojiPicker, {onClick: onEmoji}, {replaceState: true})
 
@@ -71,9 +64,9 @@
 
     history.back()
 
-    const error = isPinned
-      ? await unpinRoomMessage(url, h, event.id, $pinIds)
-      : await pinRoomMessage(url, h, event.id, $pinIds)
+    const pins = isPinned ? $pinIds.filter(pin => pin !== event.id) : [...$pinIds, event.id]
+    const command = await $roomPinLists.setPins(url, h, pins)
+    const error = await command.publishToRelays([url]).waitForError()
 
     if (error) {
       pushToast({theme: "error", message: error})
@@ -86,7 +79,7 @@
 <Modal>
   <ModalBody>
     <div class="flex flex-col gap-2">
-      {#if event.pubkey === $pubkey}
+      {#if event.pubkey === $user.pubkey}
         <Button class="button button-neutral text-error" onclick={showDelete}>
           <Icon size={4} icon={TrashBin2} />
           Delete Message

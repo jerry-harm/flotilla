@@ -1,11 +1,11 @@
 <script lang="ts">
   import type {ComponentProps} from "svelte"
-  import {getTagValue} from "@welshman/util"
+  import {tagSpec, tagValue} from "@welshman/util"
   import Content from "@app/components/Content.svelte"
 
   const props: ComponentProps<typeof Content> = $props()
 
-  const title = getTagValue("title", props.event.tags)
+  const title = tagValue(tagSpec("title"), props.event.tags)
 </script>
 
 <div class="flex flex-col gap-2">

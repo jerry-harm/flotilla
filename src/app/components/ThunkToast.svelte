@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type {AbstractThunk} from "@welshman/app"
-  import {thunkHasStatus, thunkIsComplete} from "@welshman/app"
+  import type {BaseThunk} from "@welshman/app"
   import {PublishStatus} from "@welshman/net"
   import ThunkPending from "@app/components/ThunkPending.svelte"
   import type {Toast} from "@app/toast"
@@ -8,7 +7,7 @@
 
   type Props = {
     toast: Toast
-    thunk: AbstractThunk
+    thunk: BaseThunk
   }
 
   const {toast, ...props}: Props = $props()
@@ -16,8 +15,8 @@
   const id = toast.id
   const thunk = props.thunk
   const {Aborted, Timeout, Failure} = PublishStatus
-  const isFailure = $derived(thunkHasStatus([Aborted, Timeout, Failure], $thunk))
-  const isComplete = $derived(thunkIsComplete($thunk))
+  const isFailure = $derived($thunk.hasStatus([Aborted, Timeout, Failure]))
+  const isComplete = $derived($thunk.isComplete())
 
   $effect(() => {
     if (isFailure) {

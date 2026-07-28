@@ -1,7 +1,7 @@
 <script lang="ts">
   import {onMount} from "svelte"
   import {goto} from "$app/navigation"
-  import {displayProfileByPubkey, loadMessagingRelayList} from "@welshman/app"
+  import {spec} from "@welshman/lib"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import UserCircle from "@assets/icons/user-circle.svg?dataurl"
   import MinusCircle from "@assets/icons/minus-circle.svg?dataurl"
@@ -17,13 +17,8 @@
   import ProfileAbout from "@app/components/ProfileAbout.svelte"
   import ProfileBadges from "@app/components/ProfileBadges.svelte"
   import ProfileMenu from "@app/components/ProfileMenu.svelte"
-  import {
-    deriveUserIsSpaceAdmin,
-    deriveSpaceBannedPubkeyItems,
-    removeSpaceMembers,
-    addSpaceMembers,
-    banSpaceMembers,
-  } from "@app/members"
+  import {messagingRelayLists, profiles, relayManagement} from "@app/core"
+  import {deriveUserIsSpaceAdmin} from "@app/management"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
   import {makeProfilePath} from "@app/routes"
@@ -37,54 +32,57 @@
 
   const userIsAdmin = deriveUserIsSpaceAdmin(url)
 
-  const bannedPubkeys = url ? deriveSpaceBannedPubkeyItems(url) : undefined
-
-  const isBanned = $derived($bannedPubkeys?.some(item => item.pubkey === pubkey) ?? false)
-
   const back = () => history.back()
 
   const viewProfile = () => goto(makeProfilePath(pubkey), {replaceState: true})
 
+  const report = (error: string | undefined, message: string) => {
+    if (error) {
+      pushToast({theme: "error", message: error})
+    } else {
+      pushToast({message})
+      back()
+    }
+  }
+
   const banMember = () =>
     pushModal(Confirm, {
       title: "Ban User",
-      message: `Are you sure you want to ban @${displayProfileByPubkey(pubkey)} from the space?`,
+      message: `Are you sure you want to ban @${$profiles.display(pubkey).get()} from the space?`,
       confirm: async () => {
-        const error = await banSpaceMembers(url!, [pubkey])
+        const {error} = await $relayManagement.forUrl(url!).banPubkey(pubkey)
 
-        if (error) {
-          pushToast({theme: "error", message: error})
-        } else {
-          pushToast({message: "User has successfully been banned!"})
-          back()
-        }
+        report(error, "User has successfully been banned!")
       },
     })
 
   const removeMember = async () => {
-    const error = await removeSpaceMembers(url!, [pubkey])
+    const {error} = await $relayManagement.forUrl(url!).unallowPubkey(pubkey)
 
-    if (error) {
-      pushToast({theme: "error", message: error})
-    } else {
-      pushToast({message: "User has successfully been removed!"})
-      back()
-    }
+    report(error, "User has successfully been removed!")
   }
 
   const restoreMember = async () => {
-    const error = await addSpaceMembers(url!, [pubkey])
+    const {error} = await $relayManagement.forUrl(url!).allowPubkey(pubkey)
 
-    if (error) {
-      pushToast({theme: "error", message: error})
-    } else {
-      pushToast({message: "User has successfully been restored!"})
-      back()
-    }
+    report(error, "User has successfully been restored!")
   }
 
+  let isBanned = $state(false)
+
+  $effect(() => {
+    if (url && $userIsAdmin) {
+      $relayManagement
+        .forUrl(url)
+        .listBannedPubkeys()
+        .then(({result = []}) => {
+          isBanned = result.some(spec({pubkey}))
+        })
+    }
+  })
+
   onMount(() => {
-    loadMessagingRelayList(pubkey)
+    $messagingRelayLists.load(pubkey)
   })
 </script>
 

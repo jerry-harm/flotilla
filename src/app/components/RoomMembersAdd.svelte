@@ -1,9 +1,7 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import {setKey, popKey} from "@lib/implicit"
   import {sleep} from "@welshman/lib"
-  import {displayProfileByPubkey} from "@welshman/app"
-  import type {PublishedRoomMeta} from "@welshman/util"
+  import {setKey, popKey} from "@lib/implicit"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import Spinner from "@lib/components/Spinner.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -18,20 +16,19 @@
   import Confirm from "@lib/components/Confirm.svelte"
   import RoomName from "@app/components/RoomName.svelte"
   import ProfileMultiSelect from "@app/components/ProfileMultiSelect.svelte"
+  import {profiles, relayMemberLists} from "@app/core"
   import {pushToast} from "@app/toast"
   import {pushModal} from "@app/modal"
-  import {deriveRoom} from "@app/groups"
-  import {deriveSpaceMembers, addRoomMembers} from "@app/members"
+  import {addRoomMembers} from "@app/rooms"
 
-  interface Props {
+  type Props = {
     url: string
     h: string
   }
 
   const {url, h}: Props = $props()
 
-  const room = deriveRoom(url, h)
-  const spaceMembers = deriveSpaceMembers(url)
+  const spaceMembers = $relayMemberLists.forUrl(url)
 
   const back = () => history.back()
 
@@ -42,7 +39,7 @@
       // Show loading for auto submit callback
       await sleep(500)
 
-      const error = await addRoomMembers(url, $room as PublishedRoomMeta, pubkeys)
+      const error = await addRoomMembers(url, {h}, pubkeys)
 
       if (error) {
         pushToast({theme: "error", message: error})
@@ -55,14 +52,12 @@
     }
   }
 
-  const onSubmit = async () => {
-    if (!$spaceMembers) {
-      addMembers()
-      return
-    }
-
+  const onSubmit = () => {
+    const members = $spaceMembers
     const pubkeysSnapshot = $state.snapshot(pubkeys)
-    const nonSpaceMembers = pubkeysSnapshot.filter(pubkey => !$spaceMembers.includes(pubkey))
+    const nonSpaceMembers = members
+      ? pubkeysSnapshot.filter(pubkey => !members.isMember(pubkey))
+      : []
 
     if (nonSpaceMembers.length > 0) {
       setKey("RoomMembersAdd.pubkeys", pubkeysSnapshot)
@@ -72,7 +67,7 @@
         subtitle: "Automatically add members to space",
         message:
           nonSpaceMembers.length === 1
-            ? `${displayProfileByPubkey(nonSpaceMembers[0])} is not a member of this space. Add them?`
+            ? `${$profiles.display(nonSpaceMembers[0]).get()} is not a member of this space. Add them?`
             : `${nonSpaceMembers.length} people are not members of this space. Add them?`,
         confirm: async () => {
           setKey("RoomMembersAdd.confirm", true)

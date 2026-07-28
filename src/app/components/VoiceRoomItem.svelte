@@ -1,7 +1,7 @@
 <script lang="ts">
   import cx from "classnames"
   import {goto} from "$app/navigation"
-  import {loadProfile, displayProfileByPubkey} from "@welshman/app"
+  import {makeRoomKey} from "@welshman/app"
   import SecondaryNavItem from "@lib/components/SecondaryNavItem.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
@@ -12,7 +12,6 @@
   import {pushModal} from "@app/modal"
   import VoiceRoomJoinDialog from "@app/components/VoiceRoomJoinDialog.svelte"
   import VoiceParticipantMediaBadges from "@app/components/VoiceParticipantMediaBadges.svelte"
-  import {makeRoomId} from "@app/groups"
   import {
     CallState,
     callTargetRoom,
@@ -25,6 +24,7 @@
     loadCallParticipants,
     type CallParticipant,
   } from "@app/call"
+  import {profiles} from "@app/core"
 
   interface Props {
     url: string
@@ -38,10 +38,10 @@
   const participants = deriveCallParticipants(url, h)
   const participantPubkeys = $derived($participants.flatMap(p => (p.pubkey ? [p.pubkey] : [])))
   const isActive = $derived(
-    $callState === CallState.Connected && $callTargetRoom?.id === makeRoomId(url, h),
+    $callState === CallState.Connected && $callTargetRoom?.id === makeRoomKey(url, h),
   )
   const isJoining = $derived(
-    $callState === CallState.Joining && $callTargetRoom?.id === makeRoomId(url, h),
+    $callState === CallState.Joining && $callTargetRoom?.id === makeRoomKey(url, h),
   )
 
   const handleClick = async (e: MouseEvent) => {
@@ -64,7 +64,7 @@
 
   $effect(() => {
     for (const p of $participants) {
-      if (p.pubkey) loadProfile(p.pubkey)
+      if (p.pubkey) $profiles.load(p.pubkey)
     }
   })
 </script>
@@ -98,7 +98,7 @@
               <ProfileCircle pubkey={p.pubkey} size={5} class="h-5 w-5" />
             </div>
             <span class="truncate min-w-0 flex-1 text-xs opacity-70">
-              {p.pubkey ? displayProfileByPubkey(p.pubkey) : "Unknown"}
+              {p.pubkey ? $profiles.display(p.pubkey).get() : "Unknown"}
             </span>
             <VoiceParticipantMediaBadges
               muted={media.muted}

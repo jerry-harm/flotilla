@@ -1,20 +1,8 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import {
-    pubkey,
-    getRelayLists,
-    derivePubkeyRelays,
-    addRelay,
-    removeRelay,
-    addBlockedRelay,
-    removeBlockedRelay,
-    addMessagingRelay,
-    removeMessagingRelay,
-    addSearchRelay,
-    removeSearchRelay,
-    getRelay,
-  } from "@welshman/app"
-  import {RelayMode} from "@welshman/util"
+  import {uniq} from "@welshman/lib"
+  import {isShareableRelayUrl} from "@welshman/util"
+  import {publish} from "@welshman/app"
   import Plane from "@assets/icons/plane.svg?dataurl"
   import Inbox from "@assets/icons/inbox.svg?dataurl"
   import Server from "@assets/icons/server.svg?dataurl"
@@ -25,22 +13,46 @@
   import PageContent from "@lib/components/PageContent.svelte"
   import RelaySettingsItem from "@app/components/RelaySettingsItem.svelte"
   import RelaySettingsHealthChecks from "@app/components/RelaySettingsHealthChecks.svelte"
-  import {hasNip50} from "@app/relays"
-  import {discoverRelays} from "@app/relays"
+  import {
+    blockedRelayLists,
+    messagingRelayLists,
+    relayLists,
+    relays,
+    searchRelayLists,
+    user,
+  } from "@app/core"
 
-  const readRelayUrls = derivePubkeyRelays($pubkey!, RelayMode.Read)
-  const writeRelayUrls = derivePubkeyRelays($pubkey!, RelayMode.Write)
-  const searchRelayUrls = derivePubkeyRelays($pubkey!, RelayMode.Search)
-  const blockedRelayUrls = derivePubkeyRelays($pubkey!, RelayMode.Blocked)
-  const messagingRelayUrls = derivePubkeyRelays($pubkey!, RelayMode.Messaging)
+  const readRelayUrls = $relayLists.readUrls($user.pubkey).$
+  const writeRelayUrls = $relayLists.writeUrls($user.pubkey).$
+  const searchRelayUrls = $searchRelayLists.urls($user.pubkey).$
+  const blockedRelayUrls = $blockedRelayLists.urls($user.pubkey).$
+  const messagingRelayUrls = $messagingRelayLists.urls($user.pubkey).$
 
-  const addReadRelay = (url: string) => addRelay(url, RelayMode.Read)
-  const removeReadRelay = (url: string) => removeRelay(url, RelayMode.Read)
-  const addWriteRelay = (url: string) => addRelay(url, RelayMode.Write)
-  const removeWriteRelay = (url: string) => removeRelay(url, RelayMode.Write)
+  const addReadRelay = (url: string) => $relayLists.addReadUrl(url).then(publish)
+  const removeReadRelay = (url: string) => $relayLists.removeReadUrl(url).then(publish)
+  const addWriteRelay = (url: string) => $relayLists.addWriteUrl(url).then(publish)
+  const removeWriteRelay = (url: string) => $relayLists.removeWriteUrl(url).then(publish)
 
+  const addMessagingRelay = (url: string) => $messagingRelayLists.addUrl(url).then(publish)
+
+  const removeMessagingRelay = (url: string) => $messagingRelayLists.removeUrl(url).then(publish)
+
+  const addSearchRelay = (url: string) => $searchRelayLists.addUrl(url).then(publish)
+  const removeSearchRelay = (url: string) => $searchRelayLists.removeUrl(url).then(publish)
+  const addBlockedRelay = (url: string) => $blockedRelayLists.addUrl(url).then(publish)
+
+  const removeBlockedRelay = (url: string) => $blockedRelayLists.removeUrl(url).then(publish)
+
+  const relaySupportsSearch = (url: string) => Boolean($relays.get(url)?.hasNip(50))
+
+  // Suggestions come from relay search, which only knows about relays whose NIP-11
+  // document has been fetched — so seed it from everyone's relay lists.
   onMount(() => {
-    discoverRelays(getRelayLists())
+    const urls = uniq($relayLists.all.get().flatMap(list => list.urls()))
+
+    for (const url of urls.filter(isShareableRelayUrl)) {
+      $relays.load(url)
+    }
   })
 </script>
 
@@ -84,7 +96,7 @@
       relays={searchRelayUrls}
       addRelay={addSearchRelay}
       removeRelay={removeSearchRelay}
-      matchRelay={url => hasNip50(getRelay(url))} />
+      matchRelay={relaySupportsSearch} />
     <RelaySettingsItem
       icon={ForbiddenCircle}
       title="Blocked Relays"

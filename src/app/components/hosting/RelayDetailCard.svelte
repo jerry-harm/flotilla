@@ -27,11 +27,11 @@
   import Confirm from "@lib/components/Confirm.svelte"
   import CustomDomainModal from "@app/components/hosting/CustomDomainModal.svelte"
   import PlanModal from "@app/components/hosting/PlanModal.svelte"
+  import {roomLists} from "@app/core"
   import RelayForm from "@app/components/hosting/RelayForm.svelte"
   import type {RelayFormValues} from "@app/components/hosting/RelayForm.svelte"
   import {pushModal, clearModals} from "@app/modal"
   import {clip, pushToast} from "@app/toast"
-  import {moveSpace} from "@app/groups"
   import {goToMovedSpace} from "@app/routes"
   import {
     HostingError,
@@ -46,13 +46,13 @@
     reactivateRelay,
     derivePlans,
     deriveRelayMembers,
-    type Relay,
+    type HostedRelay,
     type RelayFlag,
     type UpdateRelayInput,
   } from "@app/hosting"
 
   type Props = {
-    relay: Relay
+    relay: HostedRelay
   }
 
   const {relay}: Props = $props()
@@ -74,19 +74,19 @@
 
   // Adding, removing or verifying a custom domain moves the relay's host, so
   // migrate the admin's groups list and follow the space to its new url.
-  const setCurrentAndFollowHost = async (next: Relay) => {
+  const setCurrentAndFollowHost = async (next: HostedRelay) => {
     const previousUrl = getHostedRelayUrl(current)
     const nextUrl = getHostedRelayUrl(next)
 
     current = next
 
     if (previousUrl !== nextUrl) {
-      await moveSpace(previousUrl, nextUrl)
+      await $roomLists.migrateRelay(previousUrl, nextUrl).then(command => command?.publish())
       await goToMovedSpace(previousUrl, nextUrl)
     }
   }
 
-  const persist = async (next: Relay, input: UpdateRelayInput) => {
+  const persist = async (next: HostedRelay, input: UpdateRelayInput) => {
     const previous = current
 
     current = next
@@ -108,7 +108,7 @@
     persist({...current, ...input}, input)
   }
 
-  const setCurrent = (next: Relay) => {
+  const setCurrent = (next: HostedRelay) => {
     current = next
   }
 

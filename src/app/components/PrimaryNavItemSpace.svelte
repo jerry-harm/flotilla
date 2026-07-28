@@ -1,7 +1,7 @@
 <script lang="ts">
-  import {deriveRelayDisplay} from "@welshman/app"
   import PrimaryNavItem from "@lib/components/PrimaryNavItem.svelte"
   import RelayIcon from "@app/components/RelayIcon.svelte"
+  import {relays} from "@app/core"
   import {makeSpacePath, goToSpace} from "@app/routes"
   import {notifications} from "@app/notifications"
 
@@ -16,7 +16,7 @@
 
   const path = makeSpacePath(url)
 
-  const display = $derived(deriveRelayDisplay(url))
+  const display = $relays.display(url).$
 </script>
 
 <PrimaryNavItem

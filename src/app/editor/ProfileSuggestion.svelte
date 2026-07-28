@@ -1,7 +1,7 @@
 <script lang="ts">
-  import {removeUndefined} from "@welshman/lib"
-  import {displayPubkey} from "@welshman/util"
-  import {deriveHandleForPubkey, displayHandle, deriveProfileDisplay} from "@welshman/app"
+  import {displayHandle} from "@welshman/util"
+  import {displayPubkey} from "@welshman/domain"
+  import {handles, profiles} from "@app/core"
   import WotScore from "@app/components/WotScore.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
 
@@ -13,8 +13,8 @@
   const {value, url}: Props = $props()
 
   const pubkey = value
-  const profileDisplay = deriveProfileDisplay(pubkey, removeUndefined([url]))
-  const handle = deriveHandleForPubkey(pubkey)
+  const profileDisplay = $profiles.display(pubkey).$
+  const handle = $handles.forPubkey(pubkey).$
 </script>
 
 <div class="flex max-w-full gap-3">

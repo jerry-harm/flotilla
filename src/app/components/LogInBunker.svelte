@@ -5,7 +5,7 @@
   import type {Nip46ResponseWithResult} from "@welshman/signer"
   import {Nip46Broker} from "@welshman/signer"
   import {makeSecret} from "@welshman/util"
-  import {loginWithNip01, loginWithNip46} from "@welshman/app"
+  import {nip01, nip46, toSession} from "@welshman/app"
   import {preventDefault} from "@lib/html"
   import Spinner from "@lib/components/Spinner.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -20,6 +20,7 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import BunkerConnect from "@app/components/BunkerConnect.svelte"
   import BunkerUrl from "@app/components/BunkerUrl.svelte"
+  import {login} from "@app/core"
   import {Nip46Controller} from "@app/nip46"
   import {clearModals} from "@app/modal"
   import {setChecked} from "@app/notifications"
@@ -36,16 +37,16 @@
 
   const controller = new Nip46Controller({
     onNostrConnect: async (response: Nip46ResponseWithResult) => {
-      const pubkey = await controller.broker.getPublicKey()
-
       // Use the broker's current relays rather than the ones we started with, since
       // the signer may have asked us to switch relays during the connection handshake.
-      loginWithNip46(
-        pubkey,
-        controller.clientSecret,
-        response.event.pubkey,
-        controller.broker.params.relays,
+      await login(
+        toSession(nip46, {
+          clientSecret: controller.clientSecret,
+          signerPubkey: response.event.pubkey,
+          relays: controller.broker.params.relays,
+        }),
       )
+
       setChecked("*")
       clearModals()
     },
@@ -86,7 +87,7 @@
         controller.stop()
 
         // connect() may have switched relays, so persist the broker's current relays.
-        loginWithNip46(pubkey, clientSecret, signerPubkey, broker.params.relays)
+        await login(toSession(nip46, {clientSecret, signerPubkey, relays: broker.params.relays}))
         setChecked("*")
       } else {
         return pushToast({
@@ -128,7 +129,7 @@
   $effect(() => {
     // For testing and for play store reviewers
     if ($bunker === "reviewkey") {
-      loginWithNip01(makeSecret())
+      login(toSession(nip01, {secret: makeSecret()}))
     }
   })
 

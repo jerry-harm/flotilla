@@ -1,16 +1,16 @@
 <script lang="ts">
   import * as nip19 from "nostr-tools/nip19"
-  import {removeUndefined} from "@welshman/lib"
-  import {displayPubkey} from "@welshman/util"
-  import {deriveHandleForPubkey, displayHandle, deriveProfileDisplay} from "@welshman/app"
+  import {displayHandle} from "@welshman/util"
+  import {displayPubkey} from "@welshman/domain"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Copy from "@assets/icons/copy.svg?dataurl"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import WotScore from "@app/components/WotScore.svelte"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
   import {pushModal} from "@app/modal"
   import {clip} from "@app/toast"
-  import Copy from "@assets/icons/copy.svg?dataurl"
+  import {handles, profiles} from "@app/core"
 
   type Props = {
     pubkey: string
@@ -22,9 +22,8 @@
 
   const {pubkey, url, showPubkey, inert, avatarSize = 10}: Props = $props()
 
-  const relays = removeUndefined([url])
-  const profileDisplay = deriveProfileDisplay(pubkey, relays)
-  const handle = deriveHandleForPubkey(pubkey)
+  const profileDisplay = $profiles.display(pubkey).$
+  const handle = $handles.forPubkey(pubkey).$
 
   const openProfile = () => {
     pushModal(ProfileDetail, {pubkey, url})

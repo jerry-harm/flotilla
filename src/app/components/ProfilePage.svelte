@@ -1,17 +1,7 @@
 <script lang="ts">
   import * as nip19 from "nostr-tools/nip19"
-  import {displayPubkey} from "@welshman/util"
-  import {
-    pubkey,
-    followLists,
-    deriveProfile,
-    deriveProfileDisplay,
-    getFollows,
-    follow,
-    unfollow,
-    tagPubkey,
-    loadRelayList,
-  } from "@welshman/app"
+  import {publish} from "@welshman/app"
+  import {displayPubkey} from "@welshman/domain"
   import Copy from "@assets/icons/copy.svg?dataurl"
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import Letter from "@assets/icons/letter-opened.svg?dataurl"
@@ -30,11 +20,11 @@
   import ProfileEdit from "@app/components/ProfileEdit.svelte"
   import ProfileMenu from "@app/components/ProfileMenu.svelte"
   import WotScore from "@app/components/WotScore.svelte"
-  import {updateProfile} from "@app/profiles"
   import {compressFileForUpload, uploadFile} from "@app/uploads"
   import {pushModal} from "@app/modal"
   import {clip, pushToast} from "@app/toast"
   import {goToChat} from "@app/routes"
+  import {followLists, profiles, relayLists, user} from "@app/core"
 
   type Props = {
     pubkey: string
@@ -42,19 +32,16 @@
 
   const {pubkey: target}: Props = $props()
 
-  const profile = deriveProfile(target)
-  const profileDisplay = deriveProfileDisplay(target)
-  const isSelf = $derived($pubkey === target)
-  const isFollowing = $derived.by(() => {
-    void $followLists
-
-    return $pubkey ? getFollows($pubkey).includes(target) : false
-  })
-  const website = $derived($profile?.website?.replace(/^https?:\/\//, ""))
+  const profile = $profiles.one(target)
+  const profileDisplay = $profiles.display(target).$
+  const isSelf = $derived($user.pubkey === target)
+  const follows = $derived($followLists.one($user.pubkey))
+  const isFollowing = $derived(($follows?.pubkeys() ?? []).includes(target))
+  const website = $derived($profile?.website()?.replace(/^https?:\/\//, ""))
   const websiteHref = $derived(
-    $profile?.website?.match(/^https?:\/\//)
-      ? $profile.website
-      : `https://${$profile?.website || ""}`,
+    website && $profile?.website()?.match(/^https?:\/\//)
+      ? $profile.website()!
+      : `https://${website || ""}`,
   )
 
   let bannerLoading = $state(false)
@@ -67,12 +54,12 @@
   const openChat = () => goToChat([target])
 
   const toggleFollow = async () => {
-    if (!$pubkey || isSelf) return
+    if (isSelf) return
 
     if (isFollowing) {
-      await unfollow(target)
+      await $followLists.unfollow(target).then(publish)
     } else {
-      await follow(tagPubkey(target))
+      await $followLists.follow(["p", target]).then(publish)
     }
   }
 
@@ -92,7 +79,10 @@
       const {result} = await uploadFile(await compressFileForUpload(file))
 
       if (result?.url) {
-        await updateProfile({profile: {...$profile, banner: result.url}})
+        const command = await $profiles.update(w => w.setBanner(result.url))
+
+        await command.publish().waitForCompletion()
+
         pushToast({message: "Banner updated."})
       }
     } finally {
@@ -105,8 +95,8 @@
   <div class="flex flex-col gap-3 xl:flex-row xl:items-start">
     <div class="min-w-0 flex-1 overflow-hidden border-line bg-surface md:rounded-3xl md:border">
       <div class="relative overflow-hidden border-b border-line bg-surface-more">
-        {#if $profile?.banner}
-          <img src={$profile.banner} alt="" class="h-28 w-full object-cover sm:h-32 md:h-40" />
+        {#if $profile?.banner()}
+          <img src={$profile.banner()} alt="" class="h-28 w-full object-cover sm:h-32 md:h-40" />
         {:else}
           <div class="h-28 w-full bg-linear-to-br from-surface-more to-surface sm:h-32 md:h-40">
           </div>
@@ -159,7 +149,7 @@
                         <Icon icon={PenNewSquare} size={4} />
                         Edit profile
                       </Button>
-                    {:else if $pubkey}
+                    {:else}
                       <Button
                         class="button button-neutral flex-1 sm:button-sm sm:flex-none"
                         onclick={toggleFollow}>
@@ -200,7 +190,7 @@
                 </Link>
               {/if}
 
-              {#if $profile?.about}
+              {#if $profile?.about()}
                 <ProfileAbout pubkey={target} />
               {/if}
             </div>
@@ -214,7 +204,7 @@
             <ProfileTrust pubkey={target} {isSelf} />
             <ProfileSharedSpaces pubkey={target} {isSelf} />
           </div>
-          {#await loadRelayList(target)}
+          {#await $relayLists.load(target)}
             <p class="my-12 flex items-center justify-center gap-2">
               <Spinner loading />
               Loading notes...

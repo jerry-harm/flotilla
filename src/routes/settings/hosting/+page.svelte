@@ -1,9 +1,8 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import type {Maybe} from "@welshman/lib"
-  import {indexBy} from "@welshman/lib"
-  import {pubkey} from "@welshman/app"
   import {App} from "@capacitor/app"
+  import type {Maybe} from "@welshman/lib"
+  import {indexBy, spec} from "@welshman/lib"
   import Add from "@assets/icons/add.svg?dataurl"
   import Server from "@assets/icons/server.svg?dataurl"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
@@ -23,6 +22,7 @@
   import InvoiceListItem from "@app/components/hosting/InvoiceListItem.svelte"
   import PaymentDialog from "@app/components/hosting/PaymentDialog.svelte"
   import PaymentSetup from "@app/components/hosting/PaymentSetup.svelte"
+  import {user} from "@app/core"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
   import {
@@ -35,8 +35,8 @@
     derivePlans,
     reconcileTenant,
     selectPayableInvoice,
+    type HostedRelay,
     type Invoice,
-    type Relay,
     type Tenant,
   } from "@app/hosting"
 
@@ -48,7 +48,7 @@
 
   let tenant = $state<Maybe<Tenant>>()
   let invoices = $state<Invoice[]>([])
-  let relays = $state<Relay[]>([])
+  let relays = $state<HostedRelay[]>([])
   let draftInvoice = $state<Maybe<Invoice>>()
   let loading = $state(true)
   let error = $state("")
@@ -94,7 +94,7 @@
   )
 
   const refetch = async () => {
-    const pk = pubkey.get()
+    const pk = user.get().pubkey
     if (!pk) return
 
     const results = await Promise.allSettled([
@@ -111,7 +111,7 @@
     if (rel.status === "fulfilled") relays = rel.value
     if (draft.status === "fulfilled") draftInvoice = draft.value
 
-    if (results.some(r => r.status === "rejected")) {
+    if (results.some(spec({status: "rejected"}))) {
       pushToast({theme: "error", message: "Failed to refresh billing data"})
     }
   }
@@ -126,7 +126,7 @@
   // to settle a completed checkout and pick up a portal-added card. Charging open
   // invoices is left to the backend's dunning poll, which collects all of them.
   const reconcile = async () => {
-    const pk = pubkey.get()
+    const pk = user.get().pubkey
     if (!pk || reconciling) return
 
     reconciling = true

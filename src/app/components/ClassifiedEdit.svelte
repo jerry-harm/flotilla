@@ -1,10 +1,10 @@
 <script lang="ts">
-  import {fromPairs} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {getTag, getTagValues} from "@welshman/util"
+  import {Classified} from "@welshman/domain"
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
+  import {reader} from "@app/core"
   import ClassifiedForm from "@app/components/ClassifiedForm.svelte"
 
   type Props = {
@@ -14,19 +14,29 @@
 
   const {url, event}: Props = $props()
 
-  const {content} = event
-  const {d, title, status} = fromPairs(event.tags)
-  const [_, price = 0, currency = "SAT"] = getTag("price", event.tags) || []
-  const images = getTagValues("image", event.tags)
-  const topics = getTagValues("t", event.tags)
-  const initialValues = {d, title, status, content, price: Number(price), currency, images, topics}
+  const classified = reader(Classified)(event)
+
+  const initialValues = $derived(
+    classified && {
+      d: classified.identifier() ?? "",
+      title: classified.title() ?? "",
+      status: classified.status() ?? "",
+      content: classified.content(),
+      price: classified.price()?.amount ?? 0,
+      currency: classified.price()?.currency ?? "SAT",
+      images: classified.images(),
+      topics: classified.topics(),
+    },
+  )
 </script>
 
-<ClassifiedForm {url} {initialValues}>
-  {#snippet header()}
-    <ModalHeader>
-      <ModalTitle>Edit this Listing</ModalTitle>
-      <ModalSubtitle>Advertise a job, sale, or need.</ModalSubtitle>
-    </ModalHeader>
-  {/snippet}
-</ClassifiedForm>
+{#if initialValues}
+  <ClassifiedForm {url} {initialValues}>
+    {#snippet header()}
+      <ModalHeader>
+        <ModalTitle>Edit this Listing</ModalTitle>
+        <ModalSubtitle>Advertise a job, sale, or need.</ModalSubtitle>
+      </ModalHeader>
+    {/snippet}
+  </ClassifiedForm>
+{/if}

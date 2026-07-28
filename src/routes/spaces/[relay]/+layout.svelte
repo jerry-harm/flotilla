@@ -8,6 +8,7 @@
   import {page} from "$app/stores"
   import type {Maybe} from "@welshman/lib"
   import {once} from "@welshman/lib"
+  import {normalizeRelayUrl} from "@welshman/util"
   import Page from "@lib/components/Page.svelte"
   import SecondaryNav from "@lib/components/SecondaryNav.svelte"
   import SpaceMenu from "@app/components/SpaceMenu.svelte"
@@ -16,10 +17,11 @@
   import SpaceJoin from "@app/components/SpaceJoin.svelte"
   import SpaceRedirect from "@app/components/SpaceRedirect.svelte"
   import {deriveRelayAuthError} from "@app/access"
-  import {loadUserGroupList, userSpaceUrls} from "@app/groups"
+  import {relays, roomLists, user} from "@app/core"
+  import {userSpaceUrls} from "@app/rooms"
   import {modal, pushModal} from "@app/modal"
   import {relaysPendingTrust} from "@app/policies"
-  import {decodeRelay, fetchRelayRedirect} from "@app/relays"
+  import {decodeRelay} from "@app/relays"
   import {makeSpacePath} from "@app/routes"
 
   type Props = {
@@ -38,12 +40,26 @@
 
   const showPendingTrust = once(() => pushModal(SpaceTrustRelay, {url}, {noEscape: true}))
 
-  // Detect a moved custom domain (see fetchRelayRedirect)
+  // Detect a moved custom domain — the relay's nip-11 document answered with a redirect
   const checkRedirect = once(() => {
-    fetchRelayRedirect(url).then(next => {
-      redirectUrl = next
+    $relays.load(url).then($relay => {
+      const next = $relay?.redirect_to
+
+      if (next) {
+        redirectUrl = normalizeRelayUrl(next.replace(/^http/, "ws"))
+      }
     })
   })
+
+  const loadSpaces = async () => {
+    const currentPubkey = user.get().pubkey
+
+    if (currentPubkey) {
+      await $roomLists.load(currentPubkey, [url])
+    }
+
+    spacesLoaded = true
+  }
 
   // Track this manually since we want to avoid race conditions in which we show this prompt before we load
   let spacesLoaded = $state(false)
@@ -57,7 +73,7 @@
   $effect(() => {
     if ($modal) return
 
-    if (redirectUrl && !redirectPrompted.has(url)) {
+    if (redirectUrl && redirectUrl !== url && !redirectPrompted.has(url)) {
       redirectPrompted.add(url)
       pushModal(SpaceRedirect, {url, newUrl: redirectUrl})
     } else if (!$userSpaceUrls.includes(url) && !joinPrompted.has(url)) {
@@ -65,9 +81,7 @@
         joinPrompted.add(url)
         pushModal(SpaceJoin, {url})
       } else {
-        loadUserGroupList([url]).then(() => {
-          spacesLoaded = true
-        })
+        loadSpaces()
       }
     } else if ($authError) {
       showAuthError()

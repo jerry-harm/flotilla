@@ -2,7 +2,6 @@
   import {onMount} from "svelte"
   import {writable} from "svelte/store"
   import {uniq} from "@welshman/lib"
-  import {loadMessagingRelayList} from "@welshman/app"
   import {decodePubkey} from "@lib/util"
   import {preventDefault} from "@lib/html"
   import Field from "@lib/components/Field.svelte"
@@ -18,6 +17,7 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import ProfileMultiSelect from "@app/components/ProfileMultiSelect.svelte"
   import {goToChat} from "@app/routes"
+  import {messagingRelayLists} from "@app/core"
 
   const back = () => history.back()
 
@@ -33,7 +33,7 @@
   let pubkeys: string[] = $state([])
 
   $effect(() => {
-    pubkeys.forEach(pubkey => loadMessagingRelayList(pubkey))
+    pubkeys.forEach(pubkey => $messagingRelayLists.load(pubkey))
   })
 
   onMount(() => {

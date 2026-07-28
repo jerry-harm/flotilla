@@ -1,7 +1,6 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
   import cx from "classnames"
-  import {userProfile} from "@welshman/app"
   import Letter from "@assets/icons/letter.svg?dataurl"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import Widget from "@assets/icons/widget-4.svg?dataurl"
@@ -9,21 +8,24 @@
   import Settings from "@assets/icons/settings.svg?dataurl"
   import ImageIcon from "@lib/components/ImageIcon.svelte"
   import Divider from "@lib/components/Divider.svelte"
-  import MenuSettings from "@app/components/MenuSettings.svelte"
   import PrimaryNavItem from "@lib/components/PrimaryNavItem.svelte"
+  import MenuSettings from "@app/components/MenuSettings.svelte"
   import PrimaryNavItemSpace from "@app/components/PrimaryNavItemSpace.svelte"
   import PrimaryNavSpaces from "@app/components/PrimaryNavSpaces.svelte"
-  import {userSpaceUrls} from "@app/groups"
+  import {userSpaceUrls} from "@app/rooms"
   import {PLATFORM_RELAYS} from "@app/env"
   import {pushModal} from "@app/modal"
   import {notifications} from "@app/notifications"
   import {goToChat, makeSpacePath} from "@app/routes"
+  import {deriveUserItem, profiles} from "@app/core"
 
   type Props = {
     children?: Snippet
   }
 
   const {children}: Props = $props()
+
+  const userProfile = deriveUserItem($app => $profiles)
 
   const chatHandler = () => goToChat()
 
@@ -41,8 +43,8 @@
   {/if}
   <div class="flex flex-col items-center">
     <PrimaryNavItem title="Settings" href="/settings/profile" prefix="/settings">
-      {#if $userProfile?.picture}
-        <ImageIcon alt="Settings" src={$userProfile?.picture} class="rounded-full" size={10} />
+      {#if $userProfile?.picture()}
+        <ImageIcon alt="Settings" src={$userProfile.picture()!} class="rounded-full" size={10} />
       {:else}
         <ImageIcon alt="Settings" src={UserRounded} class="rounded-full" size={8} />
       {/if}
@@ -85,8 +87,8 @@
       {/if}
     </div>
     <PrimaryNavItem onclick={showSettingsMenu}>
-      {#if $userProfile?.picture}
-        <ImageIcon alt="Settings" src={$userProfile?.picture} size={10} class="rounded-full" />
+      {#if $userProfile?.picture()}
+        <ImageIcon alt="Settings" src={$userProfile.picture()!} size={10} class="rounded-full" />
       {:else}
         <ImageIcon alt="Settings" src={Settings} size={8} class="rounded-full" />
       {/if}

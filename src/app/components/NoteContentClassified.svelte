@@ -1,22 +1,25 @@
 <script lang="ts">
   import type {ComponentProps} from "svelte"
-  import {getTag, getTagValue, getTagValues} from "@welshman/util"
+  import {Classified} from "@welshman/domain"
   import CurrencySymbol from "@lib/components/CurrencySymbol.svelte"
+  import {reader} from "@app/core"
   import Content from "@app/components/Content.svelte"
   import ContentLinkBlock from "@app/components/ContentLinkBlock.svelte"
 
   const props: ComponentProps<typeof Content> = $props()
 
-  const title = getTagValue("title", props.event.tags)
-  const images = getTagValues("image", props.event.tags)
-  const [_, price = 0, currency = "SAT"] = getTag("price", props.event.tags) || []
+  const classified = reader(Classified)(props.event)
+
+  const title = classified.title()
+  const images = classified.images() ?? []
+  const price = classified.price()
 </script>
 
 <div class="flex flex-col gap-2">
   {#if title}
     <p class="text-xl">
       {title} —
-      <CurrencySymbol code={currency} />{price}
+      <CurrencySymbol code={price?.currency ?? "SAT"} />{price?.amount ?? 0}
     </p>
   {/if}
   {#if props.event.content}

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type {TrustedEvent} from "@welshman/util"
-  import {getTagValue, getAddress} from "@welshman/util"
+  import {getAddress, tagValue, tagSpec} from "@welshman/util"
   import Link from "@lib/components/Link.svelte"
   import CalendarEventActions from "@app/components/CalendarEventActions.svelte"
   import CalendarEventHeader from "@app/components/CalendarEventHeader.svelte"
@@ -15,7 +15,7 @@
 
   const {url, event}: Props = $props()
 
-  const h = getTagValue("h", event.tags)
+  const h = tagValue(tagSpec("h"), event.tags)
 </script>
 
 <Link

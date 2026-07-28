@@ -1,19 +1,10 @@
 <script lang="ts">
+  import {readable} from "svelte/store"
   import {clamp} from "@welshman/lib"
-  import {
-    pubkey,
-    followLists,
-    deriveUserWotScore,
-    deriveProfileDisplay,
-    deriveFollowList,
-    followersByPubkey,
-    loadFollowList,
-    getFollowsWhoFollow,
-    getFollowers,
-  } from "@welshman/app"
   import Shield from "@assets/icons/shield-minimalistic.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import ProfileCircles from "@app/components/ProfileCircles.svelte"
+  import {followLists, profiles, user, wot} from "@app/core"
 
   type Props = {
     pubkey: string
@@ -22,41 +13,20 @@
 
   const {pubkey: target, isSelf = false}: Props = $props()
 
-  const score = deriveUserWotScore(target)
-  const profileDisplay = deriveProfileDisplay(target)
-  const targetFollowList = deriveFollowList(target)
+  const profileDisplay = $profiles.display(target).$
+  const followers = $wot.followers(target).$
 
-  $effect(() => {
-    if (isSelf) return
+  const score = $derived($wot.wotScore($user.pubkey, target).$)
 
-    loadFollowList(target)
+  const followsWhoFollow = $derived(
+    !isSelf && $user.pubkey
+      ? $wot.followsWhoFollow($user.pubkey, target).$
+      : readable<string[]>([]),
+  )
 
-    const viewer = $pubkey
+  const followerCount = $derived($followers.length)
 
-    if (viewer) {
-      loadFollowList(viewer)
-    }
-  })
-
-  const followerCount = $derived.by(() => {
-    void $followersByPubkey
-
-    return getFollowers(target).length
-  })
-
-  const followsWhoFollow = $derived.by(() => {
-    if (isSelf) return []
-
-    const viewer = $pubkey
-    void $followLists
-    void $targetFollowList
-
-    if (!viewer) return []
-
-    return getFollowsWhoFollow(viewer, target)
-  })
-
-  const networkFollowCount = $derived(isSelf ? followerCount : followsWhoFollow.length)
+  const networkFollowCount = $derived(isSelf ? followerCount : $followsWhoFollow.length)
 
   const displayScore = $derived(isSelf ? followerCount : Math.round(clamp([0, 100], $score)))
   const progress = $derived(isSelf ? undefined : displayScore)
@@ -68,13 +38,6 @@
       return `Followed by ${followerCount}+ people in your network.`
     }
 
-    if (!$pubkey) {
-      if (displayScore >= 50) return "This user is highly trusted."
-      if (displayScore >= 10) return "This user has some trust."
-
-      return "This user is not well known."
-    }
-
     if (networkFollowCount > 0) {
       return `Followed by ${networkFollowCount}+ people in your network.`
     }
@@ -83,6 +46,13 @@
     if (displayScore >= 10) return "This user has some trust in your network."
 
     return "This user is not well known in your network."
+  })
+
+  $effect(() => {
+    if (!isSelf) {
+      $followLists.load(target)
+      $followLists.load($user.pubkey)
+    }
   })
 </script>
 
@@ -107,13 +77,13 @@
     {/if}
     <p class="text-sm opacity-75">{trustMessage}</p>
   </div>
-  {#if followsWhoFollow.length > 0}
+  {#if $followsWhoFollow.length > 0}
     <div class="flex flex-col gap-2 border-t border-line pt-4">
       <p class="text-sm font-medium">People who follow {$profileDisplay}</p>
-      <ProfileCircles pubkeys={followsWhoFollow} limit={5} />
+      <ProfileCircles pubkeys={$followsWhoFollow} limit={5} />
       <p class="text-sm opacity-75">
-        {followsWhoFollow.length}
-        {followsWhoFollow.length === 1 ? "person" : "people"} you follow also follow
+        {$followsWhoFollow.length}
+        {$followsWhoFollow.length === 1 ? "person" : "people"} you follow also follow
         {$profileDisplay}.
       </p>
     </div>

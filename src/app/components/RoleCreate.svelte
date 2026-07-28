@@ -7,7 +7,7 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import RelayName from "@app/components/RelayName.svelte"
   import RoleForm, {type Values} from "@app/components/RoleForm.svelte"
-  import {createRole} from "@app/members"
+  import {relayManagement} from "@app/core"
   import {pushToast} from "@app/toast"
 
   type Props = {
@@ -24,7 +24,9 @@
     loading = true
 
     try {
-      const error = await createRole(url, randomId(), label, description, color, 1)
+      const {error} = await $relayManagement
+        .forUrl(url)
+        .createRole(randomId(), label, description, String(color), 1)
 
       if (error) {
         pushToast({theme: "error", message: error})

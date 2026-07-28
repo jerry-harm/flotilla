@@ -387,9 +387,9 @@ const label = formatTimestampRelative(event.created_at) // "3 hours ago"
 
 ```typescript
 import { on } from '@welshman/lib'
-import { repository } from '@welshman/app'
 
-const unsub = on(repository, 'update', updates => {
+// Each App owns its repository.
+const unsub = on(app.repository, 'update', updates => {
   console.log('added', updates.flatMap(u => u.added).length, 'events')
 })
 

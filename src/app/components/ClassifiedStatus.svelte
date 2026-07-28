@@ -1,8 +1,9 @@
 <script lang="ts">
   import type {TrustedEvent} from "@welshman/util"
-  import {getTagValue} from "@welshman/util"
+  import {Classified} from "@welshman/domain"
   import {ucFirst} from "@lib/util"
   import Badge from "@lib/components/Badge.svelte"
+  import {reader} from "@app/core"
 
   type Props = {
     event: TrustedEvent
@@ -10,7 +11,9 @@
 
   const {event}: Props = $props()
 
-  const status = getTagValue("status", event.tags)
+  const classified = reader(Classified)(event)
+
+  const status = classified.status()
 </script>
 
 {#if status}

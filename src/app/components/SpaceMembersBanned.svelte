@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {displayRelayUrl, ManagementMethod} from "@welshman/util"
+  import {displayRelayUrl} from "@welshman/util"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import Button from "@lib/components/Button.svelte"
   import Icon from "@lib/components/Icon.svelte"
@@ -12,8 +12,7 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import Profile from "@app/components/Profile.svelte"
   import SpaceMemberBannedMenu from "@app/components/SpaceMemberBannedMenu.svelte"
-  import {deriveSpaceBannedPubkeyItems} from "@app/members"
-  import {deriveSupportedMethods} from "@app/relays"
+  import {deriveSpaceBannedPubkeyItems, deriveSpaceSupportedMethods} from "@app/management"
 
   interface Props {
     url: string
@@ -22,9 +21,9 @@
   const {url}: Props = $props()
 
   const bans = deriveSpaceBannedPubkeyItems(url)
-  const supportedMethods = deriveSupportedMethods(url)
-  const canUnban = $derived($supportedMethods.includes(ManagementMethod.UnbanPubkey))
-  const canRestore = $derived($supportedMethods.includes(ManagementMethod.AllowPubkey))
+  const supportedMethods = deriveSpaceSupportedMethods(url)
+  const canUnban = $derived($supportedMethods.includes("unbanpubkey"))
+  const canRestore = $derived($supportedMethods.includes("allowpubkey"))
 
   const back = () => history.back()
 </script>

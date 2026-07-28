@@ -1,30 +1,20 @@
+import {first, normalizeUrl, parseJson, sha256, simpleCache} from "@welshman/lib"
+import {canUploadBlob, encryptFile, makeBlossomAuthEvent, uploadBlob} from "@welshman/util"
 import {Nip01Signer} from "@welshman/signer"
 import type {UploadTask} from "@welshman/editor"
-import {
-  canUploadBlob,
-  encryptFile,
-  getListTags,
-  getTagValues,
-  makeBlossomAuthEvent,
-  uploadBlob,
-} from "@welshman/util"
-import {getRelay, signer, userBlossomServerList} from "@welshman/app"
-import {first, normalizeUrl, parseJson, sha256, simpleCache} from "@welshman/lib"
-import {get} from "svelte/store"
 import {compressFile} from "@lib/html"
+import {app, blossomServerLists, relays} from "@app/core"
 import {DEFAULT_BLOSSOM_SERVERS} from "@app/env"
 
 export const normalizeBlossomUrl = (url: string) => normalizeUrl(url.replace(/^ws/, "http"))
 
 export const fetchHasBlossomSupport = async (url: string) => {
-  const relay = getRelay(url)
-
-  if (relay?.supported_nips?.map(String).includes("BUD-02")) {
+  if (relays.get().get(url)?.hasNip("BUD-02")) {
     return true
   }
 
   const server = normalizeBlossomUrl(url)
-  const $signer = signer.get() || Nip01Signer.ephemeral()
+  const $signer = app.get().user?.signer || Nip01Signer.ephemeral()
   const headers: Record<string, string> = {
     "X-Content-Type": "text/plain",
     "X-Content-Length": "1",
@@ -58,10 +48,14 @@ export const getBlossomServer = async (options: GetBlossomServerOptions = {}) =>
     }
   }
 
-  const userUrls = getTagValues("server", getListTags(get(userBlossomServerList)))
+  const $pubkey = app.get().user?.pubkey
 
-  for (const url of userUrls) {
-    return normalizeBlossomUrl(url)
+  if ($pubkey) {
+    const userUrl = first(blossomServerLists.get().urls($pubkey).get())
+
+    if (userUrl) {
+      return normalizeBlossomUrl(userUrl)
+    }
   }
 
   return first(DEFAULT_BLOSSOM_SERVERS)!
@@ -111,7 +105,7 @@ export const uploadFile = async (file: File, options: UploadFileOptions = {}) =>
     const ext = "." + type.split("/")[1]
     const server = await getBlossomServer(options)
     const hashes = [await sha256(await file.arrayBuffer())]
-    const $signer = signer.get() || Nip01Signer.ephemeral()
+    const $signer = app.get().user?.signer || Nip01Signer.ephemeral()
     const authTemplate = makeBlossomAuthEvent({action: "upload", server, hashes})
     const authEvent = await $signer.sign(authTemplate)
     const res = await uploadBlob(server, file, {authEvent})

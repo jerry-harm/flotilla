@@ -1,7 +1,7 @@
 <script lang="ts">
   import {goto} from "$app/navigation"
-  import type {RoomMeta} from "@welshman/util"
   import {displayRelayUrl} from "@welshman/util"
+  import type {RoomMeta} from "@welshman/app"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import Spinner from "@lib/components/Spinner.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -11,7 +11,7 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import RoomForm from "@app/components/RoomForm.svelte"
-  import {deriveRoom} from "@app/groups"
+  import {rooms} from "@app/core"
   import {makeSpacePath} from "@app/routes"
 
   type Props = {
@@ -21,14 +21,28 @@
 
   const {url, h}: Props = $props()
 
-  const room = deriveRoom(url, h)
+  const room = $rooms.forRoom(url, h)
+  const meta = $derived($room?.meta)
+
+  const initialValues: RoomMeta = $derived({
+    h,
+    name: meta?.name(),
+    about: meta?.about(),
+    picture: meta?.picture(),
+    pictureMeta: meta?.pictureMeta(),
+    isClosed: meta?.isClosed(),
+    isHidden: meta?.isHidden(),
+    isPrivate: meta?.isPrivate(),
+    isRestricted: meta?.isRestricted(),
+    livekit: meta?.hasLivekit(),
+  })
 
   const back = () => history.back()
 
-  const onsubmit = (room: RoomMeta) => goto(makeSpacePath(url, h))
+  const onsubmit = () => goto(makeSpacePath(url, h))
 </script>
 
-<RoomForm {url} {onsubmit} initialValues={$room}>
+<RoomForm {url} {onsubmit} {initialValues}>
   {#snippet header()}
     <ModalHeader>
       <ModalTitle>Edit a Room</ModalTitle>

@@ -1,7 +1,5 @@
 <script lang="ts">
   import {Client} from "@pomade/core"
-  import type {SessionPomade} from "@welshman/app"
-  import {session} from "@welshman/app"
   import {preventDefault} from "@lib/html"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
@@ -16,6 +14,7 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import StringMultiInput from "@lib/components/StringMultiInput.svelte"
   import PasswordResetConfirm from "@app/components/PasswordResetConfirm.svelte"
+  import {session} from "@app/core"
   import {pushToast} from "@app/toast"
   import {pushModal} from "@app/modal"
   import {getPomadeClient} from "@app/pomade"
@@ -26,7 +25,7 @@
 
   const {peersByPrefix}: Props = $props()
 
-  const {email} = $session as SessionPomade
+  const {email} = $session?.data as {email: string}
 
   const confirmRecovery = async () => {
     const request = await Client.recoverWithChallenge(email, peersByPrefix, otps)

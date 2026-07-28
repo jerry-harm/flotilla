@@ -1,8 +1,8 @@
 <script module lang="ts">
-  import type {Relay} from "@app/hosting"
+  import type {HostedRelay} from "@app/hosting"
 
   export type RelayFormValues = Pick<
-    Relay,
+    HostedRelay,
     "info_name" | "subdomain" | "info_icon" | "info_description" | "plan_id"
   >
 </script>

@@ -1,6 +1,4 @@
-import {withGetter} from "@welshman/store"
 import {writable} from "svelte/store"
-import {goto} from "$app/navigation"
 import type {Subscriber, Unsubscriber} from "svelte/store"
 import {
   PushNotifications,
@@ -9,23 +7,24 @@ import {
   type Token,
 } from "@capacitor/push-notifications"
 import type {PluginListenerHandle} from "@capacitor/core"
-import {pubkey, repository, tracker, userMessagingRelayList} from "@welshman/app"
-import {merged} from "@welshman/store"
+import {goto} from "$app/navigation"
 import {assoc, call, now, on, poll, spec, throttle} from "@welshman/lib"
-import {load, LOCAL_RELAY_URL} from "@welshman/net"
+import {LOCAL_RELAY_URL} from "@welshman/net"
 import type {RepositoryUpdate} from "@welshman/net"
 import {
   getIdFilters,
-  getRelaysFromList,
-  getTagValue,
   matchFilters,
+  tagSpec,
+  tagValue,
   MESSAGE,
   type Filter,
   type TrustedEvent,
 } from "@welshman/util"
+import {merged, withGetter} from "@welshman/store"
+import {User} from "@welshman/app"
+import {app, messagingRelayLists, network, roomLists} from "@app/core"
 import {DM_KINDS, CONTENT_KINDS, makeCommentFilter} from "@app/content"
 import {notificationSettings, shouldNotify, userSettingsValues} from "@app/settings"
-import {userSpaceUrls} from "@app/groups"
 import {getEventPath, goToSpace} from "@app/routes"
 
 export type PushSubscription = {
@@ -66,17 +65,19 @@ export const onNotification = call(() => {
     subscribers.push(f)
 
     if (!unsubscribe) {
-      unsubscribe = on(repository, "update", ({added}: RepositoryUpdate) => {
-        const $pubkey = pubkey.get()
+      unsubscribe = on(app.get().repository, "update", ({added}: RepositoryUpdate) => {
+        const $pubkey = app.get().user?.pubkey
 
         for (const event of added) {
           if (event.pubkey == $pubkey) {
             continue
           }
 
-          const h = getTagValue("h", event.tags)
+          const h = tagValue(tagSpec("h"), event.tags)
 
-          if (Array.from(tracker.getRelays(event.id)).every(url => !shouldNotify(url, h))) {
+          if (
+            Array.from(app.get().tracker.getRelays(event.id)).every(url => !shouldNotify(url, h))
+          ) {
             continue
           }
 
@@ -103,7 +104,7 @@ export const onNotification = call(() => {
 export const onPushNotificationAction = async (action: ActionPerformed) => {
   const {relay, id} = action.notification.data
 
-  const [event] = await load({
+  const [event] = await network.get().load({
     relays: [relay, LOCAL_RELAY_URL],
     filters: getIdFilters([id]),
   })
@@ -157,21 +158,17 @@ export const syncRelaySubscriptions = (
   signal: AbortSignal,
   sync: (url: string, key: string, filters: Filter[], ignore: Filter[]) => void,
 ) => {
-  const $pubkey = pubkey.get()
-
-  if (!$pubkey) {
-    throw new Error("Attempted to sync push subscriptions without an active pubkey")
-  }
+  const $pubkey = User.require(app.get()).pubkey
 
   const unsubscribeSpaces = merged([
-    userSpaceUrls,
+    roomLists.get().urls($pubkey).$,
     notificationSettings,
     userSettingsValues,
   ]).subscribe(
-    throttle(3000, ([$userSpaceUrls, {spaces, mentions}, {alerts}]) => {
+    throttle(3000, ([$spaceUrls, {spaces, mentions}, {alerts}]) => {
       const baseFilters = [{kinds: [MESSAGE, ...CONTENT_KINDS]}, makeCommentFilter(CONTENT_KINDS)]
 
-      for (const url of $userSpaceUrls) {
+      for (const url of $spaceUrls) {
         const {notify = true, exceptions = []} = alerts.find(spec({url})) || {}
         const filters: Filter[] = []
         const ignore: Filter[] = []
@@ -198,9 +195,12 @@ export const syncRelaySubscriptions = (
     }),
   )
 
-  const unsubscribeMessages = merged([userMessagingRelayList, notificationSettings]).subscribe(
-    throttle(3000, ([$userMessagingRelayList, {messages}]) => {
-      for (const url of getRelaysFromList($userMessagingRelayList)) {
+  const unsubscribeMessages = merged([
+    messagingRelayLists.get().urls($pubkey).$,
+    notificationSettings,
+  ]).subscribe(
+    throttle(3000, ([$messagingUrls, {messages}]) => {
+      for (const url of $messagingUrls) {
         const filters: Filter[] = []
 
         if (messages) {

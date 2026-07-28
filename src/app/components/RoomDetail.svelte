@@ -1,5 +1,6 @@
 <script lang="ts">
   import {displayRelayUrl} from "@welshman/util"
+  import {publish} from "@welshman/app"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import EyeClosed from "@assets/icons/eye-closed.svg?dataurl"
@@ -22,8 +23,8 @@
   import RoomInvite from "@app/components/RoomInvite.svelte"
   import RoomName from "@app/components/RoomName.svelte"
   import RoomImage from "@app/components/RoomImage.svelte"
-  import {deriveRoom, deriveUserRooms, addRoom, removeRoom} from "@app/groups"
-  import {deriveRoomMembers, deriveUserIsRoomAdmin} from "@app/members"
+  import {roomLists, rooms} from "@app/core"
+  import {deriveRoomMembers, deriveUserIsRoomAdmin, deriveUserRooms} from "@app/rooms"
   import {deriveShouldNotify, toggleRoomNotifications} from "@app/settings"
   import {pushModal} from "@app/modal"
 
@@ -34,11 +35,12 @@
 
   const {url, h}: Props = $props()
 
-  const room = deriveRoom(url, h)
+  const room = $rooms.forRoom(url, h)
   const members = deriveRoomMembers(url, h)
   const userRooms = deriveUserRooms(url)
   const userIsAdmin = deriveUserIsRoomAdmin(url, h)
 
+  const meta = $derived($room?.meta)
   const isFavorite = $derived($userRooms.includes(h))
   const shouldNotify = deriveShouldNotify(url, h)
 
@@ -50,9 +52,9 @@
 
   const toggleFavorite = () => {
     if (isFavorite) {
-      removeRoom(url, h)
+      $roomLists.removeRoom(h, url).then(publish)
     } else {
-      addRoom(url, h)
+      $roomLists.addRoom(h, url).then(publish)
     }
   }
 
@@ -75,41 +77,41 @@
       </div>
       <MenuButton component={RoomDetailMenu} componentProps={{url, h}} />
     </div>
-    {#if $room?.about}
-      <p>{$room.about}</p>
+    {#if meta?.about()}
+      <p>{meta.about()}</p>
     {/if}
     <div class="flex flex-col gap-2 card card-sm">
       <strong class="text-lg">Room Permissions</strong>
       <div class="flex gap-2 flex-wrap">
-        {#if $room?.isRestricted}
+        {#if meta?.isRestricted()}
           <Tooltip content="Only members can send messages.">
             <Button class="button button-neutral button-xs button-pill flex gap-2 items-center">
               <Icon size={4} icon={Microphone} /> Restricted
             </Button>
           </Tooltip>
         {/if}
-        {#if $room?.isPrivate}
+        {#if meta?.isPrivate()}
           <Tooltip content="Only members can view messages.">
             <Button class="button button-neutral button-xs button-pill flex gap-2 items-center">
               <Icon size={4} icon={Lock} /> Private
             </Button>
           </Tooltip>
         {/if}
-        {#if $room?.isHidden}
+        {#if meta?.isHidden()}
           <Tooltip content="This room is not visible to non-members.">
             <Button class="button button-neutral button-xs button-pill flex gap-2 items-center">
               <Icon size={4} icon={EyeClosed} /> Hidden
             </Button>
           </Tooltip>
         {/if}
-        {#if $room?.isClosed}
+        {#if meta?.isClosed()}
           <Tooltip content="Requests to join this room will be ignored.">
             <Button class="button button-neutral button-xs button-pill flex gap-2 items-center">
               <Icon size={4} icon={MinusCircle} /> Closed
             </Button>
           </Tooltip>
         {/if}
-        {#if !$room?.isRestricted && !$room?.isPrivate && !$room?.isHidden && !$room?.isClosed}
+        {#if !meta?.isRestricted() && !meta?.isPrivate() && !meta?.isHidden() && !meta?.isClosed()}
           <Tooltip content="This room has no additional access controls.">
             <Button class="button button-neutral button-xs button-pill flex gap-2 items-center">
               <Icon size={4} icon={Eye} /> Public

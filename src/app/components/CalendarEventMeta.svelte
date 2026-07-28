@@ -1,9 +1,10 @@
 <script lang="ts">
-  import {fromPairs} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
+  import {TimeEvent} from "@welshman/domain"
   import UserCircle from "@assets/icons/user-circle.svg?dataurl"
   import MapPoint from "@assets/icons/map-point.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
+  import {reader} from "@app/core"
   import ProfileLink from "@app/components/ProfileLink.svelte"
 
   type Props = {
@@ -12,7 +13,10 @@
   }
 
   const {event, url}: Props = $props()
-  const meta = $derived(fromPairs(event.tags) as Record<string, string>)
+
+  const timeEvent = reader(TimeEvent)(event)
+
+  const location = timeEvent.location()
 </script>
 
 <div class="flex min-w-0 flex-col gap-1 text-sm opacity-75">
@@ -20,10 +24,10 @@
     <Icon icon={UserCircle} size={4} />
     Posted by <ProfileLink pubkey={event.pubkey} {url} />
   </span>
-  {#if meta.location}
+  {#if location}
     <span class="flex items-start gap-1">
       <Icon icon={MapPoint} class="mt-[2px]" size={4} />
-      <span class="wrap-break-word">{meta.location}</span>
+      <span class="wrap-break-word">{location}</span>
     </span>
   {/if}
 </div>

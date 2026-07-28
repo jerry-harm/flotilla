@@ -1,27 +1,25 @@
 <script lang="ts">
-  import type {Profile} from "@welshman/util"
-  import {makeProfile} from "@welshman/util"
-  import {pubkey, profilesByPubkey, waitForThunkError} from "@welshman/app"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import {errorMessage} from "@lib/util"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import ProfileEditForm from "@app/components/ProfileEditForm.svelte"
+  import type {Values} from "@app/components/ProfileEditForm.svelte"
   import {clearModals} from "@app/modal"
   import {pushToast} from "@app/toast"
-  import {updateProfile} from "@app/profiles"
+  import {profiles, user} from "@app/core"
 
-  const profile = $profilesByPubkey.get($pubkey!) || makeProfile()
-  const initialValues = {profile}
+  const initialValues = {profile: {...$profiles.get($user.pubkey)?.values}}
 
   const back = () => history.back()
 
-  const onsubmit = async ({profile}: {profile: Profile}) => {
+  const onsubmit = async ({profile}: Values) => {
     loading = true
 
     try {
-      const error = await waitForThunkError(updateProfile({profile}))
+      const command = await $profiles.update(writer => writer.update(profile))
+      const error = await command.publish().waitForError()
 
       if (error) {
         pushToast({

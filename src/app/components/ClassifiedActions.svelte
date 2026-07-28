@@ -1,27 +1,26 @@
 <script lang="ts">
   import {uniq} from "@welshman/lib"
   import type {TrustedEvent, EventContent} from "@welshman/util"
-  import {getTagValue, getTagValues, getAddress} from "@welshman/util"
-  import {pubkey} from "@welshman/app"
+  import {getAddress} from "@welshman/util"
+  import {Classified} from "@welshman/domain"
   import Pen2 from "@assets/icons/pen-2.svg?dataurl"
   import {normalizeTopic} from "@lib/util"
   import Link from "@lib/components/Link.svelte"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import RoomName from "@app/components/RoomName.svelte"
+  import {publishReaction, retractReaction} from "@app/reactions"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
   import ClassifiedStatus from "@app/components/ClassifiedStatus.svelte"
   import ThunkStatusOrDeleted from "@app/components/ThunkStatusOrDeleted.svelte"
   import EventActivity from "@app/components/EventActivity.svelte"
   import EventActions from "@app/components/EventActions.svelte"
   import ClassifiedEdit from "@app/components/ClassifiedEdit.svelte"
-  import {publishDelete} from "@app/deletes"
-  import {publishReaction} from "@app/reactions"
-  import {canEnforceNip70} from "@app/relays"
+  import {reader, user} from "@app/core"
   import {makeClassifiedPath, makeSpacePath} from "@app/routes"
   import {pushModal} from "@app/modal"
 
-  interface Props {
+  type Props = {
     url: string
     event: TrustedEvent
     showRoom?: boolean
@@ -30,18 +29,17 @@
 
   const {url, event, showRoom, showActivity}: Props = $props()
 
-  const h = getTagValue("h", event.tags)
-  const topics = getTagValues("t", event.tags)
+  const classified = reader(Classified)(event)
+
+  const h = classified.room()
+  const topics = classified.topics() ?? []
   const path = makeClassifiedPath(url, getAddress(event))
-  const shouldProtect = canEnforceNip70(url)
 
   const editClassified = () => pushModal(ClassifiedEdit, {url, event})
 
-  const deleteReaction = async (event: TrustedEvent) =>
-    publishDelete({relays: [url], event, protect: await shouldProtect})
+  const deleteReaction = (reaction: TrustedEvent) => retractReaction(reaction, {url, h})
 
-  const createReaction = async (template: EventContent) =>
-    publishReaction({...template, event, relays: [url], protect: await shouldProtect})
+  const createReaction = (values: EventContent) => publishReaction(event, values, {url, h})
 </script>
 
 <div class="flex grow flex-wrap justify-end gap-2">
@@ -66,7 +64,7 @@
   {/if}
   <EventActions {url} {event} noun="Listing">
     {#snippet customActions()}
-      {#if event.pubkey === $pubkey}
+      {#if event.pubkey === $user.pubkey}
         <li>
           <Button onclick={editClassified}>
             <Icon size={4} icon={Pen2} />

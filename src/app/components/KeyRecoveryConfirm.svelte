@@ -1,8 +1,6 @@
 <script lang="ts">
   import {Client} from "@pomade/core"
   import {getPubkey} from "@welshman/util"
-  import type {SessionPomade} from "@welshman/app"
-  import {session} from "@welshman/app"
   import {preventDefault} from "@lib/html"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
@@ -19,6 +17,8 @@
   import KeyDownload from "@app/components/KeyDownload.svelte"
   import {pushToast} from "@app/toast"
   import {pushModal, clearModals} from "@app/modal"
+  import {session} from "@app/core"
+  import {requirePomadeSession} from "@app/pomade"
 
   type Props = {
     peersByPrefix: Map<string, string>
@@ -29,7 +29,7 @@
   const {
     email,
     clientOptions: {secret, peers},
-  } = $session as SessionPomade
+  } = requirePomadeSession($session).data
 
   const confirmRecovery = async () => {
     const request = await Client.recoverWithChallenge(email, peersByPrefix, otps)

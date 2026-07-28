@@ -10,12 +10,7 @@
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import RoomItemContent from "@app/components/RoomItemContent.svelte"
   import RoomPinnedMessagesAll from "@app/components/RoomPinnedMessagesAll.svelte"
-  import {
-    deriveRoomPinIds,
-    deriveRoomPinnedEvents,
-    loadRoomPinList,
-    loadRoomPinnedMessages,
-  } from "@app/pins"
+  import {deriveRoomPinnedEvents} from "@app/roomPins"
   import {goToEvent} from "@app/routes"
   import {pushModal} from "@app/modal"
 
@@ -26,8 +21,7 @@
 
   const {url, h}: Props = $props()
 
-  const pinIds = deriveRoomPinIds(url, h)
-  const pinnedEvents = deriveRoomPinnedEvents(url, pinIds)
+  const pinnedEvents = deriveRoomPinnedEvents(url, h)
 
   let currentIndex = $state(0)
   let expanded = $state(false)
@@ -95,16 +89,6 @@
 
   $effect(() => {
     reset(url, h)
-  })
-
-  $effect(() => {
-    const ids = $pinIds
-    const controller = new AbortController()
-
-    loadRoomPinList(url, h, controller.signal)
-    loadRoomPinnedMessages(url, ids, controller.signal)
-
-    return () => controller.abort()
   })
 
   $effect(() => {

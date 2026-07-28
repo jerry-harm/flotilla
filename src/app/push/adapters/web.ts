@@ -1,8 +1,8 @@
-import {pubkey} from "@welshman/app"
-import {maybe} from "@welshman/lib"
 import type {Unsubscriber} from "svelte/store"
-import {getPubkeyTagValues, matchFilter, type TrustedEvent} from "@welshman/util"
+import {maybe} from "@welshman/lib"
+import {hexTags, matchFilter, tagValues, type TrustedEvent} from "@welshman/util"
 import {DM_KINDS} from "@app/content"
+import {app} from "@app/core"
 import {notificationSettings} from "@app/settings"
 import type {IPushAdapter} from "@app/push/adapters/common"
 import {onNotification} from "@app/push/adapters/common"
@@ -49,15 +49,12 @@ export class WebNotifications implements IPushAdapter {
     if (!this._unsubscriber) {
       this._unsubscriber = onNotification(event => {
         const {push, messages, mentions, spaces} = notificationSettings.get()
+        const $pubkey = app.get().user?.pubkey
 
         if (push && document.hidden && Notification?.permission === "granted") {
           if (messages && matchFilter({kinds: DM_KINDS}, event)) {
             this._notify(event, "New direct message", "Someone sent you a direct message.")
-          } else if (
-            mentions &&
-            event.pubkey !== pubkey.get() &&
-            getPubkeyTagValues(event.tags).includes(pubkey.get()!)
-          ) {
+          } else if (mentions && $pubkey && tagValues(hexTags("p"), event.tags).includes($pubkey)) {
             this._notify(event, "Someone mentioned you", "Someone tagged you in a message.")
           } else if (spaces) {
             this._notify(event, "New activity", "Someone posted a new message.")

@@ -32,7 +32,6 @@ yarn add @welshman/util
 | `HashedEvent` | `OwnedEvent + id` |
 | `SignedEvent` | `HashedEvent + sig` |
 | `TrustedEvent` | `HashedEvent + optional sig` — most common in-app type |
-| `DecryptedEvent` | `TrustedEvent + plaintext` (for encrypted lists/events) |
 
 ### Event Utilities
 
@@ -49,9 +48,6 @@ yarn add @welshman/util
 | `isReplaceable(event)` | True for plain or parameterized replaceable |
 | `isPlainReplaceable(event)` | True for kinds 10000–19999 and metadata/contacts |
 | `isParameterizedReplaceable(event)` | True for kinds 30000–39999 |
-| `getAncestors(event)` | Returns `{ roots, replies, mentions }` for NIP-10 events (mentions may be empty `[]` but is always present); NIP-22/COMMENT path returns `{ roots, replies }` without mentions |
-| `getParentIdOrAddr(event)` | Immediate parent id or address |
-| `isChildOf(child, parent)` | Check if child replies to parent |
 
 ### Type Guards
 
@@ -274,24 +270,16 @@ isDVMKind(kind)                    // 5000–7000
 
 | Export | Description |
 |--------|-------------|
-| `getTags(types, tags)` | Get all tags matching one or more type strings |
-| `getTag(types, tags)` | Get first matching tag |
-| `getTagValues(types, tags)` | Get value (index 1) of all matching tags — types first, then the tags array |
-| `getTagValue(types, tags)` | Get value of first matching tag — types first, then the tags array |
-| `getEventTags(tags)` | `e` tags |
-| `getEventTagValues(tags)` | Values of `e` tags |
-| `getAddressTags(tags)` | `a` tags |
-| `getAddressTagValues(tags)` | Values of `a` tags |
-| `getPubkeyTags(tags)` | `p` tags |
-| `getPubkeyTagValues(tags)` | Values of `p` tags |
-| `getTopicTags(tags)` / `getTopicTagValues(tags)` | `t` (hashtag) tags |
-| `getRelayTags(tags)` / `getRelayTagValues(tags)` | `r` and `relay` tags |
-| `getKindTags(tags)` / `getKindTagValues(tags)` | `k` tags (returns `number[]`) |
-| `getGroupTags(tags)` / `getGroupTagValues(tags)` | group tags |
-| `getReplyTags(tags)` | `{ roots, replies, mentions }` — NIP-10 threading |
-| `getCommentTags(tags)` | `{ roots, replies }` — NIP-22 uppercase/lowercase tags |
-| `uniqTags(tags)` | Remove duplicate tags |
-| `tagsFromIMeta(imeta)` | Parse `imeta` tag into array of tag arrays |
+| `tagSpec(keys, matchValue?, normalize?)` | Build a spec: which tag keys, plus optional validation/normalization |
+| `hexTags(keys)` | Spec for 32-byte hex values (`e`, `p`, …) |
+| `addressTags(keys)` | Spec for `kind:pubkey:d` addresses (`a`, `A`) |
+| `kindTags(keys)` | Spec for kind numbers (`k`) |
+| `topicTags(keys)` | Spec for topics, normalized (`t`) |
+| `relayTags(keys)` | Spec for relay urls (`r`, `relay`) |
+| `tagValue(spec, tags)` | Value (index 1) of the first matching tag |
+| `tagValues(spec, tags)` | Values of all matching tags |
+| `matchTag(spec, tags)` / `matchTags(spec, tags)` | The matching tag(s) themselves |
+| `tagMatcher(spec)` | A `(tag) => boolean` predicate, for filtering in one pass |
 
 ### Filters
 
@@ -319,50 +307,12 @@ isDVMKind(kind)                    // 5000–7000
 | `Address.from(s, relays?)` | Parse from `kind:pubkey:identifier` string |
 | `Address.fromNaddr(naddr)` | Parse from NIP-19 naddr |
 | `Address.fromEvent(event, relays?)` | Create from addressable event |
-| `address.toString()` | Serialize to `kind:pubkey:identifier` |
-| `address.toNaddr()` | Serialize to NIP-19 naddr |
 | `getAddress(event)` | Convenience: get address string from event |
-
-### Profile
-
-| Export | Description |
-|--------|-------------|
-| `makeProfile(partial)` | Create a profile object |
-| `readProfile(event)` | Parse `PublishedProfile` from kind 0 event |
-| `createProfile(profile)` | Create kind 0 `EventTemplate` |
-| `editProfile(published)` | Update existing profile event |
-| `displayProfile(profile?, fallback?)` | Get best display name string |
-| `displayPubkey(pubkey)` | Shorten pubkey to `npub1abc...xyz` |
-| `profileHasName(profile?)` | Check if profile has a name field |
-
-Profile fields: `name`, `display_name`, `about`, `picture`, `banner`, `website`, `nip05`, `lud06`, `lud16`, `lnurl`
-
-### Lists (kind 10000+)
-
-| Export | Description |
-|--------|-------------|
-| `makeList(params)` | Create a new list |
-| `readList(event)` | Parse `PublishedList` from `DecryptedEvent` |
-| `getListTags(list)` | Combined public + private tags |
-| `addToListPublicly(list, ...tags)` | Returns `Encryptable` with tag added publicly |
-| `addToListPrivately(list, ...tags)` | Returns `Encryptable` with tag added privately |
-| `removeFromList(list, value)` | Returns `Encryptable` with tag removed |
-| `removeFromListByPredicate(list, pred)` | Returns `Encryptable` with matching tags removed |
-| `updateList(list, { publicTags?, privateTags? })` | Bulk update tags |
-
-### Encryptable
-
-| Export | Description |
-|--------|-------------|
-| `Encryptable<T>` | Wraps a partial event with plaintext updates; call `.reconcile(encrypt)` to produce encrypted event |
-| `asDecryptedEvent(event, plaintext?)` | Attach plaintext data to a `TrustedEvent` |
 
 ### Relay
 
 | Export | Description |
 |--------|-------------|
-| `RelayMode` | Enum: `Read`, `Write`, `Search`, `Blocked`, `Messaging` |
-| `RelayProfile` | NIP-11 relay info type |
 | `isRelayUrl(url)` | Validate relay URL |
 | `isShareableRelayUrl(url)` | True if valid relay URL and not a local address |
 | `isOnionUrl(url)` | Tor address check |
@@ -370,7 +320,6 @@ Profile fields: `name`, `display_name`, `about`, `picture`, `banner`, `website`,
 | `isIPAddress(url)` | IP address check |
 | `normalizeRelayUrl(url)` | Normalize to standard wss:// format |
 | `displayRelayUrl(url)` | Strip protocol and trailing slash |
-| `displayRelayProfile(profile?, fallback?)` | Get display name for relay |
 
 ### Zaps (NIP-57)
 
@@ -379,9 +328,6 @@ Profile fields: `name`, `display_name`, `about`, `picture`, `banner`, `website`,
 | `getLnUrl(address)` | Convert lightning address or URL to LNURL; returns `undefined` if invalid |
 | `getInvoiceAmount(bolt11)` | Extract millisatoshi amount from BOLT11 invoice |
 | `hrpToMillisat(hrpString)` | Convert human-readable BTC amount to millisats (`bigint`) |
-| `zapFromEvent(response, zapper)` | Validate zap receipt and return `Zap` or `undefined` |
-| `Zapper` type | `{ lnurl, pubkey?, callback?, minSendable?, maxSendable?, nostrPubkey?, allowsNostr? }` |
-| `Zap` type | `{ request: TrustedEvent, response: TrustedEvent, invoiceAmount: number }` |
 
 ### Wallet
 
@@ -502,29 +448,14 @@ Only do this for events you persisted yourself after they were validated. Never 
 ### Working with tags
 
 ```typescript
-import {
-  getTagValue,
-  getTagValues,
-  getPubkeyTagValues,
-  getTopicTagValues,
-  getRelayTagValues,
-  getReplyTags,
-  uniqTags,
-} from '@welshman/util'
+import {tagValue, tagValues, hexTags, relayTags, tagSpec, topicTags} from '@welshman/util'
 
-// getTagValue and getTagValues: types argument FIRST, then the tags array
-const title  = getTagValue('title', event.tags)          // string | undefined
-const urls   = getTagValues('r', event.tags)             // string[]
-
-// Multiple types at once
-const ids    = getTagValues(['e', 'a'], event.tags)      // string[]
-
-const mentions = getPubkeyTagValues(event.tags)   // string[]
-const topics   = getTopicTagValues(event.tags)    // string[]
-const relays   = getRelayTagValues(event.tags)    // string[]
-
-// NIP-10 thread context
-const { roots, replies, mentions: threadMentions } = getReplyTags(event.tags)
+// Specs come first, then the tags array. The spec says which keys to match and how to
+// validate the value, so malformed tags are skipped rather than silently returned.
+const title = tagValue(tagSpec('title'), event.tags)        // string | undefined
+const urls  = tagValues(relayTags('r'), event.tags)         // string[], valid relay urls only
+const ids   = tagValues(hexTags(['e', 'a']), event.tags)    // string[], 32-byte hex only
+const topics = tagValues(topicTags('t'), event.tags)        // string[], normalized
 ```
 
 ### Matching and building filters
@@ -566,24 +497,11 @@ const parsed = Address.fromNaddr('naddr1...')
 const addressStr = getAddress(event)  // '30023:deadbeef:my-slug'
 ```
 
-### Profiles
-
-```typescript
-import { readProfile, displayProfile, displayPubkey, editProfile } from '@welshman/util'
-
-const profile = readProfile(kind0Event)
-console.log(displayProfile(profile, 'Anonymous'))  // name or fallback
-console.log(displayPubkey(pubkey))                 // 'npub1abc...xyz'
-
-// Update profile
-const updatedEvent = editProfile({ ...profile, name: 'New Name', about: 'Updated bio' })
-// sign and publish updatedEvent
-```
-
 ### Zap flow
 
 ```typescript
-import { getLnUrl, makeEvent, ZAP_REQUEST, zapFromEvent } from '@welshman/util'
+import { getLnUrl, makeEvent, ZAP_REQUEST } from '@welshman/util'
+import { Zappers } from '@welshman/app'
 
 // Step 1: resolve LNURL
 const lnurl = getLnUrl('satoshi@getalby.com')
@@ -604,7 +522,7 @@ const zapRequest = makeEvent(ZAP_REQUEST, {
 // Step 3: sign, send to LNURL callback, pay invoice...
 
 // Step 4: validate receipt (kind 9735)
-const zap = zapFromEvent(zapReceipt, { nostrPubkey: zapperPubkey, allowsNostr: true, lnurl })
+const zap = await app.use(Zappers).validateZapReceipt(zapReceipt, zappedEvent)
 if (zap) {
   console.log(`Received ${zap.invoiceAmount} msat`, zap.request.content)
 }
@@ -646,9 +564,9 @@ await fetch('https://api.example.com/upload', {
 
 - **`@welshman/net`** — uses `TrustedEvent`, `Filter`, `SignedEvent` from this package as the wire types for relay connections and subscriptions.
 - **`@welshman/store`** — provides Svelte stores over repositories built on `TrustedEvent`; relies on `isReplaceable`, `getAddress`, etc. for deduplication.
-- **`@welshman/app`** — high-level application layer; wraps net/store/router and uses profile, list, zap, and handler helpers from this package.
-- **`@welshman/router`** — uses `RelayMode` and relay URL helpers when computing relay selections.
-- **`@welshman/signer`** — produces `SignedEvent` objects that satisfy types defined here; the `Encrypt` function type used by `Encryptable` is typically provided by a signer.
+- **`@welshman/app`** — high-level application layer; wraps net/store/domain and resolves this package's `RelaySelection` DSL through `app.use(Router)`.
+- **`@welshman/domain`** — builds its typed readers on the tag specs (`tagValue`, `hexTags`, `addressTags`) defined here.
+- **`@welshman/signer`** — produces `SignedEvent` objects that satisfy types defined here, and supplies the encryption used when writing encrypted list kinds.
 
 ---
 
@@ -658,11 +576,9 @@ await fetch('https://api.example.com/upload', {
 
 - **Replaceable event identity**: Use `getIdOrAddress` rather than `event.id` when referencing events that may be addressable — the address string is stable across updates, the id is not.
 
-- **`getAncestors` handles two protocols**: Kind 1111 (comment/NIP-22) uses uppercase `E`/`A` for roots and lowercase for replies, returning `{ roots, replies }`. All other kinds use NIP-10 positional rules, returning `{ roots, replies, mentions }` where `mentions` is always present but may be an empty array. You do not need to branch on this; `getAncestors`, `getParentIdOrAddr`, and `isChildOf` handle it automatically.
 
-- **List mutations return `Encryptable`**: `addToListPrivately`, `removeFromList`, etc. do not return an event directly. Call `.reconcile(encryptFn)` on the result to get the final `EventTemplate` ready to sign.
 
-- **`zapFromEvent` returns `undefined` on any validation failure** including amount mismatch, wrong zapper pubkey, malformed invoice, or self-zap. Always check the result.
+- **`validateZapReceipt` returns `undefined` on any validation failure** including amount mismatch, wrong zapper pubkey, malformed invoice, or self-zap. Always check the result. For a reactive list of a parent's valid zaps, use `app.use(Zappers).validZapReceipts(receipts, parent)`, which re-validates as each recipient's zapper loads.
 
 - **`getLnUrl` handles three input forms**: bare lightning address (`user@domain`), full HTTPS URL, or already-encoded `lnurl1...`. Returns `undefined` for anything else.
 

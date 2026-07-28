@@ -1,7 +1,7 @@
 <script lang="ts">
   import {formatTimestamp} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {getTagValue} from "@welshman/util"
+  import {tagSpec, tagValue} from "@welshman/util"
   import Link from "@lib/components/Link.svelte"
   import Content from "@app/components/Content.svelte"
   import ProfileLink from "@app/components/ProfileLink.svelte"
@@ -16,8 +16,8 @@
 
   const {url, event}: Props = $props()
 
-  const title = getTagValue("title", event.tags)
-  const h = getTagValue("h", event.tags)
+  const title = tagValue(tagSpec("title"), event.tags)
+  const h = tagValue(tagSpec("h"), event.tags)
 </script>
 
 <Link

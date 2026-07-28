@@ -1,7 +1,6 @@
 <script lang="ts">
-  import type {RelayProfile} from "@welshman/util"
-  import {displayRelayUrl, ManagementMethod} from "@welshman/util"
-  import {manageRelay, forceLoadRelay} from "@welshman/app"
+  import {displayRelayUrl} from "@welshman/util"
+  import type {RelayInfo} from "@welshman/domain"
   import Widget from "@assets/icons/widget-4.svg?dataurl"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import {preventDefault} from "@lib/html"
@@ -20,10 +19,11 @@
   import {pushToast} from "@app/toast"
   import {clearModals} from "@app/modal"
   import {compressFileForUpload, uploadFileOrFallback} from "@app/uploads"
+  import {relayManagement, relays} from "@app/core"
 
   type Props = {
     url: string
-    initialValues: Partial<RelayProfile>
+    initialValues: Partial<RelayInfo>
   }
 
   const {url, initialValues = {}}: Props = $props()
@@ -34,10 +34,7 @@
 
   const submit = async () => {
     if (values.name != initialValues.name) {
-      const res = await manageRelay(url, {
-        method: ManagementMethod.ChangeRelayName,
-        params: [values.name || ""],
-      })
+      const res = await $relayManagement.forUrl(url).changeRelayName(values.name || "")
 
       if (res.error) {
         return pushToast({theme: "error", message: res.error})
@@ -45,10 +42,9 @@
     }
 
     if (values.description != initialValues.description) {
-      const res = await manageRelay(url, {
-        method: ManagementMethod.ChangeRelayDescription,
-        params: [values.description || ""],
-      })
+      const res = await $relayManagement
+        .forUrl(url)
+        .changeRelayDescription(values.description || "")
 
       if (res.error) {
         return pushToast({theme: "error", message: res.error})
@@ -59,10 +55,7 @@
       const compressedFile = await compressFileForUpload(imageFile, {maxWidth: 128, maxHeight: 128})
       const result = await uploadFileOrFallback(compressedFile)
 
-      const res = await manageRelay(url, {
-        method: ManagementMethod.ChangeRelayIcon,
-        params: [result.url],
-      })
+      const res = await $relayManagement.forUrl(url).changeRelayIcon(result.url)
 
       if (res.error) {
         return pushToast({theme: "error", message: res.error})
@@ -70,7 +63,7 @@
     }
 
     pushToast({message: "Your changes have been saved!"})
-    forceLoadRelay(url)
+    $relays.forceLoad(url)
     clearModals()
   }
 

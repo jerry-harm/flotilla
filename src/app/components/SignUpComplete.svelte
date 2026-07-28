@@ -46,7 +46,7 @@
     </p>
     <p>
       From your dashboard, you can use invite links, discover community spaces, and keep up-to-date
-      on groups you've already joined. Click below to get started!
+      on spaces you've already joined. Click below to get started!
     </p>
   </ModalBody>
   {#if step && totalSteps}

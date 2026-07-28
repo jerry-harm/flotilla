@@ -1,7 +1,6 @@
 <script lang="ts">
   import type {Readable} from "svelte/store"
   import {SvelteSet} from "svelte/reactivity"
-  import {waitForThunkError} from "@welshman/app"
   import type {Thunk} from "@welshman/app"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
@@ -19,7 +18,7 @@
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
 
-  interface Props {
+  type Props = {
     title: string
     subtitle: string
     relays: Readable<string[]>
@@ -38,7 +37,8 @@
     loading.add(url)
 
     try {
-      const error = await waitForThunkError(await removeRelay(url))
+      const thunk = await removeRelay(url)
+      const error = await thunk.waitForError()
 
       if (error) {
         pushToast({

@@ -6,12 +6,8 @@
   import Link from "@lib/components/Link.svelte"
   import RelayIcon from "@app/components/RelayIcon.svelte"
   import RelayName from "@app/components/RelayName.svelte"
-  import {
-    groupListPubkeysByUrl,
-    userSpaceUrls,
-    deriveGroupList,
-    getSpaceUrlsFromGroupList,
-  } from "@app/groups"
+  import {userSpaceUrls} from "@app/rooms"
+  import {roomLists} from "@app/core"
   import {makeSpacePath} from "@app/routes"
 
   type Props = {
@@ -22,8 +18,8 @@
 
   const {pubkey, isSelf = false, ...props}: Props = $props()
 
-  const groupList = deriveGroupList(pubkey)
-  const spaceUrls = $derived(getSpaceUrlsFromGroupList($groupList))
+  const roomList = $roomLists.one(pubkey)
+  const spaceUrls = $derived($roomList?.urls() ?? [])
 </script>
 
 <div class={cx("card card-sm flex flex-col gap-3 sm:gap-4", props.class)}>
@@ -37,7 +33,7 @@
   {#if spaceUrls.length > 0}
     <div class="flex flex-col gap-2 border-t border-line pt-4">
       {#each spaceUrls as url (url)}
-        {@const count = $groupListPubkeysByUrl.get(url)?.size || 0}
+        {@const count = $roomLists.pubkeysForUrl(url).get().length}
         {@const isMember = !isSelf && $userSpaceUrls.includes(url)}
         <Link
           href={makeSpacePath(url)}

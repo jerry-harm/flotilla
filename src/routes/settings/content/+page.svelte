@@ -1,15 +1,5 @@
 <script lang="ts">
-  import {
-    getListTags,
-    tagger,
-    makeEvent,
-    getPubkeyTagValues,
-    getTagValues,
-    MUTES,
-    BLOSSOM_SERVERS,
-  } from "@welshman/util"
-  import {Router} from "@welshman/router"
-  import {userMuteList, tagPubkey, publishThunk, userBlossomServerList} from "@welshman/app"
+  import {publish} from "@welshman/app"
   import NotesMinimalistic from "@assets/icons/notes-minimalistic.svg?dataurl"
   import AddCircle from "@assets/icons/add-circle.svg?dataurl"
   import {preventDefault} from "@lib/html"
@@ -22,14 +12,18 @@
   import Button from "@lib/components/Button.svelte"
   import PageContent from "@lib/components/PageContent.svelte"
   import ProfileMultiSelect from "@app/components/ProfileMultiSelect.svelte"
+  import {blossomServerLists, deriveUserItem, muteLists} from "@app/core"
   import {pushToast} from "@app/toast"
   import {PLATFORM_NAME} from "@app/env"
   import {userSettingsValues, publishSettings} from "@app/settings"
 
+  const userMuteList = deriveUserItem($app => $muteLists)
+  const userBlossomServerList = deriveUserItem($app => $blossomServerLists)
+
   const reset = () => {
     settings = {...$userSettingsValues}
-    mutedPubkeys = getPubkeyTagValues(getListTags($userMuteList))
-    blossomServers = getTagValues("server", getListTags($userBlossomServerList))
+    mutedPubkeys = $userMuteList?.pubkeys() ?? []
+    blossomServers = $userBlossomServerList?.urls() ?? []
   }
 
   const addServer = () => {
@@ -39,22 +33,16 @@
   const onsubmit = preventDefault(async () => {
     await publishSettings($state.snapshot(settings))
 
-    publishThunk({
-      event: makeEvent(MUTES, {tags: mutedPubkeys.map(tagPubkey)}),
-      relays: Router.get().FromUser().getUrls(),
-    })
+    await $muteLists.setMutes({publicTags: mutedPubkeys.map(pubkey => ["p", pubkey])}).then(publish)
 
-    publishThunk({
-      event: makeEvent(BLOSSOM_SERVERS, {tags: blossomServers.map(tagger("server"))}),
-      relays: Router.get().FromUser().getUrls(),
-    })
+    await $blossomServerLists.setUrls($state.snapshot(blossomServers)).then(publish)
 
     pushToast({message: "Your settings have been saved!"})
   })
 
   let settings = $state({...$userSettingsValues})
-  let mutedPubkeys = $state(getPubkeyTagValues(getListTags($userMuteList)))
-  let blossomServers = $state(getTagValues("server", getListTags($userBlossomServerList)))
+  let mutedPubkeys = $state($userMuteList?.pubkeys() ?? [])
+  let blossomServers = $state($userBlossomServerList?.urls() ?? [])
 </script>
 
 <form {onsubmit}>

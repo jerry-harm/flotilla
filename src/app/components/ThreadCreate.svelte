@@ -1,7 +1,7 @@
 <script lang="ts">
   import {writable} from "svelte/store"
-  import {makeEvent, THREAD} from "@welshman/util"
-  import {publishThunk, waitForThunkError} from "@welshman/app"
+  import {Thread} from "@welshman/domain"
+  import {publish} from "@welshman/app"
   import {isMobile, preventDefault} from "@lib/html"
   import Paperclip from "@assets/icons/paperclip-2.svg?dataurl"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
@@ -16,11 +16,11 @@
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import EditorContent from "@app/editor/EditorContent.svelte"
-  import {pushToast} from "@app/toast"
-  import {PROTECTED, publishRoomQuote} from "@app/groups"
-  import {makeEditor} from "@app/editor"
+  import {command, relays, writer} from "@app/core"
   import {DraftKey} from "@app/drafts"
-  import {canEnforceNip70} from "@app/relays"
+  import {makeEditor} from "@app/editor"
+  import {publishRoomQuote} from "@app/rooms"
+  import {pushToast} from "@app/toast"
 
   type Values = {
     content?: string | object
@@ -36,7 +36,7 @@
   const {url, h, shareToChat = false}: Props = $props()
   const draftKey = new DraftKey<Values>(`thread:${url}:${h ?? ""}`)
   const initialValues = draftKey.get()
-  const shouldProtect = canEnforceNip70(url)
+  const shouldProtect = $relays.hasNip(url, 70)
 
   const uploading = writable(false)
 
@@ -57,34 +57,30 @@
     const ed = await editor
     const content = ed.getText({blockSeparator: "\n"}).trim()
 
-    if (!content.trim()) {
+    if (!content) {
       return pushToast({
         theme: "error",
         message: "Please provide a message for your thread.",
       })
     }
 
-    const tags = [...ed.storage.nostr.getEditorTags(), ["title", title]]
-
     loading = true
 
     try {
       const protect = await shouldProtect
-
-      if (protect) {
-        tags.push(PROTECTED)
-      }
+      const eventWriter = writer(Thread)
+        .setContent(content)
+        .setTitle(title)
+        .setProtected(protect)
+        .addTags(...ed.storage.nostr.getEditorTags())
+        .forceRelays(url)
 
       if (h) {
-        tags.push(["h", h])
+        eventWriter.setRoom(url, h)
       }
 
-      const threadThunk = publishThunk({
-        relays: [url],
-        event: makeEvent(THREAD, {content, tags}),
-      })
-
-      const error = await waitForThunkError(threadThunk)
+      const thunk = await command(eventWriter).then(publish)
+      const error = await thunk.waitForError()
 
       if (error) {
         return pushToast({theme: "error", message: error})
@@ -94,7 +90,7 @@
       history.back()
 
       if (shareToChat) {
-        publishRoomQuote({url, h, parent: threadThunk.event, protect})
+        publishRoomQuote({url, h, parent: thunk.event, protect})
       }
     } finally {
       loading = false

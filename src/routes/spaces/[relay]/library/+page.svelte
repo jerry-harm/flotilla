@@ -1,10 +1,8 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import {get} from "svelte/store"
   import {page} from "$app/stores"
-  import {randomId} from "@welshman/lib"
-  import {deriveRelay} from "@welshman/app"
-  import {load} from "@welshman/net"
+  import {PIN, PINBOARD} from "@welshman/util"
+  import {Pinboards} from "@welshman/app"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import GalleryWide from "@assets/icons/gallery-wide.svg?dataurl"
   import Add from "@assets/icons/add.svg?dataurl"
@@ -16,53 +14,48 @@
   import SpaceBar from "@app/components/SpaceBar.svelte"
   import PinboardItem from "@app/components/PinboardItem.svelte"
   import PinboardEdit from "@app/components/PinboardEdit.svelte"
-  import {decodeRelay, deriveSupportedMethods} from "@app/relays"
-  import {deriveBoards, BOARD, PIN, type Board} from "@app/pinboards"
+  import {app, network, relays} from "@app/core"
+  import {decodeRelay} from "@app/relays"
+  import {deriveUserIsSpaceAdmin} from "@app/management"
   import {pushModal} from "@app/modal"
 
   const url = decodeRelay($page.params.relay!)
 
-  const boards = deriveBoards(url)
-  const supportedMethods = deriveSupportedMethods(url)
-  const canManage = $derived($supportedMethods.some(m => (m as string) === "signevent"))
+  const relay = $relays.one(url)
+
+  const canManage = deriveUserIsSpaceAdmin(url)
+
+  const createBoard = () => pushModal(PinboardEdit, {url})
 
   let term = $state("")
   let loading = $state(true)
 
+  // Shelves are signed by the relay itself, so the relay's own pubkey scopes them
+  // to this space.
+  const boards = $derived($app.use(Pinboards).forAuthor($relay?.self ?? "").$)
+
   const filtered = $derived.by(() => {
     const value = term.trim().toLowerCase()
 
-    if (!value) return $boards
-
-    return $boards.filter(board =>
-      [board.title, board.description, ...board.topics].some(field =>
-        field?.toLowerCase().includes(value),
-      ),
-    )
-  })
-
-  const createBoard = () => {
-    const self = get(deriveRelay(url))?.self ?? ""
-    const identifier = randomId()
-    const board: Board = {
-      address: `${BOARD}:${self}:${identifier}`,
-      identifier,
-      title: "",
-      description: "",
-      image: "",
-      topics: [],
-      collaborative: false,
+    if (value) {
+      return $boards.filter(board =>
+        [board.title(), board.description(), ...board.topics()].some(field =>
+          field?.toLowerCase().includes(value),
+        ),
+      )
     }
 
-    pushModal(PinboardEdit, {url, board, isNew: true})
-  }
+    return $boards
+  })
 
   onMount(() => {
     const controller = new AbortController()
 
-    load({relays: [url], filters: [{kinds: [BOARD, PIN]}], signal: controller.signal}).then(() => {
-      loading = false
-    })
+    $network
+      .load({relays: [url], filters: [{kinds: [PINBOARD, PIN]}], signal: controller.signal})
+      .then(() => {
+        loading = false
+      })
 
     return () => controller.abort()
   })
@@ -76,7 +69,7 @@
     <strong>Library</strong>
   {/snippet}
   {#snippet action()}
-    {#if canManage}
+    {#if $canManage}
       <Button class="button button-primary button-sm" onclick={createBoard}>
         <Icon icon={Add} />
         Create Shelf
@@ -90,7 +83,7 @@
     <Icon size={4} icon={Magnifier} />
     <input bind:value={term} class="min-w-0 grow" type="text" placeholder="Search library..." />
   </label>
-  <Masonry items={filtered} getKey={board => board.address} columnWidth={80} gap={4}>
+  <Masonry items={filtered} getKey={board => board.address()} columnWidth={80} gap={4}>
     {#snippet child(board)}
       <PinboardItem {url} {board} />
     {/snippet}

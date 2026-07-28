@@ -140,15 +140,19 @@ notes.subscribe($notes => {
 ```typescript
 import { Repository } from "@welshman/net"
 import { deriveItemsByKey, deriveItems, makeDeriveItem } from "@welshman/store"
-import { readProfile, PROFILE, type PublishedProfile } from "@welshman/util"
+import { PROFILE } from "@welshman/util"
+import { Profile, type ProfileReader } from "@welshman/domain"
 
 const repository = new Repository()
 
-const profilesByPubkey = deriveItemsByKey<PublishedProfile>({
+// Decoding is @welshman/domain's job — configure the kind, then use its reader as eventToItem.
+const readProfile = Profile.configure({}).reader
+
+const profilesByPubkey = deriveItemsByKey<ProfileReader>({
   repository,
   filters: [{ kinds: [PROFILE] }],
-  eventToItem: event => readProfile(event),
-  getKey: profile => profile.event.pubkey,
+  eventToItem: event => readProfile(event).parse(),
+  getKey: profile => profile.author(),
 })
 
 // All profiles as array
@@ -159,7 +163,7 @@ const deriveProfile = makeDeriveItem(profilesByPubkey)
 const aliceProfile = deriveProfile("alice-pubkey-hex")
 
 aliceProfile.subscribe($profile => {
-  console.log($profile?.name)
+  console.log($profile?.display())
 })
 ```
 
@@ -227,7 +231,8 @@ This `getBookmark` function is the right shape to pass as `getItem` to `makeLoad
 ### 6. Full reactive item chain: deriveItemsByKey → deriveItems → getter → makeLoadItem → makeDeriveItem
 
 This is the canonical pattern for domain objects derived from repository events with
-on-demand network loading.
+on-demand network loading. `@welshman/app` packages it as `DerivedPlugin` — prefer subclassing
+that over hand-rolling the chain unless you need something it doesn't cover.
 
 ```typescript
 import {
@@ -237,10 +242,9 @@ import {
   makeLoadItem,
   makeDeriveItem,
 } from "@welshman/store"
-import { load } from "@welshman/net"
-import { repository } from "@welshman/app"
-import { Router } from "@welshman/router"
-import { getTagValue, getTagValues } from "@welshman/util"
+import { Network, Router } from "@welshman/app"
+import { outbox } from "@welshman/util"
+import { relayTags, tagSpec, tagValue, tagValues } from "@welshman/util"
 import type { TrustedEvent } from "@welshman/util"
 
 const BOOKMARK_KIND = 30003
@@ -254,14 +258,14 @@ type Bookmark = {
 
 const parseBookmark = (event: TrustedEvent): Bookmark => ({
   pubkey: event.pubkey,
-  title: getTagValue("title", event.tags) ?? "Untitled",
-  urls: getTagValues("r", event.tags),
+  title: tagValue(tagSpec("title"), event.tags) ?? "Untitled",
+  urls: tagValues(relayTags("r"), event.tags),
   event,
 })
 
 // Step 1: Reactive Map<pubkey, Bookmark> — live-updates from repository
 const bookmarksByPubkey = deriveItemsByKey<Bookmark>({
-  repository,
+  repository: app.repository,
   filters: [{ kinds: [BOOKMARK_KIND] }],
   getKey: b => b.pubkey,
   eventToItem: parseBookmark,
@@ -278,8 +282,10 @@ const getBookmark = (pubkey: string) => getBookmarksByPubkey().get(pubkey)
 //         re-fetches only after the timeout window (default: 3600 s)
 const loadBookmark = makeLoadItem<Bookmark>(
   async (pubkey: string) => {
-    await load({
-      relays: Router.get().ForPubkey(pubkey).getUrls(),
+    const scenario = await app.use(Router).resolve([outbox(pubkey)])
+
+    await app.use(Network).load({
+      relays: scenario.getUrls(),
       filters: [{ kinds: [BOOKMARK_KIND], authors: [pubkey], limit: 1 }],
     })
   },
@@ -298,7 +304,8 @@ aliceBookmark.subscribe($b => console.log($b?.title))
 ## Integration Notes
 
 - **`@welshman/net`** — provides `Repository` and `Tracker`. `Repository` is the event cache that feeds all store primitives in this package. Events flow from the network into the repository, which triggers store updates automatically.
-- **`@welshman/util`** — provides `TrustedEvent`, `Filter`, `readProfile`, `readList`, and other event-parsing helpers that feed into `deriveItemsByKey` / `deriveEventsById`.
+- **`@welshman/util`** — provides `TrustedEvent`, `Filter`, and the tag specs (`tagValue`, `hexTags`, …) used when decoding events.
+- **`@welshman/domain`** — the typed readers you normally pass as `eventToItem`, instead of writing a parser by hand.
 - **`@welshman/app`** — the high-level app layer re-exports and composes store utilities with pre-configured repositories, loaders, and context. If you are using `@welshman/app`, many of these stores are already wired up for you.
 - Stores in this package are **framework-agnostic** at runtime (plain Svelte stores), so they work in SvelteKit SSR as well as browser-only Svelte apps. The `synced` store's `localStorageProvider` is browser-only — guard it with `if (browser)` in SvelteKit.
 

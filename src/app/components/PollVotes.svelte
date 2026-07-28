@@ -1,20 +1,13 @@
 <script lang="ts">
   import {onDestroy} from "svelte"
-  import type {TrustedEvent} from "@welshman/util"
-  import {POLL_RESPONSE} from "@welshman/util"
-  import {pubkey, publishThunk, abortThunk} from "@welshman/app"
   import {formatTimestampRelative} from "@welshman/lib"
-  import {deriveEvents} from "@app/repository"
-  import {makePollResponse} from "@app/polls"
+  import type {TrustedEvent} from "@welshman/util"
+  import {POLL_RESPONSE, tagSpec, tagValues} from "@welshman/util"
+  import {Poll, PollResponse} from "@welshman/domain"
+  import type {Thunk} from "@welshman/app"
   import PollOption from "@app/components/PollOption.svelte"
-  import {
-    getPollEndsAt,
-    getPollOptions,
-    getPollResponseSelections,
-    getPollResults,
-    getPollType,
-    isPollClosed,
-  } from "@app/polls"
+  import {command, reader, thunks, user, writer} from "@app/core"
+  import {deriveEvents} from "@app/repository"
 
   type Props = {
     url: string
@@ -25,20 +18,14 @@
 
   const responses = deriveEvents([{kinds: [POLL_RESPONSE], "#e": [event.id]}])
 
-  const pollType = getPollType(event)
-  const options = getPollOptions(event)
-  const closed = isPollClosed(event)
-  const endsAt = getPollEndsAt(event)
-
   const getOwnResponse = (responses: TrustedEvent[]) => {
     let latest: TrustedEvent | undefined
 
     for (const response of responses) {
-      if (response.pubkey !== $pubkey) {
-        continue
-      }
-
-      if (!latest || response.created_at > latest.created_at) {
+      if (
+        response.pubkey === $user.pubkey &&
+        (!latest || response.created_at > latest.created_at)
+      ) {
         latest = response
       }
     }
@@ -46,28 +33,30 @@
     return latest
   }
 
-  const publishSelection = (selection: string[]) => {
-    if (activeThunk) {
-      abortThunk(activeThunk)
-    }
+  const publishSelection = async (selection: string[]) => {
+    activeThunk?.abort()
+    activeThunk = undefined
 
-    if (selection.length === 0) {
-      activeThunk = undefined
-      return
-    }
+    if (selection.length > 0) {
+      const eventWriter = writer(PollResponse).forceRelays(url).setPollId(event.id)
 
-    activeThunk = publishThunk({
-      relays: [url],
-      event: makePollResponse({event, selectedIds: selection}),
-      delay: pollType === "multiplechoice" ? 1000 : undefined,
-    })
+      for (const id of selection) {
+        eventWriter.addSelection(id)
+      }
+
+      const responseCommand = await command(eventWriter)
+
+      // Give the user time to check more boxes before the vote actually goes out.
+      activeThunk = $thunks.publish({
+        event: responseCommand.event,
+        relays: responseCommand.relays,
+        delay: pollType === "multiplechoice" ? 1000 : undefined,
+      })
+    }
   }
 
   const publishCurrentSelection = () =>
     publishSelection(pollType === "singlechoice" ? selectedIds.slice(0, 1) : selectedIds)
-
-  const results = $derived(getPollResults(event, $responses))
-  const ownResponse = $derived(getOwnResponse($responses))
 
   const setSingleChoice = (id: string) => {
     selectedIds = [id]
@@ -82,37 +71,51 @@
     publishCurrentSelection()
   }
 
+  const poll = reader(Poll)(event)
   let selectedIds = $state<string[]>([])
-  let activeThunk: ReturnType<typeof publishThunk> | undefined
+  let activeThunk: Thunk | undefined
+
+  const pollType = poll.pollType()
+  const results = $derived(poll.results($responses))
+  const ownResponse = $derived(getOwnResponse($responses))
 
   $effect(() => {
     if (ownResponse) {
-      selectedIds = getPollResponseSelections(ownResponse, pollType)
+      const selections = tagValues(tagSpec("response"), ownResponse.tags)
+
+      selectedIds = pollType === "singlechoice" ? selections.slice(0, 1) : selections
     }
   })
 
   onDestroy(() => {
-    if (activeThunk) {
-      abortThunk(activeThunk)
-    }
+    activeThunk?.abort()
   })
 </script>
 
-<div class="flex flex-col gap-2">
-  {#each options as option (option.id)}
-    <PollOption {event} {option} {results} {selectedIds} {setSingleChoice} {toggleMultipleChoice} />
-  {/each}
-  <div class="flex flex-wrap items-center justify-between gap-2">
-    <div class="text-sm opacity-75">
-      {pollType === "multiplechoice" ? "Multiple choice" : "Single choice"}
-      {#if endsAt}
-        {#if closed}
-          • Ended {formatTimestampRelative(endsAt)}
-        {:else}
-          • Ends {formatTimestampRelative(endsAt)}
+{#if poll && results}
+  {@const endsAt = poll.endsAt()}
+  <div class="flex flex-col gap-2">
+    {#each poll.options() as option (option.id)}
+      <PollOption
+        {event}
+        {option}
+        {results}
+        {selectedIds}
+        {setSingleChoice}
+        {toggleMultipleChoice} />
+    {/each}
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <div class="text-sm opacity-75">
+        {pollType === "multiplechoice" ? "Multiple choice" : "Single choice"}
+        {#if endsAt}
+          {#if poll.isClosed()}
+            • Ended {formatTimestampRelative(endsAt)}
+          {:else}
+            • Ends {formatTimestampRelative(endsAt)}
+          {/if}
         {/if}
-      {/if}
+      </div>
+      <div class="text-sm opacity-75">{results.voters} vote{results.voters === 1 ? "" : "s"}</div>
     </div>
-    <div class="text-sm opacity-75">{results.voters} vote{results.voters === 1 ? "" : "s"}</div>
   </div>
-</div>
+{/if}

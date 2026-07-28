@@ -1,14 +1,12 @@
 <script lang="ts">
   import {onMount} from "svelte"
-  import {ManagementMethod} from "@welshman/util"
-  import {manageRelay} from "@welshman/app"
   import Restart from "@assets/icons/restart.svg?dataurl"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
-  import {addSpaceMembers} from "@app/members"
-  import {deriveSupportedMethods} from "@app/relays"
+  import {deriveSpaceSupportedMethods} from "@app/management"
   import {pushToast} from "@app/toast"
+  import {relayManagement} from "@app/core"
 
   type Props = {
     url: string
@@ -18,17 +16,14 @@
 
   const {url, pubkey, onClick}: Props = $props()
 
-  const supportedMethods = deriveSupportedMethods(url)
-  const canUnban = $derived($supportedMethods.includes(ManagementMethod.UnbanPubkey))
-  const canRestore = $derived($supportedMethods.includes(ManagementMethod.AllowPubkey))
+  const supportedMethods = deriveSpaceSupportedMethods(url)
+  const canUnban = $derived($supportedMethods.includes("unbanpubkey"))
+  const canRestore = $derived($supportedMethods.includes("allowpubkey"))
 
   const back = () => history.back()
 
   const unbanMember = async () => {
-    const {error} = await manageRelay(url, {
-      method: ManagementMethod.UnbanPubkey,
-      params: [pubkey],
-    })
+    const {error} = await $relayManagement.forUrl(url).unbanPubkey(pubkey)
 
     if (error) {
       pushToast({theme: "error", message: error})
@@ -39,7 +34,7 @@
   }
 
   const restoreMember = async () => {
-    const error = await addSpaceMembers(url, [pubkey])
+    const {error} = await $relayManagement.forUrl(url).allowPubkey(pubkey)
 
     if (error) {
       pushToast({theme: "error", message: error})

@@ -1,10 +1,9 @@
 <script lang="ts">
   import {onDestroy} from "svelte"
-  import {first} from "@welshman/lib"
-  import {signer, deriveZapperForPubkey} from "@welshman/app"
-  import {request} from "@welshman/net"
-  import {Router} from "@welshman/router"
-  import {requestZap, makeZapRequest, getZapResponseFilter} from "@welshman/util"
+  import {first, uniq} from "@welshman/lib"
+  import {inbox} from "@welshman/util"
+  import {ZapRequest} from "@welshman/domain"
+  import {Zappers} from "@welshman/app"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
   import Copy from "@assets/icons/copy.svg?dataurl"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
@@ -22,6 +21,7 @@
   import QRCode from "@app/components/QRCode.svelte"
   import WalletConnect from "@app/components/WalletConnect.svelte"
   import ZapForm from "@app/components/ZapForm.svelte"
+  import {app, domain, network, router} from "@app/core"
   import {pushModal} from "@app/modal"
   import {zapAmounts} from "@app/settings"
   import {clip, pushToast} from "@app/toast"
@@ -30,11 +30,13 @@
     url?: string
     pubkey: string
     eventId?: string
+    // NIP-75 requires a zap to a goal to request its receipt on the goal's own relays.
+    goalRelays?: string[]
   }
 
-  const {url, pubkey, eventId}: Props = $props()
+  const {url, pubkey, eventId, goalRelays = []}: Props = $props()
 
-  const zapperStore = deriveZapperForPubkey(pubkey)
+  const zapper = $app.use(Zappers).forPubkey(pubkey)
 
   const back = () => history.back()
 
@@ -42,12 +44,24 @@
     loading = true
 
     try {
-      const zapper = $zapperStore!
-      const msats = amount * 1000
-      const relays = url ? [url] : Router.get().ForPubkey(pubkey).getUrls()
-      const params = {pubkey, content, eventId, msats, relays, zapper}
-      const event = await $signer!.sign(makeZapRequest(params))
-      const res = await requestZap({zapper, event})
+      const currentZapper = zapper.get()!
+      const relays = uniq([
+        ...(url ? [url] : await $router.resolver.relays([inbox(pubkey)])),
+        ...goalRelays,
+      ])
+      const writer = $domain
+        .writer(ZapRequest)
+        .setContent(content)
+        .setAmount(amount * 1000)
+        .setLnurl(currentZapper.lnurl)
+        .setRecipient(pubkey)
+        .setUrls(relays)
+
+      if (eventId) {
+        writer.setEventId(eventId)
+      }
+
+      const res = await writer.requestInvoice(currentZapper)
 
       if (!res.invoice) {
         return pushToast({
@@ -61,10 +75,10 @@
       paymentController?.abort()
       paymentController = new AbortController()
 
-      request({
+      $network.request({
         relays,
         signal: paymentController.signal,
-        filters: [getZapResponseFilter({zapper, pubkey, eventId})],
+        filters: [currentZapper.getResponseFilter(pubkey, eventId)],
         onEvent: () => {
           pushToast({message: "Payment sent!"})
           paymentController?.abort()

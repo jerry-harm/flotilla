@@ -1,7 +1,8 @@
 <script lang="ts">
-  import {insertAt, now, randomId, removeAt, removeUndefined} from "@welshman/lib"
-  import {makeEvent, POLL} from "@welshman/util"
-  import {publishThunk, waitForThunkError} from "@welshman/app"
+  import {insertAt, now, randomId, removeAt, removeUndefined, spec} from "@welshman/lib"
+  import {publish} from "@welshman/app"
+  import {Poll} from "@welshman/domain"
+  import type {PollType} from "@welshman/domain"
   import {isMobile, preventDefault} from "@lib/html"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import HamburgerMenu from "@assets/icons/hamburger-menu.svg?dataurl"
@@ -19,11 +20,10 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
+  import {command, relays, writer} from "@app/core"
   import {pushToast} from "@app/toast"
-  import {PROTECTED, publishRoomQuote} from "@app/groups"
-  import {canEnforceNip70} from "@app/relays"
+  import {publishRoomQuote} from "@app/rooms"
   import {DraftKey} from "@app/drafts"
-  import type {PollType} from "@app/polls"
 
   type Option = {
     id: string
@@ -47,8 +47,6 @@
   const draftKey = new DraftKey<Values>(`poll:${url}:${h ?? ""}`)
   const initialValues = draftKey.get()
 
-  const shouldProtect = canEnforceNip70(url)
-
   const back = () => history.back()
 
   const addOption = () => {
@@ -68,8 +66,8 @@
       return
     }
 
-    const sourceIndex = options.findIndex(option => option.id === draggedOptionId)
-    const targetIndex = options.findIndex(option => option.id === targetId)
+    const sourceIndex = options.findIndex(spec({id: draggedOptionId}))
+    const targetIndex = options.findIndex(spec({id: targetId}))
 
     if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) {
       return
@@ -119,35 +117,32 @@
       return pushToast({theme: "error", message: "End time must be in the future."})
     }
 
-    const tags: string[][] = [
-      ...nonEmptyOptions.map(option => ["option", randomId(), option]),
-      ["polltype", pollType],
-      ["relay", url],
-    ]
-
-    if (endsAt) {
-      tags.push(["endsAt", String(endsAt)])
-    }
-
-    if (h) {
-      tags.push(["h", h])
-    }
-
     loading = true
 
     try {
-      const protect = await shouldProtect
+      const protect = await $relays.hasNip(url, 70)
+      const eventWriter = writer(Poll)
+        .setTitle(title.trim())
+        .setPollType(pollType)
+        .setUrls([url])
+        .setProtected(protect)
 
-      if (protect) {
-        tags.push(PROTECTED)
+      for (const option of nonEmptyOptions) {
+        eventWriter.addOption(option)
       }
 
-      const pollThunk = publishThunk({
-        relays: [url],
-        event: makeEvent(POLL, {content: title.trim(), tags}),
-      })
+      if (endsAt) {
+        eventWriter.setEndsAt(endsAt)
+      }
 
-      const error = await waitForThunkError(pollThunk)
+      if (h) {
+        eventWriter.setRoom(url, h)
+      } else {
+        eventWriter.forceRelays(url)
+      }
+
+      const pollThunk = await command(eventWriter).then(publish)
+      const error = await pollThunk.waitForError()
 
       if (error) {
         return pushToast({theme: "error", message: error})

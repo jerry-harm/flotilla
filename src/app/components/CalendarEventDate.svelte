@@ -1,17 +1,21 @@
 <script lang="ts">
-  import {fromPairs, LOCALE, secondsToDate} from "@welshman/lib"
+  import {LOCALE, secondsToDate} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
+  import {TimeEvent} from "@welshman/domain"
+  import {reader} from "@app/core"
 
   type Props = {
     event: TrustedEvent
   }
 
   const {event}: Props = $props()
-  const meta = $derived(fromPairs(event.tags) as Record<string, string>)
-  const start = $derived(parseInt(meta.start))
+
+  const timeEvent = reader(TimeEvent)(event)
+
+  const start = timeEvent.start()
 </script>
 
-{#if !isNaN(start)}
+{#if start}
   {@const startDate = secondsToDate(start)}
   <div
     class="hidden h-32 w-32 min-w-32 flex-col items-center justify-center gap-1 rounded-2xl bg-surface-more p-2 sm:flex">

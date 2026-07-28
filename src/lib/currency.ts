@@ -1,3 +1,5 @@
+import {spec} from "@welshman/lib"
+
 export type CurrencyOption = {
   code: string
   name: string
@@ -163,10 +165,10 @@ export const currencyOptions: CurrencyOption[] = [
   {name: "Zambian Kwacha", symbol: "K", code: "ZMW"},
 ]
 
-export const defaultCurrencyOption = currencyOptions.find(c => c.code === "SAT")
+export const defaultCurrencyOption = currencyOptions.find(spec({code: "SAT"}))
 
 export const getCurrencyOption = (code: string): CurrencyOption =>
-  currencyOptions.find(c => c.code === code) || {name: code, symbol: "$", code}
+  currencyOptions.find(spec({code})) || {name: code, symbol: "$", code}
 
 export const displayCurrency = ({code, name}: CurrencyOption) => `${code} (${name})`
 

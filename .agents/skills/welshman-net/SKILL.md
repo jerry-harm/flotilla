@@ -5,7 +5,7 @@ description: "Use this skill when working with @welshman/net: relay connections,
 
 # welshman/net — Relay Network Layer
 
-`@welshman/net` is the core networking layer for welshman-based nostr apps. It manages WebSocket relay connections, subscriptions, event publishing, NIP-42 auth, and NIP-77 negentropy sync. It sits below `@welshman/app` (which provides higher-level reactive stores and routing) and depends on `@welshman/util` for event types and `@welshman/lib` for utilities.
+`@welshman/net` is the core networking layer for welshman-based nostr apps. It manages WebSocket relay connections, subscriptions, event publishing, NIP-42 auth, and NIP-77 negentropy sync. It sits below `@welshman/app` (which owns an `App` instance and its plugins) and depends on `@welshman/util` for event types and `@welshman/lib` for utilities.
 
 ## Installation
 
@@ -135,10 +135,10 @@ Emits `"update"` with `RepositoryUpdate` (`{ added: TrustedEvent[], removed: Set
 
 | Export | Description |
 |--------|-------------|
-| `netContext` | Global `NetContext` config object |
-| `NetContext` | `{ pool, repository, isEventValid, isEventDeleted, getAdapter? }` |
+| `NetContext` | `{ pool?, repository?, getAdapter? }` |
 
-Mutate `netContext` fields directly to change global defaults; pass `context` to individual calls to override per-request.
+Pass `context` to each `request`/`publish`/`load` call. An `App` from `@welshman/app` owns one per
+instance (`app.netContext`), and `app.use(Network)` supplies it for you.
 
 ### Negentropy / Diff (NIP-77)
 
@@ -366,7 +366,7 @@ repo.load(storedEvents)
 ### Startup: bulk-load Tracker state
 
 ```typescript
-import {tracker} from '@welshman/app'   // singleton wired to the pool and repository
+// `app.tracker` — wired to that app's pool and repository
 
 // Build the map from your stored relay<->event mappings
 const relaysById = new Map<string, Set<string>>()
@@ -384,7 +384,7 @@ tracker.load(relaysById)
 
 ```typescript
 import {on, batch} from '@welshman/lib'
-import {repository} from '@welshman/app'   // singleton; or Repository.get() standalone
+// `app.repository`, or `new Repository()` when using @welshman/net standalone
 import type {RepositoryUpdate} from '@welshman/net'
 import type {TrustedEvent} from '@welshman/util'
 
@@ -417,8 +417,8 @@ on(
 
 - **`@welshman/util`** — provides `TrustedEvent`, `SignedEvent`, `Filter`, `verifyEvent`, `matchFilters`, `getAddress`, etc. All event objects flowing through `@welshman/net` are `TrustedEvent` (already verified).
 - **`@welshman/lib`** — utility helpers (`Emitter`, `batcher`, `defer`, `on`, etc.) used internally; `Emitter` (from `@welshman/lib`) is the base class for `Tracker`, `Repository`, and `WrapManager`. `Socket`, `AuthState`, `AbstractAdapter`, and `Difference` extend node's built-in `EventEmitter` directly.
-- **`@welshman/app`** — wraps `@welshman/net` with reactive Svelte stores, a router, and higher-level helpers. Most app-level code should use `@welshman/app`; drop down to `@welshman/net` only for raw relay I/O or when building non-Svelte clients.
-- **`netContext`** — shared singleton used as the default by `request`, `requestOne`, and the repository. Override fields on `netContext` at startup, or pass a `context` object per-call to isolate behavior.
+- **`@welshman/app`** — wraps `@welshman/net` in an `App` instance whose plugins own routing, collections, and publishing. Most app-level code should go through `app.use(Network)`; drop down to `@welshman/net` only for raw relay I/O or when building without an `App`.
+- **`NetContext`** — passed explicitly per call. Each `App` owns its own pool and repository, which keeps one identity's data out of another's.
 
 ---
 

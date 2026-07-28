@@ -2,7 +2,7 @@
   import RoomName from "@app/components/RoomName.svelte"
   import RoomImage from "@app/components/RoomImage.svelte"
 
-  interface Props {
+  type Props = {
     h: string
     url: string
     size?: number

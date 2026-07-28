@@ -7,11 +7,13 @@
   import Button from "@lib/components/Button.svelte"
   import RelaySettingsHealthCheck from "@app/components/RelaySettingsHealthCheck.svelte"
   import {PLATFORM_NAME} from "@app/env"
-  import {pendingHealthChecks, applyHealthCheck} from "@app/healthChecks"
+  import {healthChecks} from "@app/healthChecks"
+
+  const pending = $healthChecks.pending.$
 
   const applyAll = () => {
-    for (const healthCheck of $pendingHealthChecks) {
-      applyHealthCheck(healthCheck)
+    for (const healthCheck of $pending) {
+      $healthChecks.apply(healthCheck)
     }
   }
 </script>
@@ -23,18 +25,18 @@
       Health Check
     </strong>
     <span class="flex items-center gap-2 text-sm">
-      <Icon icon={$pendingHealthChecks.length === 0 ? CheckCircle : DangerTriangle} />
-      {$pendingHealthChecks.length} Issue{$pendingHealthChecks.length === 1 ? "" : "s"} Detected
+      <Icon icon={$pending.length === 0 ? CheckCircle : DangerTriangle} />
+      {$pending.length} Issue{$pending.length === 1 ? "" : "s"} Detected
     </span>
   </div>
   <p>
     {PLATFORM_NAME} actively checks your connection to the network in the background to discover relays
     that are offline, that you don't have access to, or are otherwise causing trouble.
   </p>
-  {#each $pendingHealthChecks as healthCheck}
+  {#each $pending as healthCheck}
     <RelaySettingsHealthCheck {healthCheck} />
   {/each}
-  {#if $pendingHealthChecks.length > 0}
+  {#if $pending.length > 0}
     <Button class="button button-primary" onclick={applyAll}>
       <Icon icon={Stars} />
       Apply All Recommendations

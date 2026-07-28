@@ -2,16 +2,15 @@
   import type {Snippet} from "svelte"
   import type {NativeEmoji} from "emoji-picker-element/shared"
   import type {TrustedEvent, EventContent} from "@welshman/util"
-  import {Router} from "@welshman/router"
+  import {seen} from "@welshman/util"
   import SmileCircle from "@assets/icons/smile-circle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import EmojiButton from "@lib/components/EmojiButton.svelte"
   import NoteContent from "@app/components/NoteContent.svelte"
+  import {publishReaction, retractReaction} from "@app/reactions"
   import NoteCard from "@app/components/NoteCard.svelte"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
-  import {publishDelete} from "@app/deletes"
-  import {publishReaction} from "@app/reactions"
-  import {canEnforceNip70} from "@app/relays"
+  import {router} from "@app/core"
 
   type Props = {
     event: TrustedEvent
@@ -21,23 +20,15 @@
 
   const {url, event, children}: Props = $props()
 
-  const relays = url ? [url] : Router.get().Event(event).getUrls()
+  const getRelays = () => (url ? [url] : $router.resolver.relays([seen(event)]))
 
-  const shouldProtect = url ? canEnforceNip70(url) : false
+  const deleteReaction = async (reaction: TrustedEvent) =>
+    retractReaction(reaction, {url, urls: await getRelays()})
 
-  const deleteReaction = async (event: TrustedEvent) =>
-    publishDelete({relays, event, protect: await shouldProtect})
+  const createReaction = async (values: EventContent) =>
+    publishReaction(event, values, {url, urls: await getRelays()})
 
-  const createReaction = async (template: EventContent) =>
-    publishReaction({...template, event, relays, protect: await shouldProtect})
-
-  const onEmoji = async (emoji: NativeEmoji) =>
-    publishReaction({
-      event,
-      relays,
-      content: emoji.unicode,
-      protect: await shouldProtect,
-    })
+  const onEmoji = (emoji: NativeEmoji) => createReaction({content: emoji.unicode, tags: []})
 </script>
 
 <NoteCard {event} {url} class="cv card card-interactive">

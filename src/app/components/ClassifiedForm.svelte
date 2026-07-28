@@ -1,8 +1,8 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
   import {removeUndefined, randomId, uniq} from "@welshman/lib"
-  import {makeEvent, CLASSIFIED} from "@welshman/util"
-  import {publishThunk, waitForThunkError} from "@welshman/app"
+  import {publish} from "@welshman/app"
+  import {Classified} from "@welshman/domain"
   import {isMobile, preventDefault} from "@lib/html"
   import {normalizeTopic} from "@lib/util"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
@@ -17,11 +17,11 @@
   import CurrencyInput from "@app/components/CurrencyInput.svelte"
   import TopicMultiSelect from "@app/components/TopicMultiSelect.svelte"
   import EditorContent from "@app/editor/EditorContent.svelte"
+  import {command, relays, writer} from "@app/core"
   import {pushToast} from "@app/toast"
-  import {PROTECTED, publishRoomQuote} from "@app/groups"
+  import {publishRoomQuote} from "@app/rooms"
   import {makeEditor} from "@app/editor"
   import {DraftKey} from "@app/drafts"
-  import {canEnforceNip70} from "@app/relays"
   import {compressFileForUpload, uploadFile} from "@app/uploads"
 
   type Values = {
@@ -51,8 +51,6 @@
     initialValues = draftKey.get()
   }
 
-  const shouldProtect = canEnforceNip70(url)
-
   const back = () => history.back()
 
   const submit = async () => {
@@ -76,32 +74,11 @@
         })
       }
 
-      const tags = [
-        ["d", d],
-        ["title", title],
-        ["summary", content],
-        ["price", String(price), currency],
-        ["status", status],
-        ...ed.storage.nostr.getEditorTags(),
-      ]
-
-      for (const topic of topics) {
-        tags.push(["t", topic])
-      }
-
-      const protect = await shouldProtect
-
-      if (protect) {
-        tags.push(PROTECTED)
-      }
-
-      if (h) {
-        tags.push(["h", h])
-      }
+      const imageUrls: string[] = []
 
       for (const image of images) {
         if (typeof image === "string") {
-          tags.push(["image", image])
+          imageUrls.push(image)
         } else {
           const {result, error} = await uploadFile(await compressFileForUpload(image), {url})
 
@@ -113,17 +90,33 @@
           }
 
           if (result) {
-            tags.push(["image", result.url])
+            imageUrls.push(result.url)
           }
         }
       }
 
-      const classifiedThunk = publishThunk({
-        relays: [url],
-        event: makeEvent(CLASSIFIED, {content, tags}),
-      })
+      const protect = await $relays.hasNip(url, 70)
 
-      const error = await waitForThunkError(classifiedThunk)
+      const eventWriter = writer(Classified)
+        .setIdentifier(d)
+        .setContent(content)
+        .setTitle(title)
+        .setSummary(content)
+        .setPrice(price, currency)
+        .setStatus(status)
+        .setTopics(topics)
+        .setImages(imageUrls)
+        .setProtected(protect)
+        .addTags(...ed.storage.nostr.getEditorTags())
+
+      if (h) {
+        eventWriter.setRoom(url, h)
+      } else {
+        eventWriter.forceRelays(url)
+      }
+
+      const classifiedThunk = await command(eventWriter).then(publish)
+      const error = await classifiedThunk.waitForError()
 
       if (error) {
         return pushToast({theme: "error", message: error})

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {deriveRelayDisplay} from "@welshman/app"
+  import {relays} from "@app/core"
 
   type Props = {
     url: string
@@ -8,7 +8,7 @@
 
   const {url, ...props}: Props = $props()
 
-  const display = $derived(deriveRelayDisplay(url))
+  const display = $derived($relays.display(url).$)
 </script>
 
 <span class={props.class}>

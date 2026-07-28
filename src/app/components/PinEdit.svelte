@@ -1,28 +1,30 @@
 <script lang="ts">
+  import {Pin} from "@welshman/domain"
+  import {publishAsRelay} from "@welshman/app"
+  import type {PinReader} from "@welshman/domain"
   import PinForm, {type PinFormValues} from "@app/components/PinForm.svelte"
-  import {createPin, referenceToPin, pinToReference, type PublishedPin} from "@app/pinboards"
+  import {command, writer} from "@app/core"
+  import {pinToReference, setPinReference} from "@app/pinboards"
 
   type Props = {
     url: string
-    pin: PublishedPin
+    pin: PinReader
   }
 
   const {url, pin}: Props = $props()
 
   const submit = async ({title, topics, value, content}: PinFormValues) => {
-    const params = referenceToPin(value)
+    const eventWriter = writer(Pin, pin)
 
-    if (!params) return "Please enter a valid URL or nostr link."
+    if (!setPinReference(eventWriter, value)) {
+      return "Please enter a valid URL or nostr link."
+    }
 
-    // Reuse the pin's identifier and boards so its addressable event is replaced.
-    return createPin(url, {
-      ...params,
-      identifier: pin.identifier,
-      boards: pin.boards,
-      title,
-      topics,
-      description: content,
-    })
+    eventWriter.setTitle(title).setTopics(topics).setContent(content)
+
+    const thunk = await command(eventWriter).then(publishAsRelay(url))
+
+    return thunk.waitForError()
   }
 </script>
 
@@ -32,9 +34,9 @@
   action="Save changes"
   successMessage="Link updated!"
   values={{
-    title: pin.title,
-    topics: pin.topics,
+    title: pin.title(),
+    topics: pin.topics(),
     value: pinToReference(pin),
-    content: pin.description,
+    content: pin.content(),
   }}
   {submit} />

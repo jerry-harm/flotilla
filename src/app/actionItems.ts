@@ -1,3 +1,5 @@
+import {derived} from "svelte/store"
+import {first, groupBy, removeUndefined, spec} from "@welshman/lib"
 import {
   REPORT,
   ROOM_ADD_MEMBER,
@@ -5,28 +7,48 @@ import {
   ROOM_LEAVE,
   ROOM_MEMBERS,
   ROOM_REMOVE_MEMBER,
-  getPubkeyTagValues,
-  getTagValue,
+  hexTags,
+  sortEventsAsc,
   sortEventsDesc,
+  tagSpec,
+  tagValue,
+  tagValues,
 } from "@welshman/util"
 import type {TrustedEvent} from "@welshman/util"
-import {first, groupBy, removeUndefined} from "@welshman/lib"
-import {derived} from "svelte/store"
 import {deriveEventsForUrl} from "@app/repository"
-import {getRoomMembers} from "@app/members"
+
+// A room's membership replayed in order — each member list is a snapshot that resets
+// the set, with add/remove events applied on top.
+const getRoomMembers = (events: TrustedEvent[]) => {
+  const members = new Set<string>()
+
+  for (const event of sortEventsAsc(events)) {
+    const pubkeys = tagValues(hexTags("p"), event.tags)
+
+    if (event.kind === ROOM_MEMBERS) {
+      members.clear()
+      pubkeys.forEach(pubkey => members.add(pubkey))
+    } else if (event.kind === ROOM_ADD_MEMBER) {
+      pubkeys.forEach(pubkey => members.add(pubkey))
+    } else if (event.kind === ROOM_REMOVE_MEMBER) {
+      pubkeys.forEach(pubkey => members.delete(pubkey))
+    }
+  }
+
+  return members
+}
+
 // Action items (admin review queue)
 
 export const deriveSpaceActionItems = (url: string) =>
   derived(
     deriveEventsForUrl(url, [
-      {
-        kinds: [REPORT, ROOM_JOIN, ROOM_LEAVE, ROOM_MEMBERS, ROOM_ADD_MEMBER, ROOM_REMOVE_MEMBER],
-      },
+      {kinds: [REPORT, ROOM_JOIN, ROOM_LEAVE, ROOM_MEMBERS, ROOM_ADD_MEMBER, ROOM_REMOVE_MEMBER]},
     ]),
     $events => {
       const getRoomId = (e: TrustedEvent) =>
-        getTagValue(e.kind === ROOM_MEMBERS ? "d" : "h", e.tags)
-      const reports = $events.filter(e => e.kind === REPORT)
+        tagValue(tagSpec(e.kind === ROOM_MEMBERS ? "d" : "h"), e.tags)
+      const reports = $events.filter(spec({kind: REPORT}))
       const pendingJoins: TrustedEvent[] = []
 
       // Room-level join requests — most recent per pubkey+h
@@ -53,7 +75,7 @@ export const deriveSpaceActionItems = (url: string) =>
           }
         }
 
-        const roomMembers = new Set(getRoomMembers(url, h, roomMembershipEvents))
+        const roomMembers = getRoomMembers(roomMembershipEvents)
 
         pendingJoins.push(
           ...removeUndefined(
@@ -72,7 +94,7 @@ export const deriveSpaceActionItems = (url: string) =>
                   return true
                 }
 
-                return getPubkeyTagValues(event.tags).includes(pubkey)
+                return tagValues(hexTags("p"), event.tags).includes(pubkey)
               })
             ) {
               return false

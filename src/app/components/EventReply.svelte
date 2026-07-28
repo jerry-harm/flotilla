@@ -2,6 +2,8 @@
   import {onMount} from "svelte"
   import {writable} from "svelte/store"
   import type {TrustedEvent} from "@welshman/util"
+  import {publishToRelays} from "@welshman/app"
+  import {Comment} from "@welshman/domain"
   import {isMobile, preventDefault} from "@lib/html"
   import {fly} from "@lib/transition"
   import Paperclip from "@assets/icons/paperclip-2.svg?dataurl"
@@ -10,12 +12,11 @@
   import Spinner from "@lib/components/Spinner.svelte"
   import EditorContent from "@app/editor/EditorContent.svelte"
   import ChatComposeParent from "@app/components/ChatComposeParent.svelte"
-  import {publishComment} from "@app/comments"
-  import {canEnforceNip70} from "@app/relays"
-  import {PROTECTED, prependParent} from "@app/groups"
+  import {prependParent} from "@app/rooms"
   import {makeEditor} from "@app/editor"
   import {DraftKey} from "@app/drafts"
   import {pushToast} from "@app/toast"
+  import {command, relays, writer} from "@app/core"
 
   type Values = {
     content?: string | object
@@ -33,7 +34,6 @@
   const {url, event, parent, onClose, onClearParent, onSubmit}: Props = $props()
   const draftKey = new DraftKey<Values>(`reply:${event.id}:${parent?.id || ""}`)
   const initialValues = draftKey.get()
-  const shouldProtect = canEnforceNip70(url)
   const uploading = writable(false)
   const autofocus = !isMobile
 
@@ -46,10 +46,6 @@
     let content = ed.getText({blockSeparator: "\n"}).trim()
     let tags = ed.storage.nostr.getEditorTags()
 
-    if (await shouldProtect) {
-      tags.push(PROTECTED)
-    }
-
     if (!content) {
       return pushToast({
         theme: "error",
@@ -58,11 +54,20 @@
     }
 
     if (parent) {
-      ;({content, tags} = prependParent(parent, {content, tags}, url))
+      ;({content, tags} = await prependParent(parent, {content, tags}, url))
     }
 
+    const eventWriter = writer(Comment)
+      .setContent(content)
+      .addTags(...tags)
+      .setRootFromEvent(event)
+      .setParentFromEvent(event)
+      .setProtected(await $relays.hasNip(url, 70))
+
+    const thunk = await command(eventWriter).then(publishToRelays([url]))
+
     draftKey.clear()
-    onSubmit(publishComment({event, content, tags, relays: [url]}))
+    onSubmit(thunk)
   }
 
   let form: HTMLElement

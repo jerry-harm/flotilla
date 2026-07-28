@@ -1,6 +1,5 @@
 <script lang="ts">
   import {Capacitor} from "@capacitor/core"
-  import {pubkey} from "@welshman/app"
   import ServerPath from "@assets/icons/server-path.svg?dataurl"
   import RemoteControlMinimalistic from "@assets/icons/remote-controller-minimalistic.svg?dataurl"
   import GalleryMinimalistic from "@assets/icons/gallery-minimalistic.svg?dataurl"
@@ -14,6 +13,7 @@
   import ModalBody from "@lib/components/ModalBody.svelte"
   import Profile from "@app/components/Profile.svelte"
   import LogOut from "@app/components/LogOut.svelte"
+  import {user} from "@app/core"
   import {pushModal} from "@app/modal"
   import {theme} from "@app/theme"
 
@@ -24,11 +24,9 @@
 <Modal>
   <ModalBody>
     <div class="flex flex-col gap-8 items-center py-12 max-w-[16rem] m-auto w-full">
-      {#if $pubkey}
-        <Link replaceState href="/settings/profile">
-          <Profile inert pubkey={$pubkey} />
-        </Link>
-      {/if}
+      <Link replaceState href="/settings/profile">
+        <Profile inert pubkey={$user.pubkey} />
+      </Link>
       <div class="grid grid-cols-3 gap-3 w-full">
         <Link
           replaceState

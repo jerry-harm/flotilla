@@ -1,7 +1,9 @@
 <script module lang="ts">
-  import type {SpaceRole} from "@app/members"
-
-  export type Values = Pick<SpaceRole, "label" | "description" | "color">
+  export type Values = {
+    label: string
+    description: string
+    color: number
+  }
 </script>
 
 <script lang="ts">
@@ -11,7 +13,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import ModalFooter from "@lib/components/ModalFooter.svelte"
-  import {roleColor} from "@app/members"
+  import {roleColor} from "@app/roles"
 
   type Props = {
     initialValues?: Partial<Values>

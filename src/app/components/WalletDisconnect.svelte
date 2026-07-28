@@ -1,11 +1,10 @@
 <script lang="ts">
-  import {dissoc} from "@welshman/lib"
-  import {pubkey, updateSession} from "@welshman/app"
   import Confirm from "@lib/components/Confirm.svelte"
+  import {wallet} from "@app/lightning"
   import {clearModals} from "@app/modal"
 
   const confirm = async () => {
-    updateSession($pubkey!, dissoc("wallet"))
+    wallet.set(undefined)
 
     clearModals()
   }

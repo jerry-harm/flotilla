@@ -1,7 +1,6 @@
 <script lang="ts">
   import type {NativeEmoji} from "emoji-picker-element/shared"
   import type {TrustedEvent} from "@welshman/util"
-  import {sendWrapped} from "@welshman/app"
   import SmileCircle from "@assets/icons/smile-circle.svg?dataurl"
   import Pen from "@assets/icons/pen.svg?dataurl"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
@@ -13,7 +12,7 @@
   import Button from "@lib/components/Button.svelte"
   import EmojiPicker from "@lib/components/EmojiPicker.svelte"
   import EventInfo from "@app/components/EventInfo.svelte"
-  import {makeReaction} from "@app/reactions"
+  import {reactions, wraps} from "@app/core"
   import {pushModal} from "@app/modal"
   import {clip} from "@app/toast"
 
@@ -26,14 +25,13 @@
 
   const {event, pubkeys, reply, edit}: Props = $props()
 
-  const onEmoji = ((event: TrustedEvent, pubkeys: string[], emoji: NativeEmoji) => {
+  const onEmoji = async (emoji: NativeEmoji) => {
     history.back()
-    sendWrapped({
-      event: makeReaction({event, content: emoji.unicode, protect: false}),
-      recipients: pubkeys,
-      pow: 16,
-    })
-  }).bind(undefined, event, pubkeys)
+
+    const reaction = await $reactions.react(event, emoji.unicode)
+
+    return $wraps.publish({event: reaction.event, recipients: pubkeys, pow: 16})
+  }
 
   const showEmojiPicker = () => pushModal(EmojiPicker, {onClick: onEmoji}, {replaceState: true})
 

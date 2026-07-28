@@ -138,8 +138,8 @@ import {get, writable} from "svelte/store"
 import {Node, Extension, mergeAttributes} from "@tiptap/core"
 import {Plugin, PluginKey} from "@tiptap/pm/state"
 import type {NodeViewRendererProps} from "@tiptap/core"
-import {Router} from "@welshman/router"
-import {createSearch, profiles, searchProfiles, deriveProfileDisplay} from "@welshman/app"
+import {Profiles, Router, createSearch} from "@welshman/app"
+import {outbox} from "@welshman/util"
 import {
   Editor, WelshmanExtension, MentionSuggestion, TippySuggestion, editorProps,
 } from "@welshman/editor"
@@ -323,8 +323,8 @@ const onSubmit = (editor: Editor) => {
 
 ## Integration Notes
 
-- **`@welshman/app`** — `profileSearch` and `deriveProfileDisplay` are the typical sources for mention autocomplete data and display names.
-- **`@welshman/router`** — `Router.get().FromPubkeys([pubkey]).getUrls()` provides the relay hints encoded into nprofile bech32 strings.
+- **`@welshman/app`** — `app.use(Profiles).profileSearch` and `app.use(Profiles).display(pubkey)` are the typical sources for mention autocomplete data and display names.
+- **`@welshman/app`** — relay hints for nprofile bech32 strings come from `app.use(Router).resolve([outbox(pubkey)])`.
 - **`@welshman/util`** — `fromNostrURI` is used internally by `EventNodeView` to strip the `nostr:` scheme before displaying.
 - **`nostr-editor`** — `WelshmanExtension` extends `NostrExtension` from this package. Storage at `editor.storage.nostr` (including `getEditorTags()`) is provided by `nostr-editor`, not welshman itself.
 - **`@tiptap/core`** — `Editor`, `NodeViewProps`, and all extension primitives come from Tiptap. Welshman does not re-export every Tiptap helper; import additional ones directly from `@tiptap/core` as needed.

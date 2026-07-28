@@ -1,12 +1,12 @@
 <script lang="ts">
+  import {derived} from "svelte/store"
   import {onMount} from "svelte"
   import {page} from "$app/stores"
   import {sleep} from "@welshman/lib"
   import type {MakeNonOptional} from "@welshman/lib"
-  import {COMMENT, getTagValue} from "@welshman/util"
-  import {repository} from "@welshman/app"
-  import {request} from "@welshman/net"
-  import {deriveEventsById, deriveEventsAsc} from "@welshman/store"
+  import {COMMENT} from "@welshman/util"
+  import {deriveEventsAsc} from "@welshman/store"
+  import {ZapGoal} from "@welshman/domain"
   import SortVertical from "@assets/icons/sort-vertical.svg?dataurl"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -19,15 +19,17 @@
   import GoalActions from "@app/components/GoalActions.svelte"
   import CommentActions from "@app/components/CommentActions.svelte"
   import EventReply from "@app/components/EventReply.svelte"
-  import {deriveEvent} from "@app/repository"
+  import {network, reader} from "@app/core"
+  import {deriveEvent, deriveEventsById} from "@app/repository"
   import {decodeRelay} from "@app/relays"
 
   const {relay, id} = $page.params as MakeNonOptional<typeof $page.params>
   const url = decodeRelay(relay)
   const event = deriveEvent(id, [url])
   const filters = [{kinds: [COMMENT], "#E": [id]}]
-  const replies = deriveEventsAsc(deriveEventsById({repository, filters}))
-  const summary = getTagValue("summary", $event?.tags || [])
+  const replies = deriveEventsAsc(deriveEventsById(filters))
+  const goal = derived(event, $event => ($event ? reader(ZapGoal)($event) : undefined))
+  const summary = $derived($goal?.summary() ?? "")
 
   const back = () => history.back()
 
@@ -49,7 +51,7 @@
   onMount(() => {
     const controller = new AbortController()
 
-    request({relays: [url], filters, signal: controller.signal})
+    $network.request({relays: [url], filters, signal: controller.signal})
 
     return () => {
       controller.abort()

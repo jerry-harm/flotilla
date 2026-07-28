@@ -2,24 +2,26 @@
   import {onMount} from "svelte"
   import {sortBy, uniqBy} from "@welshman/lib"
   import {feedFromFilter, makeIntersectionFeed, makeRelayFeed} from "@welshman/feeds"
-  import {NOTE, getReplyTags} from "@welshman/util"
+  import {NOTE} from "@welshman/util"
   import type {TrustedEvent} from "@welshman/util"
-  import {makeFeedController} from "@welshman/app"
+  import {getReplyTags} from "@welshman/domain"
+  import {Feeds} from "@welshman/app"
   import {createScroller} from "@lib/html"
   import {fly} from "@lib/transition"
   import Spinner from "@lib/components/Spinner.svelte"
   import NoteItem from "@app/components/NoteItem.svelte"
+  import {app} from "@app/core"
 
-  interface Props {
-    url: any
-    pubkey: any
+  type Props = {
+    url: string
+    pubkey: string
     events?: TrustedEvent[]
     hideLoading?: boolean
   }
 
   let {url, pubkey, events = $bindable([]), hideLoading = false}: Props = $props()
 
-  const ctrl = makeFeedController({
+  const ctrl = $app.use(Feeds).makeFeedController({
     useWindowing: true,
     feed: makeIntersectionFeed(
       makeRelayFeed(url),

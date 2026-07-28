@@ -1,37 +1,43 @@
 <script lang="ts">
   import type {ComponentProps} from "svelte"
+  import {derived} from "svelte/store"
   import {sum} from "@welshman/lib"
-  import type {Zap, TrustedEvent} from "@welshman/util"
-  import {getTagValue, fromMsats, ZAP_RESPONSE} from "@welshman/util"
-  import {deriveItemsByKey, deriveArray} from "@welshman/store"
-  import {repository, getValidZap} from "@welshman/app"
+  import {ZAP_RECEIPT, fromMsats} from "@welshman/util"
+  import {ZapGoal} from "@welshman/domain"
+  import type {Zap} from "@welshman/domain"
+  import {Zappers} from "@welshman/app"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import ContentMinimal from "@app/components/ContentMinimal.svelte"
+  import {app, reader} from "@app/core"
+  import {deriveEvents} from "@app/repository"
 
   const props: ComponentProps<typeof ContentMinimal> = $props()
 
-  const content = getTagValue("summary", props.event.tags)
-  const fakeEvent = {content, tags: props.event.tags}
+  const goal = reader(ZapGoal)(props.event)
 
-  const zaps = deriveArray(
-    deriveItemsByKey<Zap>({
-      repository,
-      getKey: zap => zap.response.id,
-      filters: [{kinds: [ZAP_RESPONSE], "#e": [props.event.id]}],
-      eventToItem: (response: TrustedEvent) => getValidZap(response, props.event),
-    }),
+  const title = goal.title()
+  const summaryEvent = $derived({content: goal.summary(), tags: props.event.tags})
+
+  const receipts = deriveEvents([{kinds: [ZAP_RECEIPT], "#e": [props.event.id]}])
+
+  const zaps = derived<typeof receipts, Zap[]>(
+    receipts,
+    ($receipts, set) => $app.use(Zappers).validZapReceipts($receipts, props.event).$.subscribe(set),
+    [],
   )
 
-  const goalAmount = parseInt(getTagValue("amount", props.event.tags) || "0")
-  const zapAmount = $derived(fromMsats(sum($zaps.map(zap => zap.invoiceAmount))))
+  const goalAmount = goal.amount() ?? 0
+  const closedAt = goal.closedAt()
+  const counted = $derived($zaps.filter(zap => !closedAt || zap.response.created_at <= closedAt))
+  const zapAmount = $derived(fromMsats(sum(counted.map(zap => zap.invoiceAmount))))
 </script>
 
 <div class="flex justify-between">
-  <span class="text-sm">{props.event.content}</span>
+  <span class="text-sm">{title}</span>
   <div class="flex items-center gap-1">
     <Icon icon={Bolt} size={4} />
     {zapAmount}/{goalAmount} sats funded
   </div>
 </div>
-<ContentMinimal {...props} event={fakeEvent} />
+<ContentMinimal {...props} event={summaryEvent} />

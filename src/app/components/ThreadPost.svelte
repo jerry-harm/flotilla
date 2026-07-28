@@ -1,8 +1,7 @@
 <script lang="ts">
   import {formatTimestamp} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {COMMENT} from "@welshman/util"
-  import {deriveHandleForPubkey, deriveProfileDisplay, displayHandle} from "@welshman/app"
+  import {COMMENT, displayHandle} from "@welshman/util"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -14,6 +13,7 @@
   import Content from "@app/components/Content.svelte"
   import CommentActions from "@app/components/CommentActions.svelte"
   import ThreadActions from "@app/components/ThreadActions.svelte"
+  import {handles, profiles} from "@app/core"
   import {makeEventPermalink} from "@app/routes"
   import {pushModal} from "@app/modal"
   import {clip} from "@app/toast"
@@ -27,8 +27,8 @@
 
   const {url, event, threadPubkey, onReply}: Props = $props()
 
-  const profileDisplay = deriveProfileDisplay(event.pubkey, [url])
-  const handle = deriveHandleForPubkey(event.pubkey)
+  const profileDisplay = $profiles.display(event.pubkey, [url]).$
+  const handle = $handles.forPubkey(event.pubkey).$
   const isOp = event.pubkey === threadPubkey
   const isComment = event.kind === COMMENT
 
