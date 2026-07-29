@@ -1,7 +1,8 @@
 <script lang="ts">
   import {Capacitor} from "@capacitor/core"
   import {pubkey} from "@welshman/app"
-  import Server from "@assets/icons/server.svg?dataurl"
+  import ServerPath from "@assets/icons/server-path.svg?dataurl"
+  import RemoteControlMinimalistic from "@assets/icons/remote-controller-minimalistic.svg?dataurl"
   import GalleryMinimalistic from "@assets/icons/gallery-minimalistic.svg?dataurl"
   import Shield from "@assets/icons/shield-minimalistic.svg?dataurl"
   import Bell from "@assets/icons/bell.svg?dataurl"
@@ -49,8 +50,15 @@
           replaceState
           href="/settings/relays"
           class="aspect-square button button-neutral h-[unset] flex flex-col gap-2 text-center">
-          <Icon icon={Server} size={5} />
+          <Icon icon={RemoteControlMinimalistic} size={5} />
           Relays
+        </Link>
+        <Link
+          replaceState
+          href="/settings/hosting"
+          class="aspect-square button button-neutral h-[unset] flex flex-col gap-2 text-center">
+          <Icon icon={ServerPath} size={5} />
+          Hosting
         </Link>
         <Link
           replaceState
