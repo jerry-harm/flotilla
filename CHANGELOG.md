@@ -1,5 +1,22 @@
 # Changelog
 
+# 1.9.0
+
+* Fix nav safe are inset, qr code reactivity
+* Performance optimizations for chat rooms
+* Add hosting platform
+* Add room invite links
+* Improve audio/video calls
+* Bugfixes and UI refinements
+* Fix push notification icon
+* Swap datepicker implementations
+* Fix popover clipping
+* Add member directory page
+* Add pinboards and content library
+* Improve white-labeled support
+* Add full profile page at /people/[npub]
+* Add theming support, improve app design
+
 # 1.8.2
 
 * Fix thread board styling
