@@ -96,13 +96,13 @@ const pullAndListen = ({url, signal, filters}: SyncOpts) => {
   })
 }
 
-const userRoomList = deriveUserItem($app => $app.use(RoomLists))
+const userRoomList = deriveUserItem(RoomLists)
 
-const userRelayList = deriveUserItem($app => $app.use(RelayLists))
+const userRelayList = deriveUserItem(RelayLists)
 
-const userFollowList = deriveUserItem($app => $app.use(FollowLists))
+const userFollowList = deriveUserItem(FollowLists)
 
-const userMessagingRelayList = deriveUserItem($app => $app.use(MessagingRelayLists))
+const userMessagingRelayList = deriveUserItem(MessagingRelayLists)
 
 const getSpaceUrls = ($roomList: Maybe<RoomListReader>) =>
   PLATFORM_RELAYS.length > 0 ? PLATFORM_RELAYS : ($roomList?.urls() ?? [])

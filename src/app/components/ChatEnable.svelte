@@ -1,5 +1,6 @@
 <script lang="ts">
   import {preventDefault} from "@lib/html"
+  import {RelayLists} from "@welshman/app"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -20,7 +21,7 @@
 
   const {next}: Props = $props()
 
-  const userRelayList = deriveUserItem($app => $relayLists)
+  const userRelayList = deriveUserItem(RelayLists)
 
   const back = () => history.back()
 

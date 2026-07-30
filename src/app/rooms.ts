@@ -138,7 +138,7 @@ export const publishRoomQuote = async ({
 
 // User
 
-export const userRoomList = deriveUserItem($app => $app.use(RoomLists))
+export const userRoomList = deriveUserItem(RoomLists)
 
 export const userSpaceUrls = derived(userRoomList, $userRoomList => $userRoomList?.urls() ?? [])
 

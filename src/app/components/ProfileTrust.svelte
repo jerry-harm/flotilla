@@ -1,6 +1,6 @@
 <script lang="ts">
-  import {readable} from "svelte/store"
   import {clamp} from "@welshman/lib"
+  import {WotScope} from "@welshman/app"
   import Shield from "@assets/icons/shield-minimalistic.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import ProfileCircles from "@app/components/ProfileCircles.svelte"
@@ -14,38 +14,18 @@
   const {pubkey: target, isSelf = false}: Props = $props()
 
   const profileDisplay = $profiles.display(target).$
-  const followers = $wot.followers(target).$
-
-  const score = $derived($wot.wotScore($user.pubkey, target).$)
-
-  const followsWhoFollow = $derived(
-    !isSelf && $user.pubkey
-      ? $wot.followsWhoFollow($user.pubkey, target).$
-      : readable<string[]>([]),
-  )
-
-  const followerCount = $derived($followers.length)
-
-  const networkFollowCount = $derived(isSelf ? followerCount : $followsWhoFollow.length)
-
-  const displayScore = $derived(isSelf ? followerCount : Math.round(clamp([0, 100], $score)))
-  const progress = $derived(isSelf ? undefined : displayScore)
+  const followers = $wot.followers(target, WotScope.Follows).$
+  const score = $wot.score(target, WotScope.Follows).$
+  const display = $derived(isSelf ? $followers.length : clamp([0, 100], $score))
 
   const trustMessage = $derived.by(() => {
-    if (isSelf) {
-      if (followerCount === 0) return "No followers in your network yet."
-
-      return `Followed by ${followerCount}+ people in your network.`
+    if ($followers.length > 0) {
+      return `Followed by ${$followers.length}+ people in your network.`
     }
 
-    if (networkFollowCount > 0) {
-      return `Followed by ${networkFollowCount}+ people in your network.`
-    }
-
-    if (displayScore >= 50) return "This user is highly trusted in your network."
-    if (displayScore >= 10) return "This user has some trust in your network."
-
-    return "This user is not well known in your network."
+    return isSelf
+      ? "No followers in your network yet."
+      : "This user is not well known in your network."
   })
 
   $effect(() => {
@@ -66,24 +46,24 @@
       <span class="text-sm opacity-75">{isSelf ? "Followers" : "Trust score"}</span>
       <span class="text-lg font-semibold">
         {#if isSelf}
-          {displayScore}
+          {display}
         {:else}
-          {displayScore} / 100
+          {display} / 100
         {/if}
       </span>
     </div>
     {#if !isSelf}
-      <progress class="progress w-full" value={progress} max="100"></progress>
+      <progress class="progress w-full" value={display} max="100"></progress>
     {/if}
     <p class="text-sm opacity-75">{trustMessage}</p>
   </div>
-  {#if $followsWhoFollow.length > 0}
+  {#if !isSelf && $followers.length > 0}
     <div class="flex flex-col gap-2 border-t border-line pt-4">
       <p class="text-sm font-medium">People who follow {$profileDisplay}</p>
-      <ProfileCircles pubkeys={$followsWhoFollow} limit={5} />
+      <ProfileCircles pubkeys={$followers} limit={5} />
       <p class="text-sm opacity-75">
-        {$followsWhoFollow.length}
-        {$followsWhoFollow.length === 1 ? "person" : "people"} you follow also follow
+        {$followers.length}
+        {$followers.length === 1 ? "person" : "people"} you follow also follow
         {$profileDisplay}.
       </p>
     </div>

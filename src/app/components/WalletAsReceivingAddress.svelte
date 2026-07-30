@@ -1,5 +1,6 @@
 <script lang="ts">
   import {getWalletAddress} from "@welshman/util"
+  import {Profiles} from "@welshman/app"
   import {errorMessage} from "@lib/util"
   import Button from "@lib/components/Button.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
@@ -13,7 +14,7 @@
   import {clearModals} from "@app/modal"
   import {pushToast} from "@app/toast"
 
-  const userProfile = deriveUserItem($app => $profiles)
+  const userProfile = deriveUserItem(Profiles)
 
   const lud16 = getWalletAddress(wallet.get()!)
 

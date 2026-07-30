@@ -3,7 +3,7 @@ import type {Readable} from "svelte/store"
 import {always} from "@welshman/lib"
 import type {Maybe} from "@welshman/lib"
 import {withGetter} from "@welshman/store"
-import type {ItemsByKey, ReadableWithGetter} from "@welshman/store"
+import type {ReadableWithGetter} from "@welshman/store"
 import {
   App,
   BlockedRelayLists,
@@ -37,7 +37,7 @@ import {
   appPolicyRelayStats,
   appPolicyWraps,
 } from "@welshman/app"
-import type {AppPolicy, IApp, Projection, Session} from "@welshman/app"
+import type {AppPolicy, DerivedPlugin, Plugin, Session} from "@welshman/app"
 import type {BaseEventReader, EventWriter, KindFactory} from "@welshman/domain"
 import {maybeMakeRelayMockAdapter} from "@lib/test/relayMocks"
 import {DEFAULT_RELAYS, DEFAULT_SEARCH_RELAYS, DUFFLEPUD_URL, INDEXER_RELAYS} from "@app/env"
@@ -106,17 +106,20 @@ export const user = withGetter(derived(app, $app => User.require($app)))
 export const fromApp = <T>(read: ($app: App) => Readable<T>): Readable<T> =>
   derived(app, ($app, set: (value: T) => void) => read($app).subscribe(set))
 
-// The signed-in user's entry in a keyed collection, e.g.
-// deriveUserItem($app => $app.use(Profiles)).
-export const deriveUserItem = <T>(getPlugin: ($app: App) => {index: Projection<ItemsByKey<T>>}) =>
-  derived(
-    [app, fromApp($app => getPlugin($app).index.$)],
-    ([$app, $index]: [App, ItemsByKey<T>]) => {
-      const $pubkey = $app.user?.pubkey
+// The signed-in user's entry in a keyed collection, e.g. deriveUserItem(Profiles).
+export const deriveUserItem = <T>(Ctor: Plugin<DerivedPlugin<T>>) =>
+  derived(app, ($app, set: (item: Maybe<T>) => void) => {
+    let previous: Maybe<T>
 
-      return $pubkey ? $index.get($pubkey) : undefined
-    },
-  )
+    return $app.use(Ctor).index.$.subscribe($index => {
+      const item = $app.user ? $index.get($app.user.pubkey) : undefined
+
+      if (item !== previous) {
+        previous = item
+        set(item)
+      }
+    })
+  })
 
 export const login = async ($session: Session) => {
   const $user = await User.fromSession($session)
@@ -135,8 +138,7 @@ export const login = async ($session: Session) => {
 // Plugins bound to the current app, so `$profiles` in a component and `profiles.get()` in a
 // module both stay pointed at the right one after login swaps it. Flotilla's own plugins expose
 // themselves the same way.
-export const usePlugin = <T>(Ctor: new (app: IApp) => T) =>
-  withGetter(derived(app, $app => $app.use(Ctor)))
+export const usePlugin = <T>(Ctor: Plugin<T>) => withGetter(derived(app, $app => $app.use(Ctor)))
 
 export const blockedRelayLists = usePlugin(BlockedRelayLists)
 export const blossomServerLists = usePlugin(BlossomServerLists)

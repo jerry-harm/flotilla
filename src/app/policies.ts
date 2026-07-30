@@ -1,9 +1,8 @@
 import {get, writable} from "svelte/store"
-import {on, call, dissoc, assoc, noop, uniq} from "@welshman/lib"
+import {on, call, dissoc, assoc, uniq} from "@welshman/lib"
 import {isDVMKind, isEphemeralKind, verifyEvent} from "@welshman/util"
 import type {Socket, RelayMessage, ClientMessage} from "@welshman/net"
 import {
-  AuthStatus,
   SocketEvent,
   isRelayEvent,
   isRelayOk,
@@ -15,7 +14,6 @@ import {
   isClientNegOpen,
   isClientNegClose,
 } from "@welshman/net"
-import {merged} from "@welshman/store"
 import {
   BlockedRelayLists,
   MessagingRelayLists,

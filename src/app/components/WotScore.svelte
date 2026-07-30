@@ -15,6 +15,7 @@
 
 <script lang="ts">
   import {clamp} from "@welshman/lib"
+  import {WotScope} from "@welshman/app"
   import {followLists, user, wot} from "@app/core"
 
   interface Props {
@@ -27,7 +28,7 @@
   const radius = 6
   const center = radius + 1
 
-  const score = $derived($wot.wotScore($user.pubkey, target).$)
+  const score = $derived($wot.score(target, WotScope.Follows).$)
   const follows = $derived($followLists.one($user.pubkey))
   const active = $derived(($follows?.pubkeys() ?? []).includes(target))
   const normalizedScore = $derived(clamp([0, max], $score) / max)

@@ -2,15 +2,21 @@
   import * as nip19 from "nostr-tools/nip19"
   import {derived, writable} from "svelte/store"
   import {removeUndefined} from "@welshman/lib"
-  import type {Maybe} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {Address, MESSAGE, eventOutbox, relays as relaySelections, seen} from "@welshman/util"
+  import {
+    Address,
+    MESSAGE,
+    eventOutbox,
+    getIdFilters,
+    relays as relaySelections,
+    seen,
+  } from "@welshman/util"
   import Button from "@lib/components/Button.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import NoteCard from "@app/components/NoteCard.svelte"
   import NoteContent from "@app/components/NoteContent.svelte"
   import NoteContentMinimal from "@app/components/NoteContentMinimal.svelte"
-  import {router} from "@app/core"
+  import {network, router} from "@app/core"
   import {deriveEvent} from "@app/repository"
   import {entityLink} from "@app/env"
   import {goToEvent} from "@app/routes"
@@ -26,12 +32,16 @@
   const {id, identifier, kind, pubkey, relays = []} = value
   const idOrAddress = id || new Address(kind, pubkey, identifier).toString()
   const ref = {id, pubkey, kind, identifier, relays}
+  const hints = removeUndefined([...relays, url])
+
+  const mergedRelays = writable(hints)
+
+  const quote = deriveEvent(idOrAddress, hints)
 
   // Start with the hints we were handed, then widen to everything the router can work out:
   // where the quoted event has been seen, its author's outbox, and — since whoever quoted it
-  // must have seen it — the relays the quoting event came from.
-  const mergedRelays = writable(removeUndefined([...relays, url]))
-
+  // must have seen it — the relays the quoting event came from. Resolving that may take a
+  // round trip for the author's relay list, so only load again if the hints came up empty.
   $router.resolver
     .relays([
       ...relaySelections(removeUndefined([url])),
@@ -39,11 +49,13 @@
       eventOutbox(ref),
       seen(event, 0.5),
     ])
-    .then(urls => mergedRelays.set(urls))
+    .then(urls => {
+      mergedRelays.set(urls)
 
-  const quote = derived(mergedRelays, ($mergedRelays, set: (event: Maybe<TrustedEvent>) => void) =>
-    deriveEvent(idOrAddress, $mergedRelays).subscribe(set),
-  )
+      if (!$quote) {
+        $network.load({filters: getIdFilters([idOrAddress]), relays: urls})
+      }
+    })
 
   const entity = derived(mergedRelays, $mergedRelays =>
     id

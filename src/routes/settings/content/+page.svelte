@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {publish} from "@welshman/app"
+  import {BlossomServerLists, MuteLists, publish} from "@welshman/app"
   import NotesMinimalistic from "@assets/icons/notes-minimalistic.svg?dataurl"
   import AddCircle from "@assets/icons/add-circle.svg?dataurl"
   import {preventDefault} from "@lib/html"
@@ -17,8 +17,8 @@
   import {PLATFORM_NAME} from "@app/env"
   import {userSettingsValues, publishSettings} from "@app/settings"
 
-  const userMuteList = deriveUserItem($app => $muteLists)
-  const userBlossomServerList = deriveUserItem($app => $blossomServerLists)
+  const userMuteList = deriveUserItem(MuteLists)
+  const userBlossomServerList = deriveUserItem(BlossomServerLists)
 
   const reset = () => {
     settings = {...$userSettingsValues}

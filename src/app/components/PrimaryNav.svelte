@@ -1,6 +1,7 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
   import cx from "classnames"
+  import {Profiles} from "@welshman/app"
   import Letter from "@assets/icons/letter.svg?dataurl"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import Widget from "@assets/icons/widget-4.svg?dataurl"
@@ -17,7 +18,7 @@
   import {pushModal} from "@app/modal"
   import {notifications} from "@app/notifications"
   import {goToChat, makeSpacePath} from "@app/routes"
-  import {deriveUserItem, profiles} from "@app/core"
+  import {deriveUserItem} from "@app/core"
 
   type Props = {
     children?: Snippet
@@ -25,7 +26,7 @@
 
   const {children}: Props = $props()
 
-  const userProfile = deriveUserItem($app => $profiles)
+  const userProfile = deriveUserItem(Profiles)
 
   const chatHandler = () => goToChat()
 
