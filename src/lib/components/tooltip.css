@@ -8,6 +8,12 @@
       transition: opacity 0.15s ease;
     }
 
+    /* themes that lift buttons on hover give the host a transform, which makes it
+       a stacking context and traps the tooltip's z-index inside it */
+    &[data-tip]:hover {
+      @apply z-tooltip;
+    }
+
     &[data-tip]:hover::before {
       @apply opacity-100;
     }
