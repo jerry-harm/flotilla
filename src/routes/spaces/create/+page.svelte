@@ -114,16 +114,6 @@
           </Link>
         </div>
       </div>
-      <div class="flex flex-col items-center justify-center gap-2 py-2 text-sm opacity-70">
-        <span>Looking for third party managed hosting?</span>
-        <Link
-          external
-          class="link flex justify-center items-center gap-1"
-          href="https://relay.tools/signup">
-          Try relay.tools
-          <Icon icon={ArrowRight} />
-        </Link>
-      </div>
     </div>
   </PageContent>
 </Page>
