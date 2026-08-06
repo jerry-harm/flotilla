@@ -10,7 +10,7 @@
     "release:android": "./build.sh && cap build android --androidreleasetype APK --signing-type apksigner",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "lint": "prettier --check src && eslint src",
+    "lint": "prettier --check src e2e playwright.config.ts && eslint src e2e",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "format": "git diff head --name-only --diff-filter d | grep -E '(js|ts|svelte|css)$' | xargs -r prettier --write",
@@ -26,6 +26,7 @@
     "@tailwindcss/postcss": "^4.2.2",
     "@types/eslint": "^9.6.1",
     "@types/node": "^25.9.1",
+    "@types/ws": "^8.18.1",
     "autoprefixer": "^10.4.23",
     "classnames": "^2.5.1",
     "eslint": "^9.39.2",
@@ -41,7 +42,8 @@
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.53.1",
-    "vite": "^6.4.2"
+    "vite": "^6.4.2",
+    "ws": "^8.18.3"
   },
   "type": "module",
   "dependencies": {
@@ -101,5 +103,5 @@
     "throttle-debounce": "^5.0.2",
     "tippy.js": "^6.3.7"
   },
-  "packageManager": "pnpm@11.5.1"
+  "packageManager": "pnpm@11.20.0"
 }

@@ -1,0 +1,43 @@
+# One of the virtual relays the container serves, and the only statement of this relay's policy —
+# a scenario says what is on a relay, never what the relay is.
+#
+# `host` must equal the Host header the harness sends, which is the hostname of the url the client
+# is given; anything else gets a 404 from the dispatcher instead of a relay. Keep it in step with
+# `tenants` in harness/zooid/config.ts, and see harness/zooid/transport.ts for why it is a name
+# that resolves nowhere.
+host = "space.test"
+schema = "e2e"
+secret = "5e1f000000000000000000000000000000000000000000000000000000000005"
+
+[info]
+# Served to the client as nip-11. `name` is what a spec sees as the space's name, so it matches the
+# name scenarios pass to `relay()`. `pubkey` is the owner, and here it is the relay's own key (the
+# pubkey for `secret`) so that [roles.admin] below is the only thing granting a test identity
+# can_manage.
+name = "space"
+pubkey = "da00132eaf7ef6bbde47e5dc409fa1d481e518db0621af31591e0306eb48ed8a"
+description = "Throwaway relay for Flotilla's end-to-end suite."
+
+[policy]
+public_read = false
+public_write = false
+public_join = true
+strip_signatures = false
+
+[groups]
+enabled = true
+
+[management]
+enabled = true
+
+# Blossom and push are off, and [livekit] is omitted entirely, because each of them would have
+# the relay or the client talk to a service the test did not create.
+[blossom]
+enabled = false
+
+[push]
+enabled = false
+
+[roles.admin]
+pubkeys = ["6ada7b6eabb3a8349f88667d278a275c704b553a7c57f9d8156555986884a08e"]
+can_manage = true

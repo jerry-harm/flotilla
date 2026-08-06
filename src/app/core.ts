@@ -39,7 +39,6 @@ import {
 } from "@welshman/app"
 import type {AppPolicy, DerivedPlugin, Plugin, Session} from "@welshman/app"
 import type {BaseEventReader, EventWriter, KindFactory} from "@welshman/domain"
-import {maybeMakeRelayMockAdapter} from "@lib/test/relayMocks"
 import {DEFAULT_RELAYS, DEFAULT_SEARCH_RELAYS, DUFFLEPUD_URL, INDEXER_RELAYS} from "@app/env"
 
 // Flotilla's own policies (ingest, sockets, storage) can't be imported here — they depend on
@@ -55,9 +54,6 @@ export const appPolicies: AppPolicy[] = [
 const makeApp = (user?: User) => {
   const instance: App = new App({
     user,
-    // Test-only: when Playwright has injected window.__RELAY_MOCKS__, serve relays from in-memory
-    // fixtures instead of the network. No-op for real users; stripped from production builds.
-    getAdapter: import.meta.env.DEV ? maybeMakeRelayMockAdapter() : undefined,
     config: {
       dufflepudUrl: DUFFLEPUD_URL,
       getDefaultRelays: always(DEFAULT_RELAYS),

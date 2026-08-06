@@ -1,0 +1,303 @@
+# E2E architecture
+
+Flotilla's end-to-end suite runs the real app against a relay network that is entirely under the
+test's control. Nothing in this directory may ever open a connection to a host the test did not
+create. That is the single invariant everything else is arranged around.
+
+## The relay
+
+Every spec runs against a real [zooid](https://github.com/coracle-social/zooid) relay in Docker, the
+implementation Flotilla is built for, so protocol drift between the client's assumptions and a real
+relay shows up as a failing test.
+
+zooid is multi-tenant: it binds a config to a `Host` header and serves any number of virtual relays
+from one process. `harness/zooid/config.ts` names them, one toml apiece in `harness/zooid/docker/`,
+and a scenario picks one by name. A second space costs a config file and no extra process, which is
+what keeps outbox routing and cross-space isolation testable.
+
+A relay's policy is its toml and nothing else. A scenario says what is _on_ a relay — its rooms, its
+members, its messages — never what the relay _is_, so there is no policy negotiation anywhere in the
+harness.
+
+### Why the relays are called `<name>.test`
+
+The container listens on plaintext loopback, but a url that is local or insecure is dropped from
+every relay selection unless the caller opts in — see `isLocalUrl` and `RelaySelection.getUrls` in
+`@welshman/util` — and Flotilla never opts in, since in production neither belongs in a routing
+decision. Handed `ws://localhost:3334/`, the client would load a space by its explicit url and
+resolve nothing else: no outbox loads for profiles or relay lists, no relay hints.
+
+So the client is given `wss://space.test/` and never learns the container has an address. Everything
+that speaks to it goes through `zooid/transport.ts`, which dials `127.0.0.1:3334` carrying the two
+headers a TLS terminator adds in front of a real deployment:
+
+- `Host: space.test` — zooid's dispatcher binds a config to a Host (`cmd/relay/main.go`), so this is
+  what selects which toml answers.
+- `X-Forwarded-Proto: https` — khatru derives the url it checks NIP-42 and NIP-86 signatures against
+  from Host plus this (`getBaseURL` in `khatru/relay.go`), arriving at `wss://space.test/`, which is
+  exactly what the client signed into its `relay` tag. Seeding signs the same url, so a fixture is
+  written over the same relay the app talks to.
+
+`.test` is reserved by RFC 2606 and resolves nowhere, so a url that ever escapes this process fails
+to connect rather than reaching a host.
+
+## Transport: one interception point
+
+All relay traffic is intercepted in the **Node** process via Playwright's `routeWebSocket`, applied
+to the `BrowserContext` so every page in it is covered:
+
+```
+browser context ──▶ context.routeWebSocket(everything but vite's hmr socket)
+                          │
+                          ▼
+                  zooid.relays.get(url)
+                          │
+        ┌─────────────────┴─────────────────┐
+        │                                   │
+  a socket this process opens         unknown url: a relay that
+  to the container, as that           holds no events, and the
+  relay's virtual host                url is recorded as a leak
+```
+
+Every socket the browser opens is terminated here, in this process, and the only one that leaves it
+is the loopback connection `zooid/transport.ts` makes to the container the test started.
+`assertNoLeaks()` fails a test that touched a url the scenario never declared.
+
+Interception is installed by `as()`, on a context it creates, so a page that came from anywhere else
+has none of it. Playwright's own `context` fixture — and the `page` fixture built on it — is
+therefore overridden to throw, so a spec written the ordinary way fails immediately with a message
+saying so rather than quietly dialling the relays in `.env`. The built-in `request` fixture goes the
+same way: an `APIRequestContext` is an http client in the node process that belongs to no browser
+context, so the block-all below cannot see it and nothing records what it sent.
+
+`playwright` is the one fixture left alone, and it has to be: it is where the run's own browser comes
+from, so every test would fail if it threw. A spec that goes around `as()` through
+`playwright.request` or `playwright.chromium.launch()` reaches the network unwatched, and no fixture
+can refuse that without refusing the suite.
+
+Interception in Node rather than in the page is what makes multi-user testing work. Three browser
+contexts logged in as three different users all dispatch into the _same_ relay, so one user
+genuinely observes another user's writes, over the wire, through the client's real socket stack.
+
+### Why not an `AdapterFactory`
+
+The obvious alternative — `new App({getAdapter})` returning a `Repository`-backed adapter — cannot
+test authentication. NIP-42 lives on `Socket`: `AuthState` listens to `SocketEvent.Receiving`/
+`Sending`, and `socketPolicyAuthBuffer` replays messages that were rejected with `auth-required:`.
+An `AbstractAdapter` whose `sockets` getter returns `[]` never constructs any of that. Patching the
+transport instead leaves `Pool → Socket → SocketAdapter` untouched, so auth, message buffering,
+replay-after-auth and reconnect are all exercised as written.
+
+## HTTP
+
+Relays are not the only egress. `installHttpRoutes` routes every url that is not the dev server — a
+predicate rather than a `"**/*"` pattern, so the hundreds of module requests a sveltekit page makes
+in dev are never even matched — and aborts what it catches. Two origins get past it: the dev server
+on `localhost:1847`, which is left unrouted, and each relay's own origin, which is forwarded to the
+container by the same transport carrying the same two headers, so the NIP-11 document and the NIP-86
+management API the app reads are the real relay's answers, signed against the url the client used.
+Every other request is aborted and recorded.
+
+A relay's NIP-11 document decides whether a space is synced by reconciliation or a plain REQ
+(NIP-77), whether a message the UI composes carries a protected `-` tag (NIP-70), what the space is
+called, and which pubkey room state is trusted from. Its NIP-86 answers decide whether the user is an
+admin, since a relay refuses management calls from anyone else and the method list that comes back
+doubles as the client's permission set — the space, room, event and pin menus, the directory and the
+library are all gated on it.
+
+Services the app talks to are then mocked back in per-scenario, so a blocked request is always a bug
+rather than ambient noise: Dufflepud (`dufflepud.coracle.social`), Blossom uploads, the push server
+(`nps.flotilla.social`), the hosting API, LiveKit token endpoints, and image/thumbnail fetches. The
+analytics script hard-coded in `src/app.html` is mocked with an empty body: it is requested on every
+navigation whatever the scenario is doing, so leaving it to the block-all would make
+`assertNoBlockedRequests()` a statement about the page shell rather than about the test.
+
+## Containment
+
+A browser has a fixed set of ways to put bytes on a wire.
+
+| how the app can reach the network                                   | what stops it                                                                                                                                                  |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WebSocket` — `@welshman/net`'s `Socket`, the only constructor call | `context.routeWebSocket(url => !isDevServerUrl(url))`. Terminated in node; an undeclared url gets a relay holding nothing and `assertNoLeaks()` fails the test |
+| `fetch` / `XMLHttpRequest` — app code, welshman, `@pomade/core`     | `context.route(url => !isDevServerUrl(url))`, which aborts unless a mock registered later answers first                                                        |
+| `img`, `script`, `link`, fonts, media, and every other subresource  | the same route. Images never reach it — `mockImages` answers anything with `resourceType() === "image"` with a 1×1 png                                         |
+| navigation, including the external links the ui offers              | the same route: a document request is routed like any other, and a popup opens in the context that owns it                                                     |
+| `EventSource`                                                       | the same route. Neither `src` nor welshman constructs one                                                                                                      |
+| `navigator.sendBeacon`                                              | no call site. The one script that would use it is the plausible tag in `src/app.html`, served with an empty body                                               |
+| a service worker                                                    | `serviceWorkers: "block"` on the context. Playwright does not route a worker's requests, so the worker is refused instead                                      |
+| a web worker                                                        | no call site in `src`; `@pomade/core`'s is argon2, which is cpu and no socket                                                                                  |
+| Capacitor's native http and push plugins                            | not reachable from a browser, and the zooid config leaves `[push]` disabled so nothing is asked to register                                                    |
+
+Two connections leave this process, both to something the test started: the browser's to the vite dev
+server on `localhost:1847`, and `zooid/transport.ts`'s to `127.0.0.1:3334`. Everything else the app
+initiates dies in node.
+
+The two ends are enforced differently. A websocket to a url no scenario declared is answered rather
+than refused — by a relay that EOSEs every REQ and accepts every event into the void — and the url is
+recorded, so the test fails on `assertNoLeaks()` naming it rather than on a timeout somewhere
+downstream. An http request nothing mocked is aborted outright, but noticing it is opt-in:
+`assertNoBlockedRequests()` is for a spec that has mocked what it exercises, because some of what a
+page asks for is meant to be refused.
+
+Configuration is the other half. `boot()` overrides every `VITE_` value that names a relay — default,
+indexer, search, messaging, signer, platform, blocked, the default space list — with the scenario's
+own urls, through the hook `src/app/env.ts` reads them with, and points `VITE_PUSH_BRIDGE` at `ws://localhost:1/`, which nothing serves, so a push
+bridge connection is reported as a leak rather than blending into a relay's traffic. The `VITE_`
+values it does not override still name real hosts — the blossom server, the pomade signers, the
+thumbnail service, the push server, the hosting api — and none of them is contacted at boot. Blossom
+is read only when an upload starts, the thumbnail url only on android, pomade only when a signup uses
+it, and the hosting api and dufflepud are mocked. They are contained by the block-all rather than by
+configuration, which is the weaker of the two guarantees.
+
+Grepping the repo for hostnames accounts for all of them, and there are only three kinds. Most are an
+`href` in help text — nostr.com, nostrapps.com, nsec.app, nosta.me, nostr.how, github.com,
+fountain.fm, cal.com, figma.com, coracle.tools, gitea.coracle.social, nwc.getalby.com, and the
+`coracle.social` entity links `src/app/env.ts` builds — reachable only by clicking, and routed if
+clicked. Two are fetched: dufflepud, whose origin is the one service url hard-coded rather than read
+from `VITE_`, and the plausible tag in `src/app.html`. Both are mocked. The rest are in comments.
+Under `e2e` the only hostnames are the four service origins `net/http.ts` matches on, the virtual
+relays' own `.test` names, and the loopback address `zooid/transport.ts` dials.
+
+Three things this does not cover:
+
+- **WebRTC.** `livekit-client` opens an `RTCPeerConnection`, and Playwright cannot see one. A voice
+  or video room reaches its sfu over ice and dtls with nothing in between. `mockLivekit` decides
+  where the client is pointed, which is why its `serverUrl` has to be something the test owns, and
+  why `[livekit]` is omitted from the zooid config entirely. A spec that joins a call escapes this
+  document's guarantee and needs its own answer.
+- **Playwright's own fixtures.** `context`, `page` and `request` are overridden to throw, but
+  `playwright` cannot be — it is where the browser comes from. A spec that reaches the network
+  through `playwright.request` or `playwright.chromium.launch()` is unwatched.
+- **The browser itself.** A browser's own traffic is not the app's and is not routed. Playwright
+  launches chromium with `--disable-background-networking`, `--disable-component-update` and
+  `--disable-breakpad`, which is the whole of the mitigation, and which is chromium's alone —
+  `E2E_BROWSER=firefox` or `webkit` runs the suite under an engine those flags say nothing about.
+
+## Determinism without freezing the clock
+
+Timestamps are never patched. Instead every fixture is generated fresh at the start of each test and
+signed with timestamps relative to the moment the test began:
+
+```ts
+const scenario = await seed(({relay, user, at}) => {
+  const space = relay("space")
+  space.room("general", {name: "General"})
+  space.join(user.alice, "general")
+  space.join(user.bob, "general")
+  space.message(user.alice, "general", "morning all", at(2, HOUR))
+  space.message(user.bob, "general", "morning!", at(90, MINUTE))
+})
+```
+
+`at(2, HOUR)` is `now() - int(2, HOUR)` evaluated once per test, so "2 hours ago" renders the same
+way on every run without the app's `now()` being touched. Fixtures are published over a real socket,
+authenticated as the identity that signed them, so the relay stores exactly what it would have stored
+for a real client: there are no pre-signed JSON blobs to drift out of date, and a fixture the relay
+would have refused fails the test instead of appearing in a query.
+
+## Users and sessions
+
+Test identities are deterministic secp256k1 keypairs derived from fixed secrets (`alice`, `bob`,
+`carol`, `admin`), so a pubkey is stable across runs and can be asserted on directly.
+
+A logged-in user is created by injecting a NIP-01 session before the app boots. `src/app/session.ts`
+carries a DEV-only hook: `restoreSession()` prefers `window.__TEST_SESSION__` when it is present, and
+`window.__TEST_EVENTS__` becomes the repository contents a returning user's client would have found
+on disk. Both branches are stripped from production builds, and injecting through the hook avoids
+writing Capacitor's `SecureStorage`/`Preferences` localStorage encoding by hand.
+
+The injected events go in _after_ `storage.ready`. Storage loads what the last session left behind
+with `Repository.load`, which clears the repository before inserting, so anything put there while
+IndexedDB is still opening is wiped a few milliseconds later — before the layout has rendered
+anything, and long before `authPolicy` reads the room list to decide whether to answer a relay's AUTH
+challenge.
+
+The cache exists for the harness rather than for the app. In production the client bootstraps itself:
+asking a keyed collection for a pubkey loads it, so `authPolicy` reading the user's room and relay
+lists to decide whether to answer a challenge is itself what fetches them, as is any outbox-routed
+load of the user's own data. Kind-10002 comes back from the public indexers, and `syncRelayList`
+cascades into the room list from there.
+
+Here the indexers _are_ the scenario's relays, because `boot()` points every relay list at them, and
+those are members-only — so that first load is refused with `auth-required:`, while `authPolicy`,
+conservative by default, will not sign for a url no list has named yet. Each waits on the other. The
+injected room list breaks the circle, and it is what a user who joined a space through the UI would
+have on disk anyway.
+
+The price is that no spec exercises the bootstrap: every one of them starts already knowing which
+relays it belongs to, so a regression in the chain from relay list to room list, or in `authPolicy`'s
+conservative gate, leaves the suite green. Covering it needs a scenario with a public relay standing
+in for an indexer.
+
+Each user is a separate `BrowserContext`, which also gives each one its own IndexedDB and
+localStorage, so nothing bleeds between users.
+
+## Layout
+
+```
+e2e/
+  ARCHITECTURE.md          this document
+  harness/
+    index.ts               everything a spec imports: `test`, `expect`, helpers
+    keys.ts                deterministic keypairs
+    zooid/
+      config.ts            the virtual relays and their hosts — the one place they are named
+      relay.ts             docker lifecycle, reset, seeding over its own authenticated socket
+      transport.ts         the only thing that knows the container's address: ws and http to it
+      testRelay.ts         the seeding affordances a scenario builds on
+      types.ts             TestRelay, RoomOptions, RelayConnection
+      docker/
+        compose.yaml       no data volume; tmpfs for /app/data and /app/media
+        config/            one toml per virtual relay: its host, and its whole policy
+    net/
+      websocket.ts         routeWebSocket install, dispatch, transcript, leak detection
+      http.ts              block-all + per-service mocks
+    app/
+      boot.ts              env overrides, navigate, wait for mount and for the app to have read
+                           the overrides
+      session.ts           NIP-01 session injection
+    seed/
+      scenario.ts          the `seed()` builder and relative-time helpers
+      space.ts             one space's fixtures: rooms, members, messages, replies, profiles
+  specs/
+    *.spec.ts
+```
+
+One piece lives outside this directory: `src/lib/test/session.ts` holds the two window keys and the
+getters `src/app/session.ts` reads them through. It is the only file the app ships on the harness's
+behalf, and `harness/app/session.ts` duplicates the key names rather than importing them, since
+importing anything under `src` would pull sveltekit into the node process.
+
+## Resetting between tests
+
+`Zooid.reset()` recreates the container rather than restarting it: with no volume mounted for
+`/app/data`, storage lives in the container's writable layer and a tmpfs, so a fresh container is a
+fresh database. The configs are bind-mounted read-only and survive, so every test starts against the
+same relays with nothing in them. The container is a worker fixture, so the docker start-up cost is
+paid once per worker rather than once per test.
+
+Seeding then writes over a real authenticated socket, one per identity per relay, held open for the
+rest of the test. A fixture must therefore be signed by one of the identities in `harness/keys.ts`,
+since zooid authenticates every write.
+
+## Running
+
+The suite is not run by agents (see CLAUDE.md).
+
+```sh
+pnpm exec playwright install                          # once
+docker pull gitea.coracle.social/coracle/zooid:latest # once; the harness never pulls
+pnpm test                                             # starts and stops the container itself
+```
+
+Every test skips when docker is unavailable, rather than failing.
+
+One engine per run rather than a project per engine: these specs exercise sockets, auth and sync, so
+a third copy of each buys much less than it costs. `E2E_BROWSER=webkit pnpm test` runs the whole
+suite under another one. The container listens on a fixed port and cannot be sharded, which is why
+`workers` is 1.
+
+`src/app/env.ts` resolves every `VITE_` value through a DEV-only hook that prefers
+`window.__TEST_ENV__`, which `boot()` injects per browser context, so any dev server will do and a
+server already listening on `:1847` is reused. `boot()` still checks that the app read the injected
+values, and fails naming the hook rather than letting a run drift onto the relays in `.env`.

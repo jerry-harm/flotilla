@@ -1,0 +1,37 @@
+# The relay the whole suite runs against. Bound to loopback only, and the one server this harness is
+# allowed to connect to for real.
+#
+# The image is distroless and runs as `nonroot`. zooid creates DATA and MEDIA itself, but it cannot
+# create their parent /app, so both have to arrive already mounted — and writable by uid 65532,
+# which is what `mode` below is for: docker defaults a tmpfs to 1777 and podman does not, and a
+# tmpfs the relay cannot write is a container that exits 1 the moment it opens its database.
+# Nothing is persisted, so `up --force-recreate` is a guaranteed-empty database.
+name: flotilla-e2e-zooid
+
+services:
+  relay:
+    image: gitea.coracle.social/coracle/zooid:latest
+    # The harness dials this published port and sends a `Host` per virtual relay, which is what the
+    # dispatcher matches against the `host` in each file under config/.
+    ports:
+      - "127.0.0.1:3334:3334"
+    environment:
+      PORT: "3334"
+      CONFIG: /app/config
+      DATA: /app/data
+      MEDIA: /app/media
+    volumes:
+      - type: bind
+        source: ./config
+        target: /app/config
+        read_only: true
+      - type: tmpfs
+        target: /app/data
+        tmpfs:
+          size: 268435456
+          mode: 01777
+      - type: tmpfs
+        target: /app/media
+        tmpfs:
+          size: 33554432
+          mode: 01777

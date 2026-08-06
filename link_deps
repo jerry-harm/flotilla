@@ -10,27 +10,44 @@ if (execSync('git status --porcelain', { encoding: 'utf8' }).trim() && !force) {
   process.exit(1)
 }
 
-const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'))
+// One entry per directory under ../welshman/packages.
+const packages = [
+  'app',
+  'content',
+  'domain',
+  'editor',
+  'feeds',
+  'lib',
+  'net',
+  'signer',
+  'store',
+  'util',
+]
 
-pkg.pnpm = pkg.pnpm || {}
-pkg.pnpm.overrides = pkg.pnpm.overrides || {}
-pkg.pnpm.overrides["@welshman/app"] = "link:../welshman/packages/app"
-pkg.pnpm.overrides["@welshman/content"] = "link:../welshman/packages/content"
-pkg.pnpm.overrides["@welshman/editor"] = "link:../welshman/packages/editor"
-pkg.pnpm.overrides["@welshman/feeds"] = "link:../welshman/packages/feeds"
-pkg.pnpm.overrides["@welshman/lib"] = "link:../welshman/packages/lib"
-pkg.pnpm.overrides["@welshman/net"] = "link:../welshman/packages/net"
-pkg.pnpm.overrides["@welshman/router"] = "link:../welshman/packages/router"
-pkg.pnpm.overrides["@welshman/signer"] = "link:../welshman/packages/signer"
-pkg.pnpm.overrides["@welshman/store"] = "link:../welshman/packages/store"
-pkg.pnpm.overrides["@welshman/util"] = "link:../welshman/packages/util"
-// pkg.pnpm.overrides["nostr-editor"] = "link:../nostr-editor"
-// pkg.pnpm.overrides["@pomade/core"] = "link:../pomade/packages/core"
-// pkg.pnpm.overrides["nostr-signer-capacitor-plugin"] = "link:../nostr-signer-capacitor-plugin"
+// pnpm 11 no longer reads the `pnpm` field in package.json, so overrides live in the workspace
+// file. They are written for the install and reverted straight after: a committed link: override
+// points every clone and every ci run at a checkout that only exists on one machine.
+const file = 'pnpm-workspace.yaml'
+const workspace = fs.readFileSync(file, 'utf8')
 
-fs.writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n')
+if (!/^overrides:$/m.test(workspace)) {
+  console.error(`Error: ${file} has no \`overrides:\` block to link welshman into.`)
+  process.exit(1)
+}
 
-execSync('pnpm i', { stdio: 'inherit' })
+const links = packages
+  .map(name => `  '@welshman/${name}': link:../welshman/packages/${name}`)
+  .join('\n')
 
-execSync('git checkout -f pnpm-lock.yaml', { stdio: 'inherit' })
-execSync('git checkout -f package.json', { stdio: 'inherit' })
+// Other packages worth linking now and then:
+//   '@pomade/core': link:../pomade/packages/core
+//   nostr-editor: link:../nostr-editor
+//   nostr-signer-capacitor-plugin: link:../nostr-signer-capacitor-plugin
+
+fs.writeFileSync(file, workspace.replace(/^overrides:$/m, `overrides:\n${links}`))
+
+try {
+  execSync('pnpm i', { stdio: 'inherit' })
+} finally {
+  execSync(`git checkout -f ${file} pnpm-lock.yaml`, { stdio: 'inherit' })
+}

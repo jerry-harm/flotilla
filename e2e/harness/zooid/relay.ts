@@ -1,0 +1,264 @@
+import {execFile} from "node:child_process"
+import {fileURLToPath} from "node:url"
+import {promisify} from "node:util"
+import {ms, sleep} from "@welshman/lib"
+import type {Maybe} from "@welshman/lib"
+import {makeRelayAuth} from "@welshman/util"
+import type {SignedEvent} from "@welshman/util"
+import {ClientMessageType, isRelayAuth, isRelayOk} from "@welshman/net"
+import type {ClientMessage} from "@welshman/net"
+import {users} from "../keys"
+import {tenantNames, tenantUrl, tenants} from "./config"
+import type {TenantName} from "./config"
+import {makeTestRelay} from "./testRelay"
+import {connectToZooid, requestZooid} from "./transport"
+import type {ZooidConnection} from "./transport"
+
+const image = "gitea.coracle.social/coracle/zooid:latest"
+
+const composeFile = fileURLToPath(new URL("docker/compose.yaml", import.meta.url))
+
+const testUsersByPubkey = new Map(Object.values(users).map(user => [user.pubkey, user]))
+
+const execFileAsync = promisify(execFile)
+
+// execFile does not go through a shell, so a `docker` that exists only as an alias or a function —
+// podman, colima, a wrapper in a shell rc file — is invisible to it however well it works when
+// typed. Name the executable to drive with E2E_DOCKER in that case.
+const dockerCommand = process.env.E2E_DOCKER ?? "docker"
+
+const docker = (...args: string[]) => execFileAsync(dockerCommand, args)
+
+const compose = (...args: string[]) => docker("compose", "-f", composeFile, ...args)
+
+// Why the container cannot be driven, or undefined when it can. The two failures need different
+// answers — a cli that is not on this process's PATH is usually a shell alias or an inherited
+// environment, and telling someone to start docker sends them the wrong way — so they are reported
+// apart rather than as one boolean.
+const probeDocker = async () => {
+  try {
+    await docker("compose", "version")
+
+    return undefined
+  } catch (error) {
+    const {code, stderr} = Object(error) as {code?: string; stderr?: string}
+
+    if (code === "ENOENT") {
+      return (
+        `\`${dockerCommand}\` is not on PATH for the test runner. If it works in your shell it is ` +
+        "an alias or a function rather than an executable, which execFile cannot see: set " +
+        "E2E_DOCKER to the real command, e.g. `E2E_DOCKER=podman pnpm test`."
+      )
+    }
+
+    return (
+      `\`${dockerCommand} compose version\` failed, so the daemon is likely not running. ` +
+      (stderr?.trim() || String(error))
+    )
+  }
+}
+
+let problem: Maybe<Promise<Maybe<string>>>
+
+// Asked once a worker: docker does not come and go mid-run, and the answer is also written to the
+// terminal, because a skip reason otherwise reaches only the html report and a run that silently
+// skips every test is the least useful thing this can do.
+export const describeDockerProblem = () =>
+  (problem ??= probeDocker().then(reason => {
+    if (reason) {
+      console.warn(
+        `\nThe e2e suite cannot drive a container, so every test will skip:\n  ${reason}\n`,
+      )
+    }
+
+    return reason
+  }))
+
+/**
+ * The relay every test runs against: one zooid container on loopback, serving a virtual relay per
+ * entry in `tenants`. Each relay's policy is whatever its toml in docker/config says, which is the
+ * only place policy is written down — a scenario describes what is *on* a relay, never what the
+ * relay is.
+ */
+export class Zooid {
+  // Every socket into the container — the client's and seeding's alike — is one this process
+  // opened, so this map is also the definition of a url that is not a leak.
+  relays = new Map(
+    tenantNames.map(name => [
+      tenantUrl(name),
+      {connect: () => connectToZooid(tenants[name]), host: tenants[name]},
+    ]),
+  )
+
+  private sessions = new Map<string, ZooidConnection>()
+
+  private started = false
+
+  // Verifying docker rather than bringing the container up: every test resets, and that is what
+  // starts it. Repeat calls are free, so the fixture can call this per test.
+  start = async () => {
+    if (this.started) return
+
+    const problem = await describeDockerProblem()
+
+    if (problem) {
+      throw new Error(problem)
+    }
+
+    const hasImage = await docker("image", "inspect", image).then(
+      () => true,
+      () => false,
+    )
+
+    if (!hasImage) {
+      throw new Error(
+        `The zooid image ${image} is not present locally. Fetch it with ` +
+          `\`${dockerCommand} pull ${image}\`, or build it from a zooid checkout with ` +
+          `\`${dockerCommand} build -t ${image} .\`.`,
+      )
+    }
+
+    this.started = true
+  }
+
+  relay = async (name: TenantName) =>
+    makeTestRelay({
+      name,
+      url: tenantUrl(name),
+      publish: event => this.publish(tenantUrl(name), event),
+    })
+
+  publish = async (url: string, event: SignedEvent) => {
+    const relay = this.relays.get(url)
+
+    if (!relay) {
+      throw new Error(`Attempted to publish to ${url}, which is not one of this container's relays`)
+    }
+
+    const connection = await this.authenticate(relay.host, event.pubkey)
+    const {ok, detail} = await this.send(connection, [ClientMessageType.Event, event], event.id)
+
+    if (!ok) {
+      throw new Error(`zooid refused a kind ${event.kind} fixture: ${detail}`)
+    }
+  }
+
+  reset = async () => {
+    this.closeSessions()
+
+    await this.up()
+  }
+
+  stop = async () => {
+    if (this.started) {
+      this.closeSessions()
+
+      await compose("down")
+
+      this.started = false
+    }
+  }
+
+  // Whatever the relay wrote before it died. Compose reports only that a container exited, so
+  // without this a startup failure is a status code and no reason.
+  private logs = () =>
+    compose("logs", "--no-color", "--tail", "50").then(
+      ({stdout, stderr}) => [stdout, stderr].filter(Boolean).join("\n").trim(),
+      () => "",
+    )
+
+  private fail = async (summary: string) => {
+    const logs = await this.logs()
+
+    throw new Error(logs ? `${summary}\n\nzooid said:\n${logs}` : summary)
+  }
+
+  // Recreating rather than restarting is what makes this a reset: with storage in tmpfs and no
+  // volume mounted for it, a new container is a new database.
+  private up = async () => {
+    try {
+      await compose("up", "-d", "--force-recreate", "--wait")
+    } catch (error) {
+      const {stderr} = Object(error) as {stderr?: string}
+
+      await this.fail((stderr?.trim() || String(error)).split("\n").slice(-3).join("\n"))
+    }
+
+    const deadline = Date.now() + ms(30)
+
+    while (Date.now() < deadline) {
+      // A 404 means the dispatcher has no relay bound to that host yet, so the configs are still
+      // loading. Anything a relay itself answers means every tenant is ready.
+      const isUp = await Promise.all(
+        tenantNames.map(name =>
+          requestZooid(tenants[name], "GET", "/", {accept: "application/nostr+json"}).then(
+            response => response.status === 200,
+            () => false,
+          ),
+        ),
+      ).then(results => results.every(Boolean))
+
+      if (isUp) {
+        return
+      }
+
+      await sleep(200)
+    }
+
+    await this.fail(
+      `zooid did not answer as ${tenantNames.map(name => tenants[name]).join(" and ")} within 30 ` +
+        "seconds.",
+    )
+  }
+
+  // NIP-42 binds an identity to a connection, so each test user seeds over its own, per relay. The
+  // url signed into the auth event is the one the client uses, because that is the one khatru
+  // rebuilds from the headers transport.ts sends — a fixture is written over the same relay the app
+  // talks to.
+  private authenticate = async (host: string, pubkey: string) => {
+    const key = `${host} ${pubkey}`
+    const session = this.sessions.get(key)
+
+    if (session) return session
+
+    const user = testUsersByPubkey.get(pubkey)
+
+    if (!user) {
+      throw new Error(
+        `Cannot publish as ${pubkey}: zooid authenticates every write, so seeded events must be ` +
+          "signed by one of the test identities in e2e/harness/keys.ts",
+      )
+    }
+
+    const connection = connectToZooid(host)
+    const [, challenge] = await connection.wait(isRelayAuth)
+    const event = await user.signer.sign(makeRelayAuth(`wss://${host}/`, challenge))
+    const {ok, detail} = await this.send(connection, [ClientMessageType.Auth, event], event.id)
+
+    if (ok) {
+      this.sessions.set(key, connection)
+
+      return connection
+    }
+
+    throw new Error(`Failed to authenticate as ${user.name} on ${host}: ${detail}`)
+  }
+
+  // Both halves of seeding — the auth that opens a connection and every event written over it —
+  // are answered with an OK naming the event that was sent.
+  private send = async (connection: ZooidConnection, message: ClientMessage, id: string) => {
+    connection.send(message)
+
+    const [, , ok, detail] = await connection.wait(reply => isRelayOk(reply) && reply[1] === id)
+
+    return {ok, detail}
+  }
+
+  private closeSessions = () => {
+    for (const connection of this.sessions.values()) {
+      connection.close()
+    }
+
+    this.sessions.clear()
+  }
+}
