@@ -57,13 +57,13 @@ export const makeRoomPath = (url: string, h: string) => `/spaces/${encodeRelay(u
 
 export const makeSpaceChatPath = (url: string) => makeRoomPath(url, "chat")
 
-export const goToChat = (pubkeys: string[] = []) => {
+export const goToChat = (pubkeys: string[] = [], options: {replaceState?: boolean} = {}) => {
   if (messagingRelayLists.get().urls(user.get().pubkey).get().length === 0) {
-    pushModal(ChatEnable, {next: () => goToChat(pubkeys)})
+    pushModal(ChatEnable, {next: () => goToChat(pubkeys, options)})
   } else if (pubkeys.length === 0) {
-    goto(lastChatUrl ?? "/chat")
+    goto(lastChatUrl ?? "/chat", options)
   } else {
-    goto(makeChatPath(pubkeys))
+    goto(makeChatPath(pubkeys), options)
   }
 }
 
