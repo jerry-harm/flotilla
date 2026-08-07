@@ -26,6 +26,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import PageBar from "@lib/components/PageBar.svelte"
+  import PageContent from "@lib/components/PageContent.svelte"
   import Divider from "@lib/components/Divider.svelte"
   import Button from "@lib/components/Button.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
@@ -263,67 +264,69 @@
   </div>
 </PageBar>
 
-<div class="flex flex-col-reverse gap-4 py-2 bg-surface scroll-container h-screen overflow-y-auto">
-  {#if missingRelayLists.length > 0}
-    <div class="py-12">
-      <div class="card flex flex-col gap-2 m-auto max-w-md items-center text-center">
-        <p class="flex gap-2 text-lg text-error">
-          <Icon icon={Danger} />
-          Direct messages are not enabled
-        </p>
-        <p>
-          Ask
-          {#each missingRelayLists as pubkey (pubkey)}
-            <ProfileLink {pubkey} />
-          {/each}
-          to enable direct messaging by opening this conversation in their $app.
-        </p>
+<div class="room flex min-h-0 min-w-0 flex-1 flex-col">
+  <PageContent class="flex flex-col-reverse gap-4 py-2 bg-surface !mb-0">
+    {#if missingRelayLists.length > 0}
+      <div class="py-12">
+        <div class="card flex flex-col gap-2 m-auto max-w-md items-center text-center">
+          <p class="flex gap-2 text-lg text-error">
+            <Icon icon={Danger} />
+            Direct messages are not enabled
+          </p>
+          <p>
+            Ask
+            {#each missingRelayLists as pubkey (pubkey)}
+              <ProfileLink {pubkey} />
+            {/each}
+            to enable direct messaging by opening this conversation in their $app.
+          </p>
+        </div>
       </div>
-    </div>
-  {/if}
-  {#each elements as { type, id, value, showPubkey } (id)}
-    {#if type === "date"}
-      <Divider>{value}</Divider>
-    {:else}
-      <ChatMessage
-        event={$state.snapshot(value as TrustedEvent)}
-        {pubkeys}
-        {showPubkey}
-        {replyTo}
-        canEdit={canEditEvent}
-        onEdit={onEditEvent} />
     {/if}
-  {/each}
-  <p class="m-auto flex h-10 max-w-sm flex-col items-center justify-center gap-4 py-20 text-center">
-    <Spinner {loading}>
-      {#if loading}
-        Looking for messages...
+    {#each elements as { type, id, value, showPubkey } (id)}
+      {#if type === "date"}
+        <Divider>{value}</Divider>
       {:else}
-        End of message history
+        <ChatMessage
+          event={$state.snapshot(value as TrustedEvent)}
+          {pubkeys}
+          {showPubkey}
+          {replyTo}
+          canEdit={canEditEvent}
+          onEdit={onEditEvent} />
       {/if}
-    </Spinner>
-    {@render info?.()}
-  </p>
-  <div class="h-screen"></div>
-</div>
+    {/each}
+    <p
+      class="m-auto flex h-10 max-w-sm flex-col items-center justify-center gap-4 py-20 text-center">
+      <Spinner {loading}>
+        {#if loading}
+          Looking for messages...
+        {:else}
+          End of message history
+        {/if}
+      </Spinner>
+      {@render info?.()}
+    </p>
+  </PageContent>
 
-<div class="room__compose bg-surface">
-  <div>
-    {#if parent}
-      <ChatComposeParent event={parent} clear={clearParent} verb="Replying to" />
-    {/if}
-    {#if eventToEdit}
-      <ChatComposeEdit clear={clearEventToEdit} />
-    {/if}
+  <div class="room__compose bg-surface">
+    <div>
+      {#if parent}
+        <ChatComposeParent event={parent} clear={clearParent} verb="Replying to" />
+      {/if}
+      {#if eventToEdit}
+        <ChatComposeEdit clear={clearEventToEdit} />
+      {/if}
+    </div>
+    {#key eventToEdit}
+      <ChatCompose
+        bind:this={compose}
+        {onSubmit}
+        {onEscape}
+        {onEditPrevious}
+        initialValues={eventToEdit}
+        draftKey={eventToEdit ? undefined : draftKey}
+        disabled={Boolean(missingRelayLists.length)} />
+    {/key}
   </div>
-  {#key eventToEdit}
-    <ChatCompose
-      bind:this={compose}
-      {onSubmit}
-      {onEscape}
-      {onEditPrevious}
-      initialValues={eventToEdit}
-      draftKey={eventToEdit ? undefined : draftKey}
-      disabled={Boolean(missingRelayLists.length)} />
-  {/key}
 </div>
