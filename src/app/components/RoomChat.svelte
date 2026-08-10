@@ -454,14 +454,18 @@
   const onEditPrevious = () => ifLet($events.toReversed().find(canEditEvent), onEditEvent)
 
   onMount(() => {
-    start()
+    // Defer rendering until navigation finishes
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(start)
+    })
 
     const unsubscribeActive = documentActive.subscribe(onActiveChange)
 
     return () => {
-      // Wrap in a closure to avoid calling a stale cleanup function
       cleanup?.()
       unsubscribeActive()
+      cancelAnimationFrame(frame)
+      document.removeEventListener("visibilitychange", onVisibilityChange)
     }
   })
 </script>
