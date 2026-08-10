@@ -14,6 +14,7 @@ import {
   supportsAudioOutputSelection,
   type AudioCaptureOptions,
 } from "livekit-client"
+import {App} from "@capacitor/app"
 import {derived, get, writable} from "svelte/store"
 import {first, not, nthEq, reject, uniqBy} from "@welshman/lib"
 import {makeHttpAuth, makeHttpAuthHeader, sortEventsDesc, tagSpec, tagValues} from "@welshman/util"
@@ -353,6 +354,25 @@ export const switchCallActiveDevice = async (
   }
 }
 
+/**
+ * On mobile, locking the screen can suspend microphone capture without ever
+ * ending the underlying MediaStreamTrack: the local participant still looks
+ * connected and unmuted, but publishes silence until the track is manually
+ * reacquired. LiveKit only guards against this for tracks attached to a DOM
+ * element (i.e. video), so the mic needs the same treatment on foreground
+ * return. `App.addListener("appStateChange", ...)` fires from Capacitor's web
+ * fallback too, so this covers both native and browser tabs.
+ */
+export const syncCallAudioResume = () => {
+  const listener = App.addListener("appStateChange", ({isActive}) => {
+    if (isActive) void reacquireMicrophoneIfNeeded()
+  })
+
+  return () => {
+    listener.then(l => l.remove())
+  }
+}
+
 export const resetVideoCallLayout = () => {
   videoCallLayout.set(VideoCallLayout.Chat)
 }
@@ -537,6 +557,33 @@ const setUpMicrophone = async (
     }
   }
   return muted
+}
+
+const reacquireMicrophoneIfNeeded = async () => {
+  const session = get(currentCallSession)
+  if (!session || get(callMicMuted)) return
+
+  const track = session.livekit.localParticipant.getTrackPublication(
+    Track.Source.Microphone,
+  )?.audioTrack
+  if (!track || track.isMuted || track.isUserProvided) return
+
+  // Mirrors LiveKit's own (mobile-only, video-track-only) reacquisition
+  // check: a capture device that died silently still reports readyState
+  // "live", but the browser flips `muted`/`enabled` on the underlying
+  // MediaStreamTrack. Checking for actual silence instead would false-
+  // positive any time the user simply isn't talking.
+  const {mediaStreamTrack} = track
+  const needsReacquisition =
+    mediaStreamTrack.readyState !== "live" || mediaStreamTrack.muted || !mediaStreamTrack.enabled
+  if (!needsReacquisition) return
+
+  try {
+    await track.restartTrack()
+  } catch {
+    // Best-effort: the user can still recover via mute/unmute or by
+    // rejoining if reacquiring the mic fails here.
+  }
 }
 
 const clearReconnectSchedule = () => {
