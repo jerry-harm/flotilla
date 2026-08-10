@@ -15,7 +15,7 @@
   import * as util from "@welshman/util"
   import * as lib from "@welshman/lib"
   import {Logger} from "@welshman/app"
-  import {isMobile} from "@lib/html"
+  import {isMobile, documentActive} from "@lib/html"
   import AppContainer from "@app/components/AppContainer.svelte"
   import ModalContainer from "@app/components/ModalContainer.svelte"
   import {app} from "@app/core"
@@ -33,6 +33,7 @@
   import {theme} from "@app/theme"
   import {toast, pushToast} from "@app/toast"
   import * as notifications from "@app/notifications"
+  import {notifications as notificationPaths, allNotifications} from "@app/notifications"
   import {Push} from "@app/push"
   import {onPushNotificationAction, pushState} from "@app/push/adapters/common"
   import {syncKeyboard} from "@app/keyboard"
@@ -239,7 +240,12 @@
   })
 
   $effect(() => {
-    document.title = getPageTitle({page: $page, pubkey: $app.user?.pubkey})
+    const title = getPageTitle({page: $page, pubkey: $app.user?.pubkey})
+    // While the tab isn't actively focused the user isn't actually looking at the
+    // active page, so count notifications for it too rather than treating it as read.
+    const unreadCount = $documentActive ? $notificationPaths.size : $allNotifications.size
+
+    document.title = unreadCount > 0 ? `(${unreadCount}) ${title}` : title
   })
 </script>
 

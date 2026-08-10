@@ -15,6 +15,7 @@
   import Login2 from "@assets/icons/login-3.svg?dataurl"
   import {fade, fly} from "@lib/transition"
   import {popKey} from "@lib/implicit"
+  import {documentActive} from "@lib/html"
   import Button from "@lib/components/Button.svelte"
   import Divider from "@lib/components/Divider.svelte"
   import Icon from "@lib/components/Icon.svelte"
@@ -301,8 +302,10 @@
     }
   }
 
-  const onVisibilityChange = () => {
-    if (document.hidden) {
+  // A tab can be `visible` but unfocused (user alt-tabbed to another app), so we
+  // can't rely on document.hidden alone to know the room is actually being watched.
+  const onActiveChange = (active: boolean) => {
+    if (!active) {
       lastVisibleAt = now()
     } else if ($events.some(e => e.pubkey !== $user.pubkey && e.created_at > lastVisibleAt)) {
       newMessagesAfter = lastVisibleAt
@@ -450,12 +453,12 @@
   onMount(() => {
     start()
 
-    document.addEventListener("visibilitychange", onVisibilityChange)
+    const unsubscribeActive = documentActive.subscribe(onActiveChange)
 
     return () => {
       // Wrap in a closure to avoid calling a stale cleanup function
       cleanup?.()
-      document.removeEventListener("visibilitychange", onVisibilityChange)
+      unsubscribeActive()
     }
   })
 </script>

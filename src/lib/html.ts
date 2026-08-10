@@ -1,6 +1,31 @@
+import {readable} from "svelte/store"
 import {sleep, randomId} from "@welshman/lib"
 import {Capacitor} from "@capacitor/core"
 export {preventDefault, stopPropagation} from "svelte/legacy"
+
+/** Whether the user is actually looking at this tab right now. Display-only concern,
+ * kept separate from any data store — consult it wherever "is someone watching" should
+ * affect what's rendered. `document.hidden` alone misses window blur: switching to
+ * another app without switching tabs leaves visibilityState "visible", so we also track
+ * focus and require both. */
+export const documentActive = readable(
+  typeof document === "undefined" ? true : !document.hidden && document.hasFocus(),
+  set => {
+    if (typeof document === "undefined") return
+
+    const update = () => set(!document.hidden && document.hasFocus())
+
+    document.addEventListener("visibilitychange", update)
+    window.addEventListener("blur", update)
+    window.addEventListener("focus", update)
+
+    return () => {
+      document.removeEventListener("visibilitychange", update)
+      window.removeEventListener("blur", update)
+      window.removeEventListener("focus", update)
+    }
+  },
+)
 
 // Anchors an @svelte-plugins/datepicker popup with fixed positioning so it
 // escapes scroll-container clipping (e.g. inside modals). Call when the picker
