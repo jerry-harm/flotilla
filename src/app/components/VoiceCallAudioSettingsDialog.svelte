@@ -1,5 +1,6 @@
 <script lang="ts">
   import {spec} from "@welshman/lib"
+  import {RoomEvent, Track} from "livekit-client"
   import Button from "@lib/components/Button.svelte"
   import FieldInline from "@lib/components/FieldInline.svelte"
   import Modal from "@lib/components/Modal.svelte"
@@ -8,6 +9,7 @@
   import ModalHeader from "@lib/components/ModalHeader.svelte"
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
+  import MicLevelMeter from "@app/components/MicLevelMeter.svelte"
   import {
     currentCallSession,
     DeviceKind,
@@ -31,6 +33,11 @@
   let selectedInput = $state("")
   let selectedOutput = $state("")
   let selectedVideo = $state("")
+  let micTrack = $state<MediaStreamTrack | undefined>(undefined)
+
+  const readMicTrack = (session: CallSession): MediaStreamTrack | undefined =>
+    session.livekit.localParticipant.getTrackPublication(Track.Source.Microphone)?.track
+      ?.mediaStreamTrack
 
   const loadDevices = async () => {
     if (!navigator.mediaDevices?.enumerateDevices) return
@@ -61,10 +68,29 @@
     selectedInput = selectValueForActiveDevice(session, DeviceKind.AudioInput)
     selectedOutput = selectValueForActiveDevice(session, DeviceKind.AudioOutput)
     selectedVideo = selectValueForActiveDevice(session, DeviceKind.VideoInput)
+
+    // Mic mute/unmute publishes or unpublishes the microphone track; keep the
+    // level meter in sync with whichever track is actually live right now.
+    const {livekit} = session
+    const refreshMicTrack = () => {
+      micTrack = readMicTrack(session)
+    }
+    refreshMicTrack()
+    livekit.on(RoomEvent.LocalTrackPublished, refreshMicTrack)
+    livekit.on(RoomEvent.LocalTrackUnpublished, refreshMicTrack)
+    return () => {
+      livekit.off(RoomEvent.LocalTrackPublished, refreshMicTrack)
+      livekit.off(RoomEvent.LocalTrackUnpublished, refreshMicTrack)
+    }
   })
 
-  const onInputChange = () => {
-    void switchCallActiveDevice(DeviceKind.AudioInput, selectedInput)
+  const onInputChange = async () => {
+    await switchCallActiveDevice(DeviceKind.AudioInput, selectedInput)
+    // Switching the active device restarts the existing LocalAudioTrack in
+    // place with a new MediaStreamTrack rather than emitting a publish event,
+    // so the meter needs an explicit re-read here.
+    const session = $currentCallSession
+    if (session) micTrack = readMicTrack(session)
   }
 
   const onOutputChange = () => {
@@ -109,6 +135,7 @@
           </select>
         {/snippet}
       </FieldInline>
+      <MicLevelMeter track={micTrack} offMessage="Microphone is off — unmute to test it" />
       {#if canPickOutput}
         <FieldInline>
           {#snippet label()}

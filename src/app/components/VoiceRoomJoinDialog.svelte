@@ -13,6 +13,7 @@
   import ModalSubtitle from "@lib/components/ModalSubtitle.svelte"
   import ModalTitle from "@lib/components/ModalTitle.svelte"
   import {AbortError, TimeoutError} from "$lib/util"
+  import MicLevelMeter from "@app/components/MicLevelMeter.svelte"
   import ProfileCircles from "@app/components/ProfileCircles.svelte"
   import {displayRoom} from "@app/rooms"
   import {deriveCallParticipants, joinVoiceRoom, loadCallParticipants} from "@app/call"
@@ -33,6 +34,7 @@
   let audioInputs = $state<MediaDeviceInfo[]>([])
   let selectedDeviceId = $state("")
   let startWithoutMic = $state(false)
+  let micError = $state(false)
 
   const loadDevices = async () => {
     if (!navigator.mediaDevices?.enumerateDevices) return
@@ -49,7 +51,60 @@
     void loadDevices()
   })
 
-  const goBack = () => history.back()
+  // Live mic level meter so the user can confirm their selected microphone is
+  // actually picking up sound before joining, rather than finding out mid-call.
+  // The stream handle stays a plain local while only the track is reactive: the
+  // effect below both reads and writes it, and reading reactive state an effect
+  // also writes makes that effect depend on its own output, so it would re-run
+  // forever and cancel the in-flight getUserMedia every time.
+  let previewStream: MediaStream | undefined
+  let previewTrack = $state<MediaStreamTrack | undefined>(undefined)
+
+  const stopMicPreview = () => {
+    previewStream?.getTracks().forEach(t => t.stop())
+    previewStream = undefined
+    previewTrack = undefined
+  }
+
+  $effect(() => {
+    // Re-runs when selectedDeviceId or startWithoutMic changes.
+    void selectedDeviceId
+    const withoutMic = startWithoutMic
+
+    stopMicPreview()
+    micError = false
+
+    if (withoutMic || !navigator.mediaDevices?.getUserMedia) return
+
+    let cancelled = false
+    const deviceId = selectedDeviceId
+
+    void (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: deviceId ? {deviceId: {exact: deviceId}} : true,
+        })
+        if (cancelled) {
+          stream.getTracks().forEach(t => t.stop())
+          return
+        }
+        previewStream = stream
+        previewTrack = stream.getAudioTracks()[0]
+      } catch {
+        if (!cancelled) micError = true
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      stopMicPreview()
+    }
+  })
+
+  const goBack = () => {
+    stopMicPreview()
+    history.back()
+  }
 
   const handleJoinError = (e: unknown) => {
     if (e instanceof AbortError) return
@@ -62,6 +117,7 @@
   }
 
   const joinVoice = async () => {
+    stopMicPreview()
     popModal()
     await joinVoiceRoom(
       url,
@@ -121,6 +177,13 @@
           </select>
         {/snippet}
       </FieldInline>
+      {#if !startWithoutMic}
+        <MicLevelMeter
+          track={previewTrack}
+          error={micError
+            ? "Could not access this microphone. Check your browser permissions, or join without one."
+            : undefined} />
+      {/if}
     </div>
   </ModalBody>
   <ModalFooter>

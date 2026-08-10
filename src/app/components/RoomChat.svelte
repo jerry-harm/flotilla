@@ -13,6 +13,8 @@
   import AltArrowDown from "@assets/icons/alt-arrow-down.svg?dataurl"
   import ClockCircle from "@assets/icons/clock-circle.svg?dataurl"
   import Login2 from "@assets/icons/login-3.svg?dataurl"
+  import ChatRound from "@assets/icons/chat-round.svg?dataurl"
+  import Close from "@assets/icons/close.svg?dataurl"
   import {fade, fly} from "@lib/transition"
   import {popKey} from "@lib/implicit"
   import {documentActive} from "@lib/html"
@@ -31,14 +33,7 @@
   import VoiceWidget from "@app/components/VoiceWidget.svelte"
   import {deletes, relays, rooms, thunks, user} from "@app/core"
   import {publishRoomJoinRequest} from "@app/access"
-  import {
-    CallState,
-    callTargetRoom,
-    callState,
-    VideoCallLayout,
-    videoCallLayout,
-    videoTileCount,
-  } from "@app/call"
+  import {CallState, callTargetRoom, callState, VideoCallLayout, videoCallLayout} from "@app/call"
   import {
     PROTECTED,
     RoomType,
@@ -49,7 +44,7 @@
   } from "@app/rooms"
   import {userSettingsValues} from "@app/settings"
   import {makeFeed} from "@app/feeds"
-  import {checked, deferredRoomPath, setChecked} from "@app/notifications"
+  import {checked, deferredRoomPath, notifications, setChecked} from "@app/notifications"
   import {makeRoomPath} from "@app/routes"
   import {pushToast} from "@app/toast"
 
@@ -75,45 +70,53 @@
     isVoiceRoom && $callState === CallState.Connected && $videoCallLayout === VideoCallLayout.Video,
   )
 
-  const roomPath = h ? makeRoomPath(url, h) : undefined
+  // Basic pass at issue #121's "chat overlaid on video" idea: float the chat panel over
+  // the full-bleed video instead of splitting the screen into fixed columns, so the call
+  // stays the visual focus. The panel opens from — and collapses back to — a chat FAB.
+  const isOverlayChat = $derived(voiceConnectedHere && $videoCallLayout === VideoCallLayout.Split)
 
   const videoCallChatHidden = $derived(
     voiceConnectedHere && $videoCallLayout === VideoCallLayout.Video,
   )
+
+  const roomPath = h ? makeRoomPath(url, h) : undefined
+  const chatUnread = $derived(roomPath !== undefined && $notifications.has(roomPath))
+
+  const openChat = () => videoCallLayout.set(VideoCallLayout.Split)
+  const closeChat = () => videoCallLayout.set(VideoCallLayout.Video)
 
   $effect(() => {
     deferredRoomPath.set(videoCallChatHidden ? roomPath : undefined)
     if (roomPath && voiceConnectedHere && !videoCallChatHidden) {
       setChecked(roomPath)
     }
+    // The messages pane (and its scroll position) is offscreen while the call view is
+    // showing — don't leave its floating "scroll down"/"new messages" chips stranded.
+    if (videoCallChatHidden) {
+      showScrollButton = false
+      showFixedNewMessages = false
+    }
   })
 
   onDestroy(() => deferredRoomPath.set(undefined))
 
-  let prevVideoTileCount = $state(0)
+  let wasConnectedHere = $state(false)
 
   $effect(() => {
-    if ($callState !== CallState.Connected) {
-      videoCallLayout.set(VideoCallLayout.Chat)
-      prevVideoTileCount = 0
+    if (!voiceConnectedHere) {
+      if ($callState !== CallState.Connected) {
+        videoCallLayout.set(VideoCallLayout.Chat)
+      }
+      wasConnectedHere = false
       return
     }
 
-    const here = isVoiceRoom && $callTargetRoom?.url === url && $callTargetRoom?.h === h
-    const n = $videoTileCount
-
-    if (!here) {
-      prevVideoTileCount = 0
-      return
-    }
-
-    if (prevVideoTileCount === 0 && n >= 1) {
+    // Land on the call view (chat as a FAB) as soon as the call starts here, whether
+    // or not anyone's camera is on — chat is one tap away via the FAB.
+    if (!wasConnectedHere) {
       videoCallLayout.set(VideoCallLayout.Video)
+      wasConnectedHere = true
     }
-    if (prevVideoTileCount >= 1 && n === 0 && $videoCallLayout === VideoCallLayout.Split) {
-      videoCallLayout.set(VideoCallLayout.Chat)
-    }
-    prevVideoTileCount = n
   })
 
   const shouldProtect = $relays.hasNip(url, 70)
@@ -463,30 +466,45 @@
   })
 </script>
 
-<div
-  class={cx(
-    "flex min-h-0 flex-1 flex-col",
-    voiceConnectedHere && $videoCallLayout === VideoCallLayout.Split && "md:flex-row",
-  )}>
+<div class={cx("flex min-h-0 flex-1 flex-col", isOverlayChat && "relative")}>
   {#if h && voiceConnectedHere}
     <VideoCallContent
       layout={$videoCallLayout}
       {url}
       {h}
-      class="hidden min-h-0 w-full min-w-0 flex-1 flex-col md:flex" />
+      class={cx(
+        "hidden min-h-0 w-full min-w-0 flex-1 flex-col md:flex",
+        isOverlayChat && "md:absolute md:inset-0",
+      )} />
+  {/if}
+
+  {#if h && isVoiceRoom && $callState === CallState.Connected}
+    <VideoCallContent
+      layout={$videoCallLayout}
+      mobile
+      {url}
+      {h}
+      class={cx("md:hidden", isOverlayChat && "absolute inset-0")} />
   {/if}
 
   <div
     class={cx(
       "room flex min-h-0 min-w-0 flex-1 flex-col",
-      voiceConnectedHere && $videoCallLayout === VideoCallLayout.Video && "md:hidden",
+      videoCallChatHidden && "hidden",
+      isOverlayChat &&
+        "absolute inset-x-2 top-4 bottom-[calc(3.5rem+var(--saib))] z-popover overflow-hidden rounded-2xl border border-line bg-surface/95 shadow-lg md:left-auto md:right-4 md:bottom-4 md:w-96 md:max-w-[26rem] md:bg-surface/90",
     )}>
-    {#if h}
-      <RoomPinnedMessages {url} {h} />
+    {#if isOverlayChat}
+      <Button
+        aria-label="Close room chat"
+        class="button button-neutral button-xs button-circle absolute right-2 top-2 z-popover"
+        onclick={closeChat}>
+        <Icon icon={Close} size={4} />
+      </Button>
     {/if}
 
-    {#if h && isVoiceRoom && $callState === CallState.Connected}
-      <VideoCallContent layout={$videoCallLayout} mobile {url} {h} class="md:hidden" />
+    {#if h}
+      <RoomPinnedMessages {url} {h} />
     {/if}
 
     <div
@@ -621,13 +639,27 @@
         <div
           class={cx(
             "hide-on-keyboard flex-shrink-0 p-2 md:hidden",
-            showMobileVideoPanel && "hidden",
+            videoCallChatHidden && "hidden",
           )}>
           <VoiceWidget />
         </div>
       {/if}
     </div>
   </div>
+
+  {#if videoCallChatHidden}
+    <Button
+      aria-label="Open room chat"
+      class="button button-primary button-circle fixed z-popover bottom-[calc(4.5rem+var(--saib))] right-4 shadow-lg md:bottom-4"
+      onclick={openChat}>
+      <Icon icon={ChatRound} size={5} />
+      {#if chatUnread}
+        <span
+          class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-surface"
+          aria-hidden="true"></span>
+      {/if}
+    </Button>
+  {/if}
 </div>
 
 {#if showScrollButton}

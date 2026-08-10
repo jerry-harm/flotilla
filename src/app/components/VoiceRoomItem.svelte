@@ -35,6 +35,10 @@
 
   const {url, h, replaceState = false, notification = false}: Props = $props()
 
+  // Beyond this many participants, a full name+avatar row per person makes the
+  // sidebar item too tall — fall back to the compact ProfileCircles cluster instead.
+  const ACTIVE_LIST_MAX = 5
+
   const participants = deriveCallParticipants(url, h)
   const participantPubkeys = $derived($participants.flatMap(p => (p.pubkey ? [p.pubkey] : [])))
   const isActive = $derived(
@@ -85,7 +89,7 @@
       <RoomName {url} {h} />
     </div>
     {#if participantPubkeys.length > 0}
-      {#if isActive}
+      {#if isActive && $participants.length <= ACTIVE_LIST_MAX}
         {#each $participants as p (participantKey(p as CallParticipant))}
           {@const media = $mediaStateByIdentity(p.liveKitIdentity)}
           <div class="flex items-center gap-2 ml-6">

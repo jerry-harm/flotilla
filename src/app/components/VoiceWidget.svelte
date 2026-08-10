@@ -19,7 +19,6 @@
   import Settings from "@assets/icons/settings.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
-  import Spinner from "@lib/components/Spinner.svelte"
   import VoiceCallAudioSettingsDialog from "@app/components/VoiceCallAudioSettingsDialog.svelte"
   import VoiceRoomJoinDialog from "@app/components/VoiceRoomJoinDialog.svelte"
   import {rooms} from "@app/core"
@@ -30,7 +29,6 @@
   import {makeRoomPath} from "@app/routes"
   import {
     VideoCallLayout,
-    isDesktopLayout,
     toggleCamera,
     toggleScreenShare,
     videoCallLayout,
@@ -98,24 +96,13 @@
 
   const showChatButton = $derived($callState === CallState.Connected && isViewingCurrentVoiceRoom)
 
-  const isChatPanelActive = $derived(
-    showChatButton &&
-      (isDesktopLayout.current
-        ? $videoCallLayout === VideoCallLayout.Split
-        : $videoCallLayout === VideoCallLayout.Chat),
-  )
+  const isChatPanelActive = $derived(showChatButton && $videoCallLayout === VideoCallLayout.Split)
 
   const onChatToggle = () => {
     if (!showChatButton) return
-    if (isDesktopLayout.current) {
-      videoCallLayout.update(p =>
-        p === VideoCallLayout.Split ? VideoCallLayout.Video : VideoCallLayout.Split,
-      )
-    } else {
-      videoCallLayout.update(p =>
-        p === VideoCallLayout.Video ? VideoCallLayout.Chat : VideoCallLayout.Video,
-      )
-    }
+    videoCallLayout.update(p =>
+      p === VideoCallLayout.Split ? VideoCallLayout.Video : VideoCallLayout.Split,
+    )
   }
 
   const chatUnread = $derived(
@@ -128,99 +115,114 @@
     in:fly={{y: 60, duration: 350}}
     out:fly={{y: 60, duration: 250}}
     class="card card-sm flex flex-col gap-2">
-    <div class="flex items-start justify-between gap-2">
-      <Button
-        class="min-w-0 flex-1 rounded-xl px-2 py-1 text-left hover:bg-surface"
-        onclick={goToRoom}
-        aria-label="Open room {roomName}">
-        <div class="flex flex-col gap-0.5">
-          {#if $callState === CallState.Joining}
-            <span class="text-sm font-semibold text-warning">Joining...</span>
-          {:else if $callState === CallState.Connected}
-            <span class="text-sm font-semibold text-success">Voice Connected</span>
-          {:else}
-            <span class="text-sm font-semibold text-content-muted">Disconnected</span>
-          {/if}
-          <span class="truncate min-w-0 text-xs text-content-muted">
-            {roomName} / {spaceName}
-          </span>
-        </div>
-      </Button>
-      {#if showChatButton}
-        <Button
-          data-tip="Toggle Chat"
-          class={cx(
-            "button button-sm button-square tip tip-top relative",
-            isChatPanelActive && "button-primary",
-          )}
-          onclick={onChatToggle}>
-          <Icon icon={ChatRound} size={4} />
-          {#if chatUnread}
-            <span
-              transition:fade={{duration: 150}}
-              class="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary"
-              aria-hidden="true"></span>
-          {/if}
-        </Button>
-      {/if}
-    </div>
-    <div class="flex items-center gap-1.5">
+    <Button
+      class="w-full min-w-0 rounded-xl px-2 py-1 text-left hover:bg-surface"
+      onclick={goToRoom}
+      aria-label="Open room {roomName}">
+      <div class="flex flex-col gap-0.5">
+        {#if $callState === CallState.Joining}
+          <span class="text-sm font-semibold text-warning">Joining...</span>
+        {:else if $callState === CallState.Connected}
+          <span class="text-sm font-semibold text-success">Voice Connected</span>
+        {:else}
+          <span class="text-sm font-semibold text-content-muted">Disconnected</span>
+        {/if}
+        <span class="truncate min-w-0 text-xs text-content-muted">
+          {roomName} / {spaceName}
+        </span>
+      </div>
+    </Button>
+    <div class="grid grid-cols-3 gap-1.5">
       {#if $callState === CallState.Joining}
-        <Spinner size="sm" />
         <Button
-          data-tip="Cancel"
-          class="button button-sm button-square tip tip-top"
+          aria-label="Cancel joining voice room"
+          class="button button-neutral col-span-3 flex-col !h-auto gap-0.5 rounded-xl px-2 py-1.5"
           onclick={cancelJoinVoiceRoom}>
           <Icon icon={CloseCircle} size={4} />
+          <span class="text-[10px] leading-none font-semibold">Cancel</span>
         </Button>
       {:else if $callState === CallState.Connected && $currentCallSession}
         <Button
-          data-tip={$callMicMuted ? "Unmute" : "Mute"}
+          aria-label={$callMicMuted ? "Unmute microphone" : "Mute microphone"}
+          aria-pressed={!$callMicMuted}
           class={cx(
-            "button button-sm button-square tip tip-top",
+            "button w-full flex-col !h-auto gap-0.5 rounded-xl px-2 py-1.5",
             $callMicMuted ? "button-neutral" : "button-primary",
           )}
           onclick={toggleMute}>
           <Icon icon={$callMicMuted ? MicrophoneOff : Microphone} size={$callMicMuted ? 4 : 4.5} />
+          <span class="text-[10px] leading-none font-semibold">
+            {$callMicMuted ? "Unmute" : "Mute"}
+          </span>
         </Button>
         <Button
-          data-tip={$currentCallSession.cameraOn ? "Turn off camera" : "Turn on camera"}
+          aria-label={$currentCallSession.cameraOn ? "Turn off camera" : "Turn on camera"}
+          aria-pressed={$currentCallSession.cameraOn}
           class={cx(
-            "button button-sm button-square tip tip-top",
+            "button w-full flex-col !h-auto gap-0.5 rounded-xl px-2 py-1.5",
             $currentCallSession.cameraOn ? "button-primary" : "button-neutral",
           )}
           onclick={toggleCamera}>
           <Icon icon={$currentCallSession.cameraOn ? VideocameraRecord : VideocameraOff} size={4} />
+          <span class="text-[10px] leading-none font-semibold">
+            {$currentCallSession.cameraOn ? "Stop" : "Start"}
+          </span>
         </Button>
         {#if !Capacitor.isNativePlatform()}
           <Button
-            data-tip={$currentCallSession.screenShareOn ? "Stop sharing" : "Share screen"}
+            aria-label={$currentCallSession.screenShareOn ? "Stop sharing screen" : "Share screen"}
+            aria-pressed={$currentCallSession.screenShareOn}
             class={cx(
-              "button button-sm button-square tip tip-top",
+              "button w-full flex-col !h-auto gap-0.5 rounded-xl px-2 py-1.5",
               $currentCallSession.screenShareOn ? "button-primary" : "button-neutral",
             )}
             onclick={toggleScreenShare}>
             <Icon icon={Monitor} size={3.75} />
+            <span class="text-[10px] leading-none font-semibold">
+              {$currentCallSession.screenShareOn ? "Stop share" : "Share"}
+            </span>
           </Button>
         {/if}
         <Button
-          data-tip="Call settings"
-          class="button button-neutral button-sm button-square tip tip-top"
+          aria-label="Call settings"
+          class="button button-neutral w-full flex-col !h-auto gap-0.5 rounded-xl px-2 py-1.5"
           onclick={openCallSettings}>
           <Icon icon={Settings} size={4} />
+          <span class="text-[10px] leading-none font-semibold">Settings</span>
         </Button>
         <Button
-          data-tip="Leave room"
-          class="button button-error button-sm button-square tip tip-top"
+          aria-label="Leave voice room"
+          class="button button-error w-full flex-col !h-auto gap-0.5 rounded-xl px-2 py-1.5"
           onclick={leaveVoiceRoom}>
           <Icon icon={EndCall} size={4.5} />
+          <span class="text-[10px] leading-none font-semibold">Leave</span>
         </Button>
+        {#if showChatButton}
+          <Button
+            aria-label="Toggle chat panel"
+            aria-pressed={isChatPanelActive}
+            class={cx(
+              "button w-full flex-col !h-auto gap-0.5 rounded-xl px-2 py-1.5 relative",
+              isChatPanelActive ? "button-primary" : "button-neutral",
+            )}
+            onclick={onChatToggle}>
+            <Icon icon={ChatRound} size={4} />
+            <span class="text-[10px] leading-none font-semibold">Chat</span>
+            {#if chatUnread}
+              <span
+                transition:fade={{duration: 150}}
+                class="absolute right-2 top-1.5 h-2 w-2 rounded-full bg-primary"
+                aria-hidden="true"></span>
+            {/if}
+          </Button>
+        {/if}
       {:else}
         <Button
-          data-tip="Join Voice"
-          class="button button-primary button-sm button-square tip tip-top"
+          aria-label="Join voice room"
+          class="button button-primary col-span-3 flex-col !h-auto gap-0.5 rounded-xl px-2 py-1.5"
           onclick={openJoinDialog}>
           <Icon icon={PhoneCallingRounded} size={4.5} />
+          <span class="text-[10px] leading-none font-semibold">Join</span>
         </Button>
       {/if}
     </div>

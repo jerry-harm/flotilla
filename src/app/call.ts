@@ -2,7 +2,6 @@
  * Voice rooms via LiveKit. Note: Voice does not work on localhost in Firefox
  * (ICE candidate gathering fails). Use Chrome or test from deployed HTTPS.
  */
-import {MediaQuery} from "svelte/reactivity"
 import {
   DisconnectReason,
   LocalParticipant,
@@ -32,7 +31,6 @@ export const LIVEKIT_PARTICIPANTS = 39004
 export {supportsAudioOutputSelection}
 
 const LIVEKIT_DEFAULT_DEVICE_ID = "default"
-const VISUAL_SOURCES = [Track.Source.Camera, Track.Source.ScreenShare] as const
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000]
 
 export type CallSession = {
@@ -63,11 +61,6 @@ export enum VideoCallLayout {
   Chat = "chat",
   Video = "video",
   Split = "split",
-}
-
-export enum ViewportSize {
-  Desktop = "desktop",
-  Mobile = "mobile",
 }
 
 export enum DeviceKind {
@@ -109,23 +102,9 @@ export const triggerVideoTrackRevision = () => {
   videoTrackRevision.update(n => n + 1)
 }
 
-export const isDesktopLayout = new MediaQuery("min-width: 768px", false)
-
-export const videoCallViewportSync = {
-  previousLayout: undefined as ViewportSize | undefined,
-}
-
 export const videoCallLayout = writable<VideoCallLayout>(VideoCallLayout.Split)
 
 export const videoPrimaryTileKey = writable<string | undefined>(undefined)
-
-export const videoTileCount = derived(
-  [currentCallSession, callState, videoTrackRevision, participantMediaState],
-  ([$session, $state]) => {
-    if ($state !== CallState.Connected || !$session) return 0
-    return countLiveVisualFeeds($session)
-  },
-)
 
 export const joinVoiceRoom = async (
   url: string,
@@ -375,7 +354,6 @@ export const switchCallActiveDevice = async (
 }
 
 export const resetVideoCallLayout = () => {
-  videoCallViewportSync.previousLayout = undefined
   videoCallLayout.set(VideoCallLayout.Chat)
 }
 
@@ -456,27 +434,6 @@ const teardownRoom = (livekit: LiveKitRoom) => {
 
   livekit.removeAllListeners()
   livekit.disconnect()
-}
-
-const countLiveVisualFeeds = (session: CallSession): number => {
-  const livekit = session.livekit
-  let n = 0
-  const lp = livekit.localParticipant
-  if (session.cameraOn) {
-    const pub = lp.getTrackPublication(Track.Source.Camera)
-    if (pub?.track) n += 1
-  }
-  if (session.screenShareOn) {
-    const pub = lp.getTrackPublication(Track.Source.ScreenShare)
-    if (pub?.track) n += 1
-  }
-  for (const rp of livekit.remoteParticipants.values()) {
-    for (const source of VISUAL_SOURCES) {
-      const pub = rp.getTrackPublication(source)
-      if (pub?.isSubscribed && pub.track && !pub.isMuted) n += 1
-    }
-  }
-  return n
 }
 
 const participantMediaFrom = (participant: Participant): ParticipantMediaState => ({

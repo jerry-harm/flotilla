@@ -2,7 +2,6 @@
   import {spec} from "@welshman/lib"
   import cx from "classnames"
   import {Track} from "livekit-client"
-  import {get} from "svelte/store"
   import Pin from "@assets/icons/pin.svg?dataurl"
   import Button from "@lib/components/Button.svelte"
   import Icon from "@lib/components/Icon.svelte"
@@ -12,11 +11,7 @@
   import VoiceParticipantMediaBadges from "@app/components/VoiceParticipantMediaBadges.svelte"
   import {
     VideoCallLayout,
-    isDesktopLayout,
     toggleVideoPrimaryTile,
-    videoCallLayout,
-    videoCallViewportSync,
-    ViewportSize,
     videoPrimaryTileKey,
     currentCallSession,
     callTargetRoom,
@@ -47,32 +42,13 @@
 
   const {layout, mobile = false, url, h, class: className = ""}: Props = $props()
 
-  $effect(() => {
-    const currentLayout = isDesktopLayout.current ? ViewportSize.Desktop : ViewportSize.Mobile
-    const {previousLayout} = videoCallViewportSync
-    if (previousLayout === undefined) {
-      videoCallViewportSync.previousLayout = currentLayout
-      return
-    }
-    if (previousLayout === currentLayout) return
-    const p = get(videoCallLayout)
-    if (previousLayout === ViewportSize.Desktop && currentLayout === ViewportSize.Mobile) {
-      if (p === VideoCallLayout.Split) videoCallLayout.set(VideoCallLayout.Video)
-    } else if (previousLayout === ViewportSize.Mobile && currentLayout === ViewportSize.Desktop) {
-      if (p === VideoCallLayout.Chat) videoCallLayout.set(VideoCallLayout.Split)
-    }
-    videoCallViewportSync.previousLayout = currentLayout
-  })
-
   const isViewingCurrentCallRoom = $derived(
     $callTargetRoom?.url === url && $callTargetRoom?.h === h,
   )
 
   const showVideoContent = $derived(
     isViewingCurrentCallRoom &&
-      (mobile
-        ? layout === VideoCallLayout.Video
-        : layout === VideoCallLayout.Split || layout === VideoCallLayout.Video),
+      (layout === VideoCallLayout.Split || layout === VideoCallLayout.Video),
   )
 
   const videoTiles = $derived.by(() => {
@@ -219,6 +195,7 @@
 
 {#snippet videoTile(tile: VideoTileData, layout: TileLayout)}
   {@const media = $mediaStateByIdentity(tile.liveKitIdentity)}
+  {@const label = labelFor(tile.liveKitIdentity, tile.source)}
   <div
     class={cx(
       "relative isolate overflow-hidden rounded-2xl shadow-sm",
@@ -249,12 +226,13 @@
     {/if}
     <span
       class="pointer-events-none absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] truncate rounded bg-surface/80 px-1.5 py-0.5 text-xs">
-      {labelFor(tile.liveKitIdentity, tile.source)}{tile.isLocal ? " (you)" : ""}
+      {label}{tile.isLocal ? " (you)" : ""}
     </span>
     {#if videoTiles.length > 1}
       {@const pinned = $videoPrimaryTileKey === tileKey(tile)}
       <Button
         data-tip={pinned ? "Exit spotlight" : "Spotlight"}
+        aria-label={pinned ? `Exit spotlight for ${label}` : `Spotlight ${label}`}
         aria-pressed={pinned}
         class={cx(
           `button button-${pinned ? "primary" : "ghost"} button-xs button-square`,
