@@ -107,10 +107,10 @@ export const goToMovedSpace = (oldUrl: string, newUrl: string) =>
 
 export const goToHome = () => {
   if (PLATFORM_RELAYS.length > 0) {
-    goToSpace(PLATFORM_RELAYS[0], get(page).url.hash)
-  } else {
-    goto("/home" + get(page).url.hash)
+    return goToSpace(PLATFORM_RELAYS[0], get(page).url.hash)
   }
+
+  return goto("/home" + get(page).url.hash)
 }
 
 // Content types, events

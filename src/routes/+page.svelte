@@ -1,5 +1,7 @@
 <script lang="ts">
   import {goToHome} from "@app/routes"
 
-  $effect(goToHome)
+  $effect(() => {
+    goToHome()
+  })
 </script>

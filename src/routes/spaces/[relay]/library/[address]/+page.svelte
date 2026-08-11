@@ -29,7 +29,7 @@
   import {app, deletes, network} from "@app/core"
   import {deriveUserIsSpaceAdmin} from "@app/management"
   import {decodeRelay} from "@app/relays"
-  import {shareEventToChat} from "@app/share"
+  import {shareEvent} from "@app/share"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
 
@@ -80,7 +80,7 @@
     menuOpen = false
 
     if ($board) {
-      shareEventToChat(url, "Shelf", $board.event)
+      shareEvent(url, "Shelf", $board.event)
     }
   }
 

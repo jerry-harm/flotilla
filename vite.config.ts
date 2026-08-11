@@ -13,7 +13,9 @@ export default defineConfig({
   // carries node_modules from welshman's own install — a second prosemirror, whose Plugin and
   // PluginKey classes tiptap refuses to mix with ours ("Adding different instances of a keyed
   // plugin"). Deduping resolves these to this project's copy wherever they are imported from, and
-  // does nothing when only one copy exists.
+  // does nothing when only one copy exists. Vite resolves a deduped package from the project root
+  // and nowhere else, so every name listed here has to be a direct dependency — under pnpm a
+  // transitive one isn't reachable from the root and the build fails to resolve it.
   resolve: {
     dedupe: [
       "@tiptap/core",

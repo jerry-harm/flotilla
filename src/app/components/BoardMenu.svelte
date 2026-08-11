@@ -6,7 +6,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import EventInfo from "@app/components/EventInfo.svelte"
-  import {shareEventToChat} from "@app/share"
+  import {shareEvent} from "@app/share"
   import {pushModal} from "@app/modal"
 
   type Props = {
@@ -19,7 +19,7 @@
 
   const showInfo = () => pushModal(EventInfo, {url, event: board.event})
 
-  const share = () => shareEventToChat(url, "Shelf", board.event)
+  const share = () => shareEvent(url, "Shelf", board.event)
 
   let ul: Element
 

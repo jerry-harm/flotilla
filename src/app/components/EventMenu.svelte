@@ -15,7 +15,7 @@
   import Report from "@app/components/Report.svelte"
   import EventDeleteConfirm from "@app/components/EventDeleteConfirm.svelte"
   import PinboardSelect from "@app/components/PinboardSelect.svelte"
-  import {shareEventToChat} from "@app/share"
+  import {shareEvent} from "@app/share"
   import {deriveUserIsSpaceAdmin} from "@app/management"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
@@ -40,7 +40,7 @@
 
   const addToLibrary = () => pushModal(PinboardSelect, {url, event})
 
-  const share = () => shareEventToChat(url, noun, event)
+  const share = () => shareEvent(url, noun, event)
 
   const showDelete = () => pushModal(EventDeleteConfirm, {url, event})
 

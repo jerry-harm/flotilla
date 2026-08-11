@@ -17,6 +17,7 @@
     enumerate,
     formatTimestampAsDate,
   } from "@welshman/lib"
+  import type {Maybe} from "@welshman/lib"
   import type {TrustedEvent, EventTemplate, EventContent} from "@welshman/util"
   import {makeEvent, DIRECT_MESSAGE, DIRECT_MESSAGE_FILE} from "@welshman/util"
   import {parse, isLink} from "@welshman/content"
@@ -44,8 +45,9 @@
   import {userSettingsValues} from "@app/settings"
   import {deriveChat, makeChatId} from "@app/chats"
   import {pushModal} from "@app/modal"
-  import {DraftKey} from "@app/drafts"
+  import {DraftKey, type Draft} from "@app/drafts"
   import {prependParent} from "@app/rooms"
+  import {pendingShare, type Share} from "@app/share"
   import {pushToast} from "@app/toast"
 
   type Props = {
@@ -57,7 +59,7 @@
 
   const chatId = makeChatId(pubkeys)
   const chat = deriveChat(chatId)
-  const draftKey = new DraftKey<{content?: string | object}>(`dm:${chatId}`)
+  const draftKey = new DraftKey<Draft>(`dm:${chatId}`)
   const others = remove($user.pubkey, pubkeys)
   const messagingRelayLists = $app.use(MessagingRelayLists).index.$
   const missingRelayLists = $derived(others.filter(pk => !$messagingRelayLists.has(pk)))
@@ -183,6 +185,26 @@
   let compose: ChatCompose | undefined = $state()
   let parent: TrustedEvent | undefined = $state()
   let eventToEdit: TrustedEvent | undefined = $state()
+  let share: Maybe<Share> = $state()
+
+  // Claim the share once we're on screen. Sharing into the conversation you're already looking at
+  // doesn't re-create this component, so this can't be read once on mount.
+  $effect(() => {
+    if ($pendingShare) {
+      share = $pendingShare
+      pendingShare.set(undefined)
+    }
+  })
+
+  const initialValues = $derived.by((): Share | undefined => {
+    if (eventToEdit) {
+      return {type: "text", value: eventToEdit.content}
+    }
+
+    if (share) {
+      return share
+    }
+  })
 
   const elements = $derived.by(() => {
     const elements = []
@@ -318,13 +340,13 @@
         <ChatComposeEdit clear={clearEventToEdit} />
       {/if}
     </div>
-    {#key eventToEdit}
+    {#key initialValues}
       <ChatCompose
         bind:this={compose}
         {onSubmit}
         {onEscape}
         {onEditPrevious}
-        initialValues={eventToEdit}
+        {initialValues}
         draftKey={eventToEdit ? undefined : draftKey}
         disabled={Boolean(missingRelayLists.length)} />
     {/key}

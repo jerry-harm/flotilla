@@ -1,5 +1,9 @@
 const store = new Map<string, unknown>()
 
+export type Draft = {
+  content?: string | object
+}
+
 export class DraftKey<T> {
   constructor(private key: string) {}
 

@@ -7,6 +7,7 @@
   import {debounce} from "throttle-debounce"
   import cx from "classnames"
   import {now, ifLet, int, formatTimestampAsDate, ago, MINUTE} from "@welshman/lib"
+  import type {Maybe} from "@welshman/lib"
   import type {TrustedEvent, EventContent} from "@welshman/util"
   import {makeEvent, MESSAGE, RELAY_ADD_MEMBER, ROOM_ADD_MEMBER} from "@welshman/util"
   import {publish} from "@welshman/app"
@@ -16,7 +17,6 @@
   import ChatRound from "@assets/icons/chat-round.svg?dataurl"
   import Close from "@assets/icons/close.svg?dataurl"
   import {fade, fly} from "@lib/transition"
-  import {popKey} from "@lib/implicit"
   import {documentActive} from "@lib/html"
   import Button from "@lib/components/Button.svelte"
   import Divider from "@lib/components/Divider.svelte"
@@ -46,6 +46,7 @@
   import {makeFeed} from "@app/feeds"
   import {checked, deferredRoomPath, notifications, setChecked} from "@app/notifications"
   import {makeRoomPath} from "@app/routes"
+  import {pendingShare, type Share} from "@app/share"
   import {pushToast} from "@app/toast"
 
   type Props = {
@@ -183,7 +184,7 @@
   }
 
   const onSubmit = async ({content, tags}: EventContent) => {
-    if (!content && !share) {
+    if (!content && !sharedEvent) {
       return
     }
 
@@ -216,8 +217,8 @@
         command.publishToRelays([url])
       }
 
-      if (share) {
-        template = await prependParent(share, template, url)
+      if (sharedEvent) {
+        template = await prependParent(sharedEvent, template, url)
       }
 
       if (parent) {
@@ -324,7 +325,7 @@
   let isUserScrolling = $state(false)
   let loadingBackward = $state(true)
   let loadingForward = $state(true)
-  let share = $state(popKey<TrustedEvent | undefined>("share"))
+  let share: Maybe<Share> = $state()
   let parent: TrustedEvent | undefined = $state()
   let element: HTMLElement | undefined = $state()
   let lastVisibleAt = now()
@@ -337,6 +338,27 @@
   let events: Readable<TrustedEvent[]> = $state(readable([]))
   let compose: RoomCompose | undefined = $state()
   let eventToEdit: TrustedEvent | undefined = $state()
+
+  // Claim the share once we're on screen. Sharing into the room you're already looking at
+  // doesn't re-create this component, so this can't be read once on mount.
+  $effect(() => {
+    if ($pendingShare) {
+      share = $pendingShare
+      pendingShare.set(undefined)
+    }
+  })
+
+  const sharedEvent = $derived(share?.type === "event" ? share.value : undefined)
+
+  const initialValues = $derived.by((): Share | undefined => {
+    if (eventToEdit) {
+      return {type: "text", value: eventToEdit.content}
+    }
+
+    if (share) {
+      return share
+    }
+  })
 
   const clearIsUserScrolling = debounce(150, () => {
     isUserScrolling = false
@@ -619,21 +641,21 @@
             {#if parent}
               <RoomComposeParent event={parent} clear={clearParent} verb="Replying to" />
             {/if}
-            {#if share}
-              <RoomComposeParent event={share} clear={clearShare} verb="Sharing" />
+            {#if sharedEvent}
+              <RoomComposeParent event={sharedEvent} clear={clearShare} verb="Sharing" />
             {/if}
             {#if eventToEdit}
               <RoomComposeEdit clear={clearEventToEdit} />
             {/if}
           </div>
-          {#key eventToEdit}
+          {#key initialValues}
             <RoomCompose
               {url}
               {h}
               {onSubmit}
               {onEscape}
               {onEditPrevious}
-              initialValues={eventToEdit}
+              {initialValues}
               bind:this={compose} />
           {/key}
         {/if}

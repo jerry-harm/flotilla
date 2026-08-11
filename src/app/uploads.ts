@@ -61,6 +61,22 @@ export const getBlossomServer = async (options: GetBlossomServerOptions = {}) =>
   return first(DEFAULT_BLOSSOM_SERVERS)!
 }
 
+// The editor's default list leaves out the formats an iPhone camera actually produces, so
+// anything shared from Photos would be rejected without a word. Heic gets re-encoded by the
+// compressor on its way to a blossom server; quicktime is uploaded as-is.
+export const UPLOAD_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "video/mp4",
+  "video/mpeg",
+  "video/webm",
+  "video/quicktime",
+]
+
 export type CompressFileOptions = {
   maxWidth?: number
   maxHeight?: number

@@ -1,18 +1,108 @@
+import {writable} from "svelte/store"
 import {goto} from "$app/navigation"
+import {Capacitor, registerPlugin} from "@capacitor/core"
+import type {PluginListenerHandle} from "@capacitor/core"
+import {noop} from "@welshman/lib"
+import type {Maybe} from "@welshman/lib"
 import type {TrustedEvent} from "@welshman/util"
-import {setKey} from "@lib/implicit"
-import {relays} from "@app/core"
+import {app, relays} from "@app/core"
 import {pushModal} from "@app/modal"
 import {makeSpaceChatPath} from "@app/routes"
-import EventShare from "@app/components/EventShare.svelte"
+import {pushToast} from "@app/toast"
+import {UPLOAD_MIME_TYPES} from "@app/uploads"
+import ShareDialog from "@app/components/Share.svelte"
+import ShareEvent from "@app/components/ShareEvent.svelte"
 
-// Share an event to chat. On NIP-29 relays we prompt for a room to share into;
-// otherwise we stash the event and jump to the space chat composer, which quotes it.
-export const shareEventToChat = (url: string, noun: string, event: TrustedEvent) => {
+export type Share =
+  | {type: "event"; value: TrustedEvent}
+  | {type: "text"; value: string}
+  | {type: "file"; value: File}
+
+export const pendingShare = writable<Maybe<Share>>(undefined)
+
+// Set pendingShare after goto so the current view doesn't pop it
+export const shareTo = async (
+  path: string,
+  share: Share,
+  options: {replaceState?: boolean} = {},
+) => {
+  await goto(path, options)
+
+  pendingShare.set(share)
+}
+
+export const shareEvent = (url: string, noun: string, event: TrustedEvent) => {
   if (relays.get().get(url)?.hasNip(29)) {
-    pushModal(EventShare, {url, noun, event})
+    pushModal(ShareEvent, {url, noun, event})
   } else {
-    setKey("share", event)
-    goto(makeSpaceChatPath(url))
+    shareTo(makeSpaceChatPath(url), {type: "event", value: event})
   }
+}
+
+const openShareDialog = (share: Share) => {
+  if (app.get().user?.pubkey) {
+    pushModal(ShareDialog, {share})
+  }
+}
+
+export const shareText = (value: string) => openShareDialog({type: "text", value})
+
+type NativeShare = {
+  text?: string
+  path?: string
+  name?: string
+  type?: string
+}
+
+// Shared media is copied somewhere capacitor's file server can reach, since neither an android
+// content uri nor an ios app group url means anything to the web view.
+export const shareFromNative = async ({
+  text,
+  path,
+  name = "",
+  type: mimeType = "",
+}: NativeShare) => {
+  if (text) {
+    shareText(text)
+  } else if (path) {
+    if (!UPLOAD_MIME_TYPES.includes(mimeType)) {
+      return pushToast({theme: "error", message: "Flotilla can't share that type of file."})
+    }
+
+    try {
+      const response = await fetch(Capacitor.convertFileSrc(path))
+
+      if (!response.ok) {
+        throw new Error(`Failed to read ${path} (${response.status})`)
+      }
+
+      const value = new File([await response.blob()], name, {type: mimeType})
+
+      openShareDialog({type: "file", value})
+    } catch (e) {
+      console.error(e)
+      pushToast({theme: "error", message: "Something went wrong reading the shared file."})
+    }
+  }
+}
+
+type ShareIntentPlugin = {
+  addListener(
+    eventName: "shareReceived",
+    listener: (share: NativeShare) => void,
+  ): Promise<PluginListenerHandle>
+}
+
+const ShareIntent = registerPlugin<ShareIntentPlugin>("ShareIntent")
+
+export const setupShareIntents = () => {
+  if (Capacitor.getPlatform() === "android") {
+    const listener = ShareIntent.addListener("shareReceived", shareFromNative)
+
+    return () => {
+      listener.then(handle => handle.remove())
+    }
+  }
+
+  return noop
 }

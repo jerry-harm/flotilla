@@ -1,10 +1,8 @@
 <script lang="ts">
-  import {goto} from "$app/navigation"
   import type {TrustedEvent} from "@welshman/util"
   import {preventDefault} from "@lib/html"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
-  import {setKey} from "@lib/implicit"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import ModalHeader from "@lib/components/ModalHeader.svelte"
@@ -15,6 +13,7 @@
   import ModalBody from "@lib/components/ModalBody.svelte"
   import RoomNameWithImage from "@app/components/RoomNameWithImage.svelte"
   import {makeRoomPath} from "@app/routes"
+  import {shareTo} from "@app/share"
   import {rooms} from "@app/core"
 
   type Props = {
@@ -30,8 +29,7 @@
   const back = () => history.back()
 
   const onSubmit = () => {
-    setKey("share", event)
-    goto(makeRoomPath(url, selection), {replaceState: true})
+    shareTo(makeRoomPath(url, selection), {type: "event", value: event}, {replaceState: true})
   }
 
   const toggleRoom = (h: string) => {

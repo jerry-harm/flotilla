@@ -28,6 +28,7 @@
   import {kv, ss, storage} from "@app/storage"
   import {device} from "@app/device"
   import {userSettingsValues, notificationSettings} from "@app/settings"
+  import {setupShareIntents, shareFromNative} from "@app/share"
   import {shouldUnwrap, syncApplicationData} from "@app/sync"
   import * as env from "@app/env"
   import {theme} from "@app/theme"
@@ -65,6 +66,13 @@
 
     if (relay && id) {
       onPushNotificationAction({notification: {data: {relay, id}}} as any)
+      return
+    }
+
+    // The iOS share extension can't talk to us directly, so it hands its payload over as a
+    // flotilla://share url
+    if (url.host === "share") {
+      shareFromNative(Object.fromEntries(url.searchParams))
       return
     }
 
@@ -160,6 +168,9 @@
 
     // History, navigation, application data
     unsubscribers.push(setupHistory(), setupAnalytics(), syncApplicationData())
+
+    // Listen for links shared into the app from elsewhere on the device
+    unsubscribers.push(setupShareIntents())
 
     // Initialize keyboard state tracking
     unsubscribers.push(syncKeyboard())

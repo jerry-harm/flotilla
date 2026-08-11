@@ -15,7 +15,7 @@ import {
   toNostrURI,
 } from "@welshman/util"
 import type {EventContent, TrustedEvent} from "@welshman/util"
-import {RoomLists, makeRoomKey} from "@welshman/app"
+import {RoomLists, makeRoomKey, createSearch} from "@welshman/app"
 import type {Room, RoomMeta} from "@welshman/app"
 import {
   deriveUserItem,
@@ -25,10 +25,12 @@ import {
   rooms,
   router,
   thunks,
+  relays,
   user,
 } from "@app/core"
 import {deriveUserIsSpaceAdmin} from "@app/management"
 import {deriveEventsForUrl} from "@app/repository"
+import {makeRoomPath} from "@app/routes"
 
 export enum MembershipStatus {
   Initial,
@@ -216,5 +218,32 @@ export const deriveUserRoomMembershipStatus = (url: string, h: string) =>
       }
 
       return isMember ? MembershipStatus.Granted : MembershipStatus.Initial
+    },
+  )
+
+export const deriveUserRoomSearch = () =>
+  derived(
+    [userSpaceUrls, userRoomList, rooms.get().byUrl.$],
+    ([$userSpaceUrls, $userRoomList, $roomsByUrl]) => {
+      const options = $userSpaceUrls.flatMap(url => {
+        const favorites = new Set($userRoomList?.roomsForUrl(url) ?? [])
+        // Spaces that aren't NIP-29 relays keep all their messages in the space-wide chat
+        const roomIds = relays.get().get(url)?.hasNip(29)
+          ? ($roomsByUrl.get(url) ?? []).map(room => room.h)
+          : ["chat"]
+
+        return roomIds.map(h => ({
+          url,
+          h,
+          name: displayRoom(url, h),
+          isFavorite: favorites.has(h),
+        }))
+      })
+
+      return createSearch(options, {
+        getValue: option => makeRoomPath(option.url, option.h),
+        fuseOptions: {keys: ["name", "url"]},
+        sortFn: ({item}) => (item.isFavorite ? 0 : 1),
+      })
     },
   )

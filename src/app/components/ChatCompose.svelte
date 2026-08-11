@@ -11,22 +11,19 @@
   import Spinner from "@lib/components/Spinner.svelte"
   import EditorContent from "@app/editor/EditorContent.svelte"
   import {makeEditor} from "@app/editor"
-  import {type DraftKey} from "@app/drafts"
-
-  type Values = {
-    content?: string | object
-  }
+  import {type DraftKey, type Draft} from "@app/drafts"
+  import type {Share} from "@app/share"
 
   type Props = {
     disabled?: boolean
-    draftKey?: DraftKey<Values>
+    draftKey?: DraftKey<Draft>
     onEscape?: () => void
     onEditPrevious?: () => void
     onSubmit: (event: EventContent) => void
-    initialValues?: Values
+    initialValues?: Share
   }
 
-  let {
+  const {
     initialValues,
     disabled = false,
     draftKey,
@@ -34,10 +31,6 @@
     onEditPrevious,
     onSubmit,
   }: Props = $props()
-
-  if (!initialValues) {
-    initialValues = draftKey?.get()
-  }
 
   const autofocus = !isMobile && !disabled
 
@@ -81,7 +74,9 @@
     ed.chain().clearContent().run()
   }
 
-  let content = $state(initialValues?.content ?? "")
+  let content = $state(
+    initialValues?.type === "text" ? initialValues.value : (draftKey?.get()?.content ?? ""),
+  )
 
   const onChange = (json: object) => {
     content = json
@@ -103,6 +98,12 @@
   onMount(async () => {
     const ed = await editor
     ed.view.dom.addEventListener("keydown", handleKeyDown)
+
+    if (initialValues?.type === "file") {
+      ed.chain()
+        .addFile(initialValues.value, ed.state.selection.from + 1)
+        .run()
+    }
   })
 
   onDestroy(async () => {

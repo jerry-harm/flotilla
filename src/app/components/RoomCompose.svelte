@@ -13,12 +13,9 @@
   import ComposeMenu from "@app/components/ComposeMenu.svelte"
   import EditorContent from "@app/editor/EditorContent.svelte"
   import {makeEditor} from "@app/editor"
-  import {DraftKey} from "@app/drafts"
+  import {DraftKey, type Draft} from "@app/drafts"
+  import type {Share} from "@app/share"
   import {onDestroy, onMount} from "svelte"
-
-  type Values = {
-    content?: string | object
-  }
 
   type Props = {
     url?: string
@@ -26,16 +23,12 @@
     onEscape?: () => void
     onEditPrevious?: () => void
     onSubmit: (event: EventContent) => void
-    initialValues?: Values
+    initialValues?: Share
   }
 
-  let {url, h, initialValues, onEscape, onEditPrevious, onSubmit}: Props = $props()
+  const {url, h, initialValues, onEscape, onEditPrevious, onSubmit}: Props = $props()
 
-  const draftKey = url || h ? new DraftKey<Values>(`room:${url ?? ""}:${h ?? ""}`) : undefined
-
-  if (!initialValues) {
-    initialValues = draftKey?.get()
-  }
+  const draftKey = url || h ? new DraftKey<Draft>(`room:${url ?? ""}:${h ?? ""}`) : undefined
 
   const autofocus = !isMobile
 
@@ -76,7 +69,9 @@
   }
 
   let popover: Instance | undefined = $state()
-  let content = $state(initialValues?.content ?? "")
+  let content = $state(
+    initialValues?.type === "text" ? initialValues.value : (draftKey?.get()?.content ?? ""),
+  )
 
   const onChange = (json: object) => {
     content = json
@@ -98,6 +93,12 @@
   onMount(async () => {
     const ed = await editor
     ed.view.dom.addEventListener("keydown", handleKeyDown)
+
+    if (initialValues?.type === "file") {
+      ed.chain()
+        .addFile(initialValues.value, ed.state.selection.from + 1)
+        .run()
+    }
   })
 
   onDestroy(async () => {

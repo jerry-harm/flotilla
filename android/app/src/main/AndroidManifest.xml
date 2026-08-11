@@ -27,6 +27,17 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="app.flotilla.social" />
             </intent-filter>
+
+            <!-- Puts Flotilla in the system share sheet. These intents carry their payload in
+                 extras rather than a data uri, so Capacitor never emits appUrlOpen for them;
+                 ShareIntentPlugin picks them up instead. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
         </activity>
 
         <provider

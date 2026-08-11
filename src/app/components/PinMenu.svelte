@@ -13,7 +13,7 @@
   import PinEdit from "@app/components/PinEdit.svelte"
   import {deletes} from "@app/core"
   import {deriveUserIsSpaceAdmin} from "@app/management"
-  import {shareEventToChat} from "@app/share"
+  import {shareEvent} from "@app/share"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
 
@@ -29,7 +29,7 @@
 
   const showInfo = () => pushModal(EventInfo, {url, event: pin.event})
 
-  const share = () => shareEventToChat(url, "Link", pin.event)
+  const share = () => shareEvent(url, "Link", pin.event)
 
   const edit = () => pushModal(PinEdit, {url, pin})
 
