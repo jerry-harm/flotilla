@@ -465,7 +465,6 @@
       cleanup?.()
       unsubscribeActive()
       cancelAnimationFrame(frame)
-      document.removeEventListener("visibilitychange", onVisibilityChange)
     }
   })
 </script>

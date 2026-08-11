@@ -55,7 +55,15 @@
     const currentPubkey = user.get().pubkey
 
     if (currentPubkey) {
-      await $roomLists.load(currentPubkey, [url])
+      // Force a fresh fetch rather than `load`, which can resolve immediately from an
+      // hour-stale cache and make a space the user has since joined look unjoined.
+      // Unlike `load`, `forceLoad` doesn't swallow fetch errors, so catch them here —
+      // otherwise a failed fetch would leave spacesLoaded false forever.
+      try {
+        await $roomLists.forceLoad(currentPubkey, [url])
+      } catch (error) {
+        console.warn(`Failed to load room list for ${currentPubkey}`, error)
+      }
     }
 
     spacesLoaded = true

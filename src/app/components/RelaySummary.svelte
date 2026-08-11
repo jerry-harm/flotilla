@@ -7,7 +7,7 @@
   import RelayDescription from "@app/components/RelayDescription.svelte"
   import ProfileCircles from "@app/components/ProfileCircles.svelte"
   import {roomLists, user} from "@app/core"
-  import {deriveUserRooms} from "@app/rooms"
+  import {userSpaceUrls} from "@app/rooms"
 
   type Props = {
     url: string
@@ -15,7 +15,6 @@
   }
 
   const {url, hideFavorites}: Props = $props()
-  const rooms = deriveUserRooms(url)
   const favorited = $roomLists.pubkeysForUrl(url).$
   const favoritedPubkeys = $derived(remove($user.pubkey, $favorited))
 </script>
@@ -30,7 +29,7 @@
             <RelayIcon {url} size={10} class="rounded-full" />
           </div>
         </div>
-        {#if $rooms.includes(url)}
+        {#if $userSpaceUrls.includes(url)}
           <div
             class="tip absolute -right-1 -top-1 h-5 w-5 rounded-full bg-primary text-primary-content"
             data-tip="You are already a member of this space.">
