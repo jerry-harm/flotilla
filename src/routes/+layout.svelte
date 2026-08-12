@@ -31,7 +31,7 @@
   import {setupShareIntents, shareFromNative} from "@app/share"
   import {shouldUnwrap, syncApplicationData} from "@app/sync"
   import * as env from "@app/env"
-  import {theme} from "@app/theme"
+  import {activeTheme, flTheme, theme} from "@app/theme"
   import {toast, pushToast} from "@app/toast"
   import * as notifications from "@app/notifications"
   import {notifications as notificationPaths, allNotifications} from "@app/notifications"
@@ -44,9 +44,17 @@
 
   const {children} = $props()
 
-  // Do this asap to avoid a font size flash
+  // Do this asap to avoid a flash of the wrong font size or theme. The stores these mirror live in
+  // indexeddb, which doesn't load until well after first paint.
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+
   // @ts-ignore
   document.documentElement.style["font-size"] = `${localStorage.getItem("font-size") || 1.1}rem`
+  document.body.setAttribute("data-fl-theme", localStorage.getItem("fl-theme") || env.FL_THEME)
+  document.body.setAttribute(
+    "data-theme",
+    localStorage.getItem("theme") || (prefersDark ? "dark" : "light"),
+  )
 
   // Add stuff to window for convenience
   Object.assign(window, {get, nip19, theme, app, domain, Logger, ...lib, ...util})
@@ -231,9 +239,13 @@
 
     // Sync theme and font size
     unsubscribers.push(
-      theme.subscribe($theme => {
-        document.body.setAttribute("data-theme", $theme)
-        document.body.setAttribute("data-fl-theme", env.FL_THEME)
+      activeTheme.subscribe($activeTheme => {
+        localStorage.setItem("theme", $activeTheme)
+        document.body.setAttribute("data-theme", $activeTheme)
+      }),
+      flTheme.subscribe($flTheme => {
+        localStorage.setItem("fl-theme", $flTheme)
+        document.body.setAttribute("data-fl-theme", $flTheme)
       }),
       userSettingsValues.subscribe(
         debounce(100, $settings => {
@@ -273,7 +285,7 @@
 {#await unsubscribe}
   <!-- pass -->
 {:then}
-  <div class={isMobile ? "fl mobile" : "fl"} data-fl-theme={env.FL_THEME}>
+  <div class={isMobile ? "fl mobile" : "fl"} data-fl-theme={$flTheme}>
     <AppContainer>
       {@render children()}
     </AppContainer>

@@ -1,6 +1,8 @@
 import twColors from "tailwindcss/colors"
-import {kv} from "@app/storage"
+import {derived, readable} from "svelte/store"
 import {synced} from "@welshman/store"
+import {FL_THEME} from "@app/env"
+import {kv} from "@app/storage"
 
 export const colors = [
   ["amber", twColors.amber[600]],
@@ -24,15 +26,35 @@ export const colors = [
   ["zinc", twColors.zinc[600]],
 ]
 
-export const theme = synced({
-  key: "theme",
-  defaultValue: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light",
+// Every theme with token values in lib/components/theme.css
+export const flThemes = ["clay", "flat", "navy"]
+
+export const flTheme = synced({
+  key: "flTheme",
+  defaultValue: FL_THEME,
   storage: kv,
 })
 
-// Hook for development
-Object.assign(window, {
-  setFlTheme: (t: string) => {
-    document.body.setAttribute("data-fl-theme", t)
-  },
+export const theme = synced({
+  key: "theme",
+  defaultValue: "system",
+  storage: kv,
+})
+
+const prefersDark = readable(window.matchMedia("(prefers-color-scheme: dark)").matches, set => {
+  const query = window.matchMedia("(prefers-color-scheme: dark)")
+  const onChange = () => set(query.matches)
+
+  query.addEventListener("change", onChange)
+
+  return () => query.removeEventListener("change", onChange)
+})
+
+// What actually gets stamped on the document, since `theme` may defer to the os
+export const activeTheme = derived([theme, prefersDark], ([$theme, $prefersDark]) => {
+  if ($theme === "system") {
+    return $prefersDark ? "dark" : "light"
+  }
+
+  return $theme
 })

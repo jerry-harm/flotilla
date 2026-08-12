@@ -15,10 +15,8 @@
   import LogOut from "@app/components/LogOut.svelte"
   import {user} from "@app/core"
   import {pushModal} from "@app/modal"
-  import {theme} from "@app/theme"
 
   const logout = () => pushModal(LogOut)
-  const toggleTheme = () => theme.set($theme === "dark" ? "light" : "dark")
 </script>
 
 <Modal>
@@ -74,7 +72,7 @@
         </Link>
       </div>
       <div class="flex gap-3 items-center opacity-75 text-sm">
-        <Button onclick={toggleTheme}>Theme</Button>
+        <Link replaceState href="/settings/theme">Theme</Link>
         /
         <Link replaceState href="/settings/about">About</Link>
         /

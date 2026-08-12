@@ -87,26 +87,6 @@
         {/snippet}
       </Field>
     </Card>
-    <Card class="flex flex-col gap-4">
-      <strong class="text-lg">Accessibility</strong>
-      <Field>
-        {#snippet label()}
-          <p>Font size</p>
-        {/snippet}
-        {#snippet secondary()}
-          <p>{Math.round(settings.font_size * 100)}%</p>
-        {/snippet}
-        {#snippet input()}
-          <input
-            class="range w-full"
-            type="range"
-            min="0.8"
-            max="1.3"
-            step="0.05"
-            bind:value={settings.font_size} />
-        {/snippet}
-      </Field>
-    </Card>
     <Card class="flex flex-col gap-4 shadow-md">
       <strong class="text-lg">Editor Settings</strong>
       <Field>

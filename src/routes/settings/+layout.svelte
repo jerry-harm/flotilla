@@ -19,7 +19,6 @@
   import LogOut from "@app/components/LogOut.svelte"
   import {HOSTING_ENABLED} from "@app/hosting"
   import {pushModal} from "@app/modal"
-  import {theme} from "@app/theme"
 
   type Props = {
     children?: Snippet
@@ -28,8 +27,6 @@
   const {children}: Props = $props()
 
   const logout = () => pushModal(LogOut)
-
-  const toggleTheme = () => theme.set($theme === "dark" ? "light" : "dark")
 </script>
 
 <SecondaryNav>
@@ -62,7 +59,7 @@
     <SecondaryNavItem href="/settings/privacy">
       <Icon icon={Shield} /> Privacy
     </SecondaryNavItem>
-    <SecondaryNavItem onclick={toggleTheme}>
+    <SecondaryNavItem href="/settings/theme">
       <Icon icon={Moon} /> Theme
     </SecondaryNavItem>
     <SecondaryNavItem href="/settings/about">
