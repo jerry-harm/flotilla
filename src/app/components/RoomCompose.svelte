@@ -107,7 +107,7 @@
   })
 </script>
 
-<form class="relative flex gap-2 p-2" onsubmit={preventDefault(submit)}>
+<form class="relative flex gap-2 py-2" onsubmit={preventDefault(submit)}>
   <div class="join">
     <Button
       class="join-item h-10 w-10 min-w-10 button button-neutral"

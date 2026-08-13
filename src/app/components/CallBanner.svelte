@@ -17,6 +17,7 @@
     callState,
     callTargetRoom,
     callMicMuted,
+    cancelJoinVoiceRoom,
     leaveVoiceRoom,
     toggleMute,
   } from "@app/call"
@@ -24,7 +25,7 @@
   const {relay, h} = $derived($page.params)
   const routeUrl = $derived(relay ? decodeRelay(relay) : undefined)
 
-  // The call's own room page already shows full controls (VoiceWidget), so
+  // The call's own room page already shows full controls (CallControlBar), so
   // the banner would just be redundant clutter there.
   const isViewingCurrentVoiceRoom = $derived(
     $callTargetRoom !== undefined &&
@@ -48,6 +49,16 @@
   const goToRoom = () => {
     if (!$callTargetRoom) return
     void goto(makeRoomPath($callTargetRoom.url, $callTargetRoom.h))
+  }
+
+  // leaveVoiceRoom no-ops during Joining (no session exists yet to leave) — cancel
+  // the in-flight join instead, otherwise this button silently does nothing.
+  const endCall = () => {
+    if ($callState === CallState.Joining) {
+      cancelJoinVoiceRoom()
+    } else {
+      leaveVoiceRoom()
+    }
   }
 </script>
 
@@ -87,9 +98,11 @@
         </Button>
       {/if}
       <Button
-        aria-label="Leave voice room"
+        aria-label={$callState === CallState.Joining
+          ? "Cancel joining voice room"
+          : "Leave voice room"}
         class="button button-circle button-sm button-error"
-        onclick={leaveVoiceRoom}>
+        onclick={endCall}>
         <Icon icon={EndCall} size={4} />
       </Button>
     </div>

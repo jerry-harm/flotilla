@@ -7,7 +7,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import VideoCallTile from "@app/components/VideoCallTile.svelte"
-  import VoiceWidget from "@app/components/VoiceWidget.svelte"
+  import CallControlBar from "@app/components/CallControlBar.svelte"
   import VoiceParticipantMediaBadges from "@app/components/VoiceParticipantMediaBadges.svelte"
   import {
     VideoCallLayout,
@@ -150,10 +150,12 @@
   })
 
   const useSpotlightLayout = $derived(primaryTile !== undefined)
-  const useMultiGrid = $derived(!useSpotlightLayout && videoTiles.length > 2)
-  const multiGridClass = $derived(
-    layout === VideoCallLayout.Split ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2",
-  )
+  // 2 tiles stacked full-width felt like they were "overlapping" each other rather
+  // than tiling — put 2+ side by side in a grid, same as everyone else's call UI.
+  // Chat (Split) floats over the video as an overlay card rather than shrinking
+  // this panel's width, so the tile grid doesn't need to collapse for it either.
+  const useMultiGrid = $derived(!useSpotlightLayout && videoTiles.length > 1)
+  const multiGridClass = "grid-cols-1 sm:grid-cols-2"
 
   $effect(() => {
     const k = $videoPrimaryTileKey
@@ -198,11 +200,13 @@
   {@const label = labelFor(tile.liveKitIdentity, tile.source)}
   <div
     class={cx(
-      "relative isolate overflow-hidden rounded-2xl shadow-sm",
+      // bg-surface-more (rather than bg-surface, same as the panel behind it) so a
+      // camera-off tile reads as its own card instead of blending into the panel.
+      "relative isolate overflow-hidden rounded-2xl border border-line shadow-sm",
       layout === "spotlight" && "min-h-0 flex-1",
       layout === "default" && "aspect-video w-full min-h-0",
       layout === "strip" && "aspect-video w-44 shrink-0",
-      tile.source === Track.Source.ScreenShare ? "bg-black" : "bg-surface",
+      tile.source === Track.Source.ScreenShare ? "bg-black" : "bg-surface-more",
     )}>
     {#if tile.track}
       <VideoCallTile
@@ -275,7 +279,7 @@
     {/if}
   {:else}
     <div
-      class="flex min-h-[12rem] flex-1 flex-col items-center justify-center gap-2 rounded-2xl bg-surface p-4 text-center text-sm opacity-80">
+      class="flex min-h-[12rem] flex-1 flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface-more p-4 text-center text-sm opacity-80">
       <p>Waiting for participants…</p>
     </div>
   {/if}
@@ -283,17 +287,24 @@
 
 {#if showVideoContent}
   <div class={panelChrome}>
-    {#if mobile}
-      <div class="flex min-h-0 flex-1 flex-col gap-2">
-        <div class="min-h-0 flex-1 overflow-hidden">
-          {@render videoPanelBody()}
-        </div>
-        <div class="shrink-0 pb-2">
-          <VoiceWidget />
-        </div>
-      </div>
-    {:else}
-      {@render videoPanelBody()}
-    {/if}
+    {@render videoPanelBody()}
+  </div>
+  <!-- fixed (viewport-relative), not absolute within panelChrome — panelChrome's
+       flex-computed height isn't guaranteed to reach the real viewport bottom, so
+       an absolute child positioned against its box can end up overlapping the
+       fixed bottom nav bar. Matches the same bottom-nav-clearing offset the old
+       chat FAB used.
+
+       RoomChat mounts both a desktop and a mobile VideoCallContent instance at
+       once while connected (each gated by its own `class` prop, e.g. "md:hidden"
+       vs "hidden ... md:flex"), so this fixed bar needs the same mobile/desktop
+       split — otherwise both instances render their own copy at the identical
+       screen position simultaneously. -->
+  <div
+    class={cx(
+      "left-content pointer-events-none fixed right-sai z-popover justify-center bottom-[calc(4.5rem+var(--saib))] md:bottom-4",
+      mobile ? "flex md:hidden" : "hidden md:flex",
+    )}>
+    <CallControlBar {url} {h} />
   </div>
 {/if}

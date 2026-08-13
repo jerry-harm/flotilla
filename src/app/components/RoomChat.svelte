@@ -14,7 +14,6 @@
   import AltArrowDown from "@assets/icons/alt-arrow-down.svg?dataurl"
   import ClockCircle from "@assets/icons/clock-circle.svg?dataurl"
   import Login2 from "@assets/icons/login-3.svg?dataurl"
-  import ChatRound from "@assets/icons/chat-round.svg?dataurl"
   import Close from "@assets/icons/close.svg?dataurl"
   import {fade, fly} from "@lib/transition"
   import {documentActive} from "@lib/html"
@@ -30,7 +29,7 @@
   import RoomPinnedMessages from "@app/components/RoomPinnedMessages.svelte"
   import ThunkToast from "@app/components/ThunkToast.svelte"
   import VideoCallContent from "@app/components/VideoCallContent.svelte"
-  import VoiceWidget from "@app/components/VoiceWidget.svelte"
+  import CallControlBar from "@app/components/CallControlBar.svelte"
   import {deletes, relays, rooms, thunks, user} from "@app/core"
   import {publishRoomJoinRequest} from "@app/access"
   import {CallState, callTargetRoom, callState, VideoCallLayout, videoCallLayout} from "@app/call"
@@ -44,7 +43,7 @@
   } from "@app/rooms"
   import {userSettingsValues} from "@app/settings"
   import {makeFeed} from "@app/feeds"
-  import {checked, deferredRoomPath, notifications, setChecked} from "@app/notifications"
+  import {checked, deferredRoomPath, setChecked} from "@app/notifications"
   import {makeRoomPath} from "@app/routes"
   import {pendingShare, type Share} from "@app/share"
   import {pushToast} from "@app/toast"
@@ -60,15 +59,17 @@
   const addMemberKind = h ? ROOM_ADD_MEMBER : RELAY_ADD_MEMBER
   const isVoiceRoom = $derived($room && getRoomType($room) === RoomType.Voice)
 
+  const isCallTargetingThisRoom = $derived($callTargetRoom?.url === url && $callTargetRoom?.h === h)
+
   const voiceConnectedHere = $derived(
-    isVoiceRoom &&
-      $callState === CallState.Connected &&
-      $callTargetRoom?.url === url &&
-      $callTargetRoom?.h === h,
+    isVoiceRoom && $callState === CallState.Connected && isCallTargetingThisRoom,
   )
 
+  // Reuses voiceConnectedHere (rather than re-deriving isVoiceRoom/callState) so it
+  // can't diverge and stay true for a different voice room the call isn't targeting
+  // — that previously hid this room's messages/compose row while connected elsewhere.
   const showMobileVideoPanel = $derived(
-    isVoiceRoom && $callState === CallState.Connected && $videoCallLayout === VideoCallLayout.Video,
+    voiceConnectedHere && $videoCallLayout === VideoCallLayout.Video,
   )
 
   // Basic pass at issue #121's "chat overlaid on video" idea: float the chat panel over
@@ -81,9 +82,7 @@
   )
 
   const roomPath = h ? makeRoomPath(url, h) : undefined
-  const chatUnread = $derived(roomPath !== undefined && $notifications.has(roomPath))
 
-  const openChat = () => videoCallLayout.set(VideoCallLayout.Split)
   const closeChat = () => videoCallLayout.set(VideoCallLayout.Video)
 
   $effect(() => {
@@ -503,7 +502,7 @@
       )} />
   {/if}
 
-  {#if h && isVoiceRoom && $callState === CallState.Connected}
+  {#if h && voiceConnectedHere}
     <VideoCallContent
       layout={$videoCallLayout}
       mobile
@@ -611,8 +610,12 @@
 
     <div
       class={cx(
-        "room__compose flex flex-col gap-1 md:flex-row md:gap-0",
+        "room__compose flex flex-row items-center gap-1 px-2",
         showMobileVideoPanel && "max-md:hidden",
+        // the connected bar (mic/camera/screenshare/settings/chat/leave) is too wide
+        // to sit beside the compose input on any screen size — give it its own row.
+        // gap-2 only applies here (the inline row stays flush with no gap).
+        voiceConnectedHere && "flex-col items-stretch gap-2",
       )}>
       <div class="room__compose-inner min-w-0 flex-1">
         {#if $room?.meta?.isPrivate() && $membershipStatus !== MembershipStatus.Granted}
@@ -660,31 +663,13 @@
           {/key}
         {/if}
       </div>
-      {#if isVoiceRoom || $callState === CallState.Joining || $callState === CallState.Connected}
-        <div
-          class={cx(
-            "hide-on-keyboard flex-shrink-0 p-2 md:hidden",
-            videoCallChatHidden && "hidden",
-          )}>
-          <VoiceWidget />
+      {#if h}
+        <div class="hide-on-keyboard flex flex-shrink-0 items-center justify-center py-2">
+          <CallControlBar {url} {h} hideConnectedOnDesktop />
         </div>
       {/if}
     </div>
   </div>
-
-  {#if videoCallChatHidden}
-    <Button
-      aria-label="Open room chat"
-      class="button button-primary button-circle fixed z-popover bottom-[calc(4.5rem+var(--saib))] right-4 shadow-lg md:bottom-4"
-      onclick={openChat}>
-      <Icon icon={ChatRound} size={5} />
-      {#if chatUnread}
-        <span
-          class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-surface"
-          aria-hidden="true"></span>
-      {/if}
-    </Button>
-  {/if}
 </div>
 
 {#if showScrollButton}

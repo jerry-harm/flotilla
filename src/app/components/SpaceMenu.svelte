@@ -5,7 +5,6 @@
   import SpaceMenuNavItems from "@app/components/SpaceMenuNavItems.svelte"
   import SpaceMenuRooms from "@app/components/SpaceMenuRooms.svelte"
   import Link from "@lib/components/Link.svelte"
-  import VoiceWidget from "@app/components/VoiceWidget.svelte"
   import SocketStatusIndicator from "@app/components/SocketStatusIndicator.svelte"
   import {makeSpacePath} from "@app/routes"
 
@@ -31,7 +30,6 @@
         <SpaceMenuRooms {url} mobile />
       </div>
       <div class="card space-menu__card space-menu__status shrink-0 z-nav-item">
-        <VoiceWidget />
         <Link href={makeSpacePath(url, "about")} class="space-menu__status-link">
           <SocketStatusIndicator {url} />
         </Link>
@@ -50,7 +48,6 @@
       </div>
     </SecondaryNavSection>
     <div class="flex shrink-0 flex-col gap-2 p-2 pt-0 -mt-4 pb-1 md:pb-2 z-nav">
-      <VoiceWidget />
       <Link href={makeSpacePath(url, "about")} class="button button-neutral button-sm h-10">
         <SocketStatusIndicator {url} />
       </Link>
