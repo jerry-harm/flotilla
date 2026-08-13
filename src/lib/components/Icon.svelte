@@ -6,7 +6,6 @@
 </style>
 
 <script lang="ts">
-  import {onMount} from "svelte"
   import {maybe} from "@welshman/lib"
 
   const {
@@ -22,46 +21,63 @@
 
   const px = size * 4
 
-  const isSafari =
+  // The ios app's wkwebview has no "Safari" token in its user agent, so
+  // detect the engine instead of sniffing for the Safari browser.
+  const isWebkit =
     typeof navigator !== "undefined" &&
-    /safari/i.test(navigator.userAgent) &&
-    !/chrome|chromium|android/i.test(navigator.userAgent)
+    /applewebkit/i.test(navigator.userAgent) &&
+    !/chrome|chromium|android|firefox/i.test(navigator.userAgent)
 
-  let canceled = false
+  // Strip any query string/fragment - hosted icons are often served with one.
+  const isRemoteSvg = (value: string) =>
+    !value.startsWith("data:") && /\.svg$/i.test(value.split(/[?#]/)[0]!)
+
   let objectUrl = $state(maybe<string>())
 
   const src = $derived(objectUrl || icon)
 
-  // Primal issues 302 redirects from blossom, which messes up safari
-  const fetchSvg = async () => {
+  // Primal issues 302 redirects from blossom, which breaks mask-image on webkit.
+  const fetchSvg = async (url: string) => {
     try {
-      const response = await fetch(icon, {
+      const response = await fetch(url, {
         mode: "cors",
         credentials: "omit",
       })
 
       if (response.ok) {
-        const blob = await response.blob()
-
-        if (!canceled) {
-          objectUrl = URL.createObjectURL(blob)
-        }
+        return URL.createObjectURL(await response.blob())
       }
     } catch {
       // pass
     }
   }
 
-  onMount(() => {
-    if (isSafari && icon.toLowerCase().endsWith(".svg")) {
-      fetchSvg()
+  // Re-fetch when icon changes, revoking the previous blob url.
+  $effect(() => {
+    const url = icon
+
+    let canceled = false
+    let created: string | undefined
+
+    if (isWebkit && isRemoteSvg(url)) {
+      fetchSvg(url).then(blobUrl => {
+        if (!blobUrl) return
+
+        if (canceled) {
+          URL.revokeObjectURL(blobUrl)
+        } else {
+          created = blobUrl
+          objectUrl = blobUrl
+        }
+      })
     }
 
     return () => {
       canceled = true
 
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl)
+      if (created) {
+        URL.revokeObjectURL(created)
+        objectUrl = undefined
       }
     }
   })
