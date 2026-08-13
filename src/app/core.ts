@@ -12,6 +12,7 @@ import {
   Domain,
   FollowLists,
   Handles,
+  Logger,
   MessagingRelayLists,
   MuteLists,
   Network,
@@ -142,6 +143,7 @@ export const deletes = usePlugin(Deletes)
 export const domain = usePlugin(Domain)
 export const followLists = usePlugin(FollowLists)
 export const handles = usePlugin(Handles)
+export const logger = usePlugin(Logger)
 export const messagingRelayLists = usePlugin(MessagingRelayLists)
 export const muteLists = usePlugin(MuteLists)
 export const network = usePlugin(Network)

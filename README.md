@@ -16,6 +16,7 @@ You can also optionally create an `.env.local` file and populate it with the fol
 - `VITE_PLATFORM_DESCRIPTION` - A description of the app
 - `VITE_PLATFORM_TERMS` - URL to your terms of service page
 - `VITE_PLATFORM_PRIVACY` - URL to your privacy policy page
+- `VITE_PLATFORM_LOGEE` - A hex pubkey which will receive logs users send from their privacy settings
 
 **Platform mode**
 - `VITE_PLATFORM_RELAYS` - A comma-separated list of relay urls that will make flotilla operate in "platform mode". Disables all space browse/add/select functionality and makes the first platform relay the home page.

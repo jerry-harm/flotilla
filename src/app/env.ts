@@ -50,6 +50,8 @@ export const PLATFORM_LOGO = import.meta.env.PROD
 
 export const PLATFORM_NAME = env("VITE_PLATFORM_NAME")
 
+export const PLATFORM_LOGEE = env("VITE_PLATFORM_LOGEE")
+
 export const PLATFORM_ACCENT = env("VITE_PLATFORM_ACCENT")
 
 // components visual preset (see src/lib/components/theme.css). Selected per

@@ -26,7 +26,6 @@ export type SettingsValues = {
   hide_sensitive: boolean
   trusted_relays: string[]
   report_usage: boolean
-  report_errors: boolean
   relay_auth: RelayAuthMode
   send_delay: number
   font_size: number
@@ -39,7 +38,6 @@ export const defaultSettings: SettingsValues = {
   hide_sensitive: true,
   trusted_relays: [],
   report_usage: true,
-  report_errors: true,
   relay_auth: RelayAuthMode.Conservative,
   send_delay: 0,
   font_size: 1.1,

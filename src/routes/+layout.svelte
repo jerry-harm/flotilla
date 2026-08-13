@@ -21,6 +21,7 @@
   import {app} from "@app/core"
   import {setupHistory} from "@app/routes"
   import {setupAnalytics} from "@app/analytics"
+  import {setupLogging} from "@app/logger"
   import "@app/policies"
   import {restoreSession} from "@app/session"
   import {signerRequests} from "@app/signer"
@@ -127,6 +128,9 @@
 
     // Attach the user before anything reads or decrypts on their behalf
     unsubscribers.push(await restoreSession())
+
+    // Set up logging
+    unsubscribers.push(setupLogging())
 
     // Sync stuff to storage
     await Promise.all([

@@ -7,12 +7,31 @@
   import Card from "@lib/components/Card.svelte"
   import PageContent from "@lib/components/PageContent.svelte"
   import Button from "@lib/components/Button.svelte"
+  import Spinner from "@lib/components/Spinner.svelte"
   import {pushToast} from "@app/toast"
   import {PLATFORM_NAME} from "@app/env"
+  import {sendLogs} from "@app/logger"
   import {RelayAuthMode, userSettingsValues, publishSettings} from "@app/settings"
 
   const reset = () => {
     settings = {...$userSettingsValues}
+  }
+
+  const send = async () => {
+    loading = true
+
+    try {
+      const thunk = await sendLogs()
+      const error = await thunk.waitForError()
+
+      if (error) {
+        pushToast({theme: "error", message: error})
+      } else {
+        pushToast({message: "Your logs have been sent. Thank you!"})
+      }
+    } finally {
+      loading = false
+    }
   }
 
   const onAuthModeChange = (checked: boolean) => {
@@ -26,6 +45,7 @@
   })
 
   let settings = $state({...$userSettingsValues})
+  let loading = $state(false)
 </script>
 
 <form {onsubmit}>
@@ -50,17 +70,6 @@
       </FieldInline>
       <FieldInline>
         {#snippet label()}
-          <p>Report errors?</p>
-        {/snippet}
-        {#snippet input()}
-          <ToggleInput bind:checked={settings.report_errors} />
-        {/snippet}
-        {#snippet info()}
-          <p>Allow {PLATFORM_NAME} to send error reports to help improve the app.</p>
-        {/snippet}
-      </FieldInline>
-      <FieldInline>
-        {#snippet label()}
           <p>Report usage?</p>
         {/snippet}
         {#snippet input()}
@@ -68,6 +77,21 @@
         {/snippet}
         {#snippet info()}
           <p>Allow {PLATFORM_NAME} to collect anonymous usage data.</p>
+        {/snippet}
+      </FieldInline>
+      <FieldInline>
+        {#snippet label()}
+          <p>Something went wrong?</p>
+        {/snippet}
+        {#snippet input()}
+          <Button class="button button-neutral" onclick={send} disabled={loading}>
+            <Spinner {loading}>Send Logs</Spinner>
+          </Button>
+        {/snippet}
+        {#snippet info()}
+          <p>
+            Send a record of recent app activity to the {PLATFORM_NAME} team as a direct message.
+          </p>
         {/snippet}
       </FieldInline>
     </Card>
