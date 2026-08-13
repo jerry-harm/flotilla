@@ -1,22 +1,20 @@
 <script lang="ts">
   import type {ComponentProps} from "svelte"
   import {onMount} from "svelte"
-  import {request} from "@welshman/net"
   import {POLL_RESPONSE} from "@welshman/util"
   import PollVotes from "@app/components/PollVotes.svelte"
   import Content from "@app/components/Content.svelte"
+  import {network} from "@app/core"
 
   const props: ComponentProps<typeof Content> = $props()
 
   onMount(() => {
-    if (!props.url) {
-      return
+    if (props.url) {
+      $network.request({
+        relays: [props.url],
+        filters: [{kinds: [POLL_RESPONSE], "#e": [props.event.id]}],
+      })
     }
-
-    request({
-      relays: [props.url],
-      filters: [{kinds: [POLL_RESPONSE], "#e": [props.event.id]}],
-    })
   })
 </script>
 

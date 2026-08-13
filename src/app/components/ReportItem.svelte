@@ -1,7 +1,7 @@
 <script lang="ts">
   import {formatTimestamp} from "@welshman/lib"
   import {getIdFilters, matchTag, tagSpec} from "@welshman/util"
-  import {load, LOCAL_RELAY_URL} from "@welshman/net"
+  import {LOCAL_RELAY_URL} from "@welshman/net"
   import type {TrustedEvent} from "@welshman/util"
   import Card from "@lib/components/Card.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -10,6 +10,7 @@
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
   import NoteContent from "@app/components/NoteContent.svelte"
   import ReportMenu from "@app/components/ReportMenu.svelte"
+  import {network} from "@app/core"
   import {pushModal} from "@app/modal"
   import {goToEvent} from "@app/routes"
 
@@ -55,7 +56,7 @@
   {/if}
   <div class="card card-sm">
     {#if etag}
-      {#await load({relays: [url, LOCAL_RELAY_URL], filters: getIdFilters([etag[1]])})}
+      {#await $network.load({relays: [url, LOCAL_RELAY_URL], filters: getIdFilters([etag[1]])})}
         <p>Loading</p>
       {:then reportedEvents}
         {#if reportedEvents.length === 0}

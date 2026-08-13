@@ -78,7 +78,7 @@ export const sendLogs = async () => {
   }
 
   const event = await writer(DirectMessage)
-    .setContent(lines.join("\n"))
+    .setContent("```" + lines.join("\n") + "```")
     .addRecipient(PLATFORM_LOGEE)
     .renderTemplate()
 

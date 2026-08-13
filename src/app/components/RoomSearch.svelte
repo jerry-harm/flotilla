@@ -1,7 +1,6 @@
 <script lang="ts">
   import {onMount, tick} from "svelte"
   import {debounce} from "throttle-debounce"
-  import {load} from "@welshman/net"
   import {groupBy, uniqBy, now, MINUTE, HOUR, DAY, WEEK} from "@welshman/lib"
   import type {TrustedEvent, Filter} from "@welshman/util"
   import {MESSAGE, sortEventsDesc, displayRelayUrl} from "@welshman/util"
@@ -19,6 +18,7 @@
   import NoteContentMinimal from "@app/components/NoteContentMinimal.svelte"
   import {CONTENT_KINDS} from "@app/content"
   import {getEventsForUrl} from "@app/repository"
+  import {network} from "@app/core"
   import {popModal} from "@app/modal"
   import {goToEvent} from "@app/routes"
 
@@ -51,7 +51,7 @@
     results = sortEventsDesc(getEventsForUrl(url, [filter]))
 
     try {
-      const events = await load({
+      const events = await $network.load({
         relays: [url],
         signal: controller.signal,
         filters: [filter],

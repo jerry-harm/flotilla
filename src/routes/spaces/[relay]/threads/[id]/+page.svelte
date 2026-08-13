@@ -8,7 +8,6 @@
   import type {TrustedEvent} from "@welshman/util"
   import {deriveEventsAsc} from "@welshman/store"
   import {COMMENT, tagValue, tagSpec} from "@welshman/util"
-  import {request} from "@welshman/net"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import PageContent from "@lib/components/PageContent.svelte"
@@ -21,6 +20,7 @@
   import EventReply from "@app/components/EventReply.svelte"
   import RoomName from "@app/components/RoomName.svelte"
   import {deriveEvent, deriveEventsById} from "@app/repository"
+  import {network} from "@app/core"
   import {decodeRelay} from "@app/relays"
   import {makeSpacePath, scrollToEvent} from "@app/routes"
 
@@ -138,7 +138,7 @@
   onMount(() => {
     const controller = new AbortController()
 
-    request({relays: [url], filters, signal: controller.signal})
+    $network.request({relays: [url], filters, signal: controller.signal})
 
     return () => {
       controller.abort()
