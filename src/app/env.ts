@@ -38,6 +38,8 @@ export const PLATFORM_RELAYS = fromCsv(env("VITE_PLATFORM_RELAYS")).map(normaliz
 
 export const PLATFORM_URL = env("VITE_PLATFORM_URL")
 
+export const PLATFORM_ABOUT = env("VITE_PLATFORM_ABOUT")
+
 export const PLATFORM_TERMS = env("VITE_PLATFORM_TERMS")
 
 export const PLATFORM_PRIVACY = env("VITE_PLATFORM_PRIVACY")

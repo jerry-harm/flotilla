@@ -5,13 +5,13 @@
   import Icon from "@lib/components/Icon.svelte"
   import Card from "@lib/components/Card.svelte"
   import Code from "@assets/icons/code-2.svg?dataurl"
-  import Global from "@assets/icons/global.svg?dataurl"
+  import Planet from "@assets/icons/planet.svg?dataurl"
   import Pen from "@assets/icons/pen.svg?dataurl"
   import HeadphonesRound from "@assets/icons/headphones-round.svg?dataurl"
   import Zap from "@app/components/Zap.svelte"
   import ZapInvoice from "@app/components/ZapInvoice.svelte"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
-  import {PLATFORM_NAME} from "@app/env"
+  import {PLATFORM_NAME, PLATFORM_ABOUT} from "@app/env"
   import {wallet} from "@app/lightning"
   import {pushModal} from "@app/modal"
   import {makeSpacePath} from "@app/routes"
@@ -68,9 +68,9 @@
           <Icon icon={Code} />
         </Link>
       </div>
-      <div class="tip tip-top" data-tip="About the Developer">
-        <Link external href="https://coracle.tools">
-          <Icon icon={Global} />
+      <div class="tip tip-top" data-tip="About {PLATFORM_NAME}">
+        <Link external href={PLATFORM_ABOUT}>
+          <Icon icon={Planet} />
         </Link>
       </div>
       <div class="tip tip-top" data-tip="Dev Blog">
