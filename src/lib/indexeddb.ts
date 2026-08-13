@@ -22,7 +22,8 @@ export class IDB {
   // on who is logged in, so open at whatever version exists and bump it to add missing ones.
   private open = async () => {
     const {name, stores} = this.options
-    const db = await openDB(name)
+    const blocking = () => this.close()
+    const db = await openDB(name, undefined, {blocking})
     const missing = stores.filter(store => !db.objectStoreNames.contains(store.name))
 
     if (missing.length === 0) {
@@ -39,8 +40,11 @@ export class IDB {
           idbDb.createObjectStore(name, {keyPath})
         }
       },
-      blocked() {},
-      blocking() {},
+      blocked: (currentVersion, blockedVersion) =>
+        console.error(
+          `Upgrade of ${name} from ${currentVersion} to ${blockedVersion} is blocked by another connection`,
+        ),
+      blocking,
     })
   }
 
@@ -107,15 +111,19 @@ export class IDB {
     await tx.done
   }
 
-  close = () => {
-    this.connection?.then(c => c?.close())
+  close = async () => {
+    const connection = this.connection
+
     this.connection = undefined
+
+    await connection?.then(c => c?.close())
   }
 
   clear = async () => {
-    await this.connection?.then(c => c?.close())
+    await this.close()
     await deleteDB(this.options.name, {
-      blocked() {},
+      blocked: currentVersion =>
+        console.error(`Deletion of ${this.options.name} at ${currentVersion} is blocked`),
     })
   }
 }
