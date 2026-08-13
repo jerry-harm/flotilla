@@ -1,3 +1,6 @@
+# Allow link_deps to change stuff in the working tree
+verifyDepsBeforeRun: warn
+
 allowBuilds:
   nostr-signer-capacitor-plugin: true
   cbor-extract: false

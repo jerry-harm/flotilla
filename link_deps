@@ -49,5 +49,10 @@ fs.writeFileSync(file, workspace.replace(/^overrides:$/m, `overrides:\n${links}`
 try {
   execSync('pnpm i', { stdio: 'inherit' })
 } finally {
-  execSync(`git checkout -f ${file} pnpm-lock.yaml`, { stdio: 'inherit' })
+  // Restore what was read rather than checking the file out, so any unrelated edits survive.
+  fs.writeFileSync(file, workspace)
+  execSync('git checkout -f pnpm-lock.yaml', { stdio: 'inherit' })
 }
+
+console.log('\nWelshman is linked. pnpm will warn that node_modules is out of sync until you')
+console.log('run `pnpm i` again, which unlinks it.')
