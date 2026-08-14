@@ -135,8 +135,17 @@ export const makeCalendarPath = (url: string, address?: string) =>
 
 export const makePollPath = (url: string, id?: string) => makeSpacePath(url, "polls", id)
 
-export const makeLibraryPath = (url: string, address?: string) =>
-  makeSpacePath(url, "library", address)
+// Shelves are selected in place on the library page rather than having their own
+// route, so the address goes in a query param.
+export const makeLibraryPath = (url: string, address?: string) => {
+  const path = makeSpacePath(url, "library")
+
+  if (address) {
+    return path + "?" + new URLSearchParams({board: address}).toString()
+  }
+
+  return path
+}
 
 export const makeContentPath = (url: string, kind: number, idOrAddress?: string) => {
   switch (kind) {

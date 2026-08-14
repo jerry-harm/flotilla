@@ -1,27 +1,32 @@
 <script lang="ts">
-  import {Pins} from "@welshman/app"
+  import cx from "classnames"
   import type {PinboardReader} from "@welshman/domain"
-  import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
-  import Icon from "@lib/components/Icon.svelte"
-  import Link from "@lib/components/Link.svelte"
+  import Button from "@lib/components/Button.svelte"
   import MenuButton from "@lib/components/MenuButton.svelte"
-  import PinItem from "@app/components/PinItem.svelte"
   import BoardMenu from "@app/components/BoardMenu.svelte"
-  import {app} from "@app/core"
-  import {makeLibraryPath} from "@app/routes"
 
   type Props = {
     url: string
     board: PinboardReader
+    selected: boolean
+    onclick: () => void
   }
 
-  const {url, board}: Props = $props()
-
-  const pins = $app.use(Pins).forBoard(board.address()).$
-  const detailPath = makeLibraryPath(url, board.address())
+  const {url, board, selected, onclick}: Props = $props()
 </script>
 
-<div class="card relative flex flex-col gap-2">
+<div class="relative w-56 shrink-0">
+  <Button
+    {onclick}
+    aria-pressed={selected}
+    class={cx("card card-sm card-interactive flex h-full w-full flex-col items-start gap-1 pr-10", {
+      "card-primary": selected,
+    })}>
+    <strong class="truncate w-full text-left">{board.title() || "Untitled shelf"}</strong>
+    {#if board.description()}
+      <span class="line-clamp-2 text-left text-sm opacity-70">{board.description()}</span>
+    {/if}
+  </Button>
   <div class="absolute right-2 top-2 z-feature">
     <MenuButton
       class="button button-neutral button-sm button-square"
@@ -30,17 +35,4 @@
       component={BoardMenu}
       componentProps={{url, board}} />
   </div>
-  <div class="flex flex-col pr-8">
-    <strong class="text-lg">{board.title() || "Untitled shelf"}</strong>
-    {#if board.description()}
-      <span class="text-sm opacity-70">{board.description()}</span>
-    {/if}
-  </div>
-  {#each $pins.slice(0, 1) as pin (pin.id())}
-    <PinItem minimal {url} {pin} />
-  {/each}
-  <Link href={detailPath} class="button button-primary">
-    <Icon icon={AltArrowRight} />
-    <strong>View all content</strong>
-  </Link>
 </div>
