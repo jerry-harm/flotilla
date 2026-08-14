@@ -2,20 +2,9 @@ import * as nip19 from "nostr-tools/nip19"
 import {derived} from "svelte/store"
 import {sortBy, uniq} from "@welshman/lib"
 import type {Maybe} from "@welshman/lib"
-import {
-  MESSAGE,
-  ROOM_ADD_MEMBER,
-  ROOM_JOIN,
-  ROOM_LEAVE,
-  ROOM_REMOVE_MEMBER,
-  makeEvent,
-  outbox,
-  seen,
-  sortEventsAsc,
-  toNostrURI,
-} from "@welshman/util"
+import {MESSAGE, makeEvent, outbox, seen, toNostrURI} from "@welshman/util"
 import type {EventContent, TrustedEvent} from "@welshman/util"
-import {RoomLists, makeRoomKey, createSearch} from "@welshman/app"
+import {MembershipStatus, RoomLists, makeRoomKey, createSearch} from "@welshman/app"
 import type {Room, RoomMeta} from "@welshman/app"
 import {
   deriveUserItem,
@@ -29,14 +18,7 @@ import {
   user,
 } from "@app/core"
 import {deriveUserIsSpaceAdmin} from "@app/management"
-import {deriveEventsForUrl} from "@app/repository"
 import {makeRoomPath} from "@app/routes"
-
-export enum MembershipStatus {
-  Initial,
-  Pending,
-  Granted,
-}
 
 export const ROOM = "h"
 
@@ -58,7 +40,7 @@ export const displayRoom = (url: string, h: string) =>
 export const roomComparator = (url: string) => (h: string) => displayRoom(url, h).toLowerCase()
 
 export const deriveRoomMembers = (url: string, h: string) =>
-  derived(rooms.get().forRoom(url, h), $room => $room?.members?.members() ?? [])
+  derived(rooms.get().members(url, h).$, $members => Array.from($members))
 
 // A room member also has to be allowed at the relay level, or they won't be able to read the
 // room at all.
@@ -181,44 +163,11 @@ export const deriveUserIsRoomAdmin = (url: string, h: string) =>
       $isSpaceAdmin || Boolean($room?.admins?.pubkeys().includes($user.pubkey)),
   )
 
+// Room membership is the relay's business, but a space admin outranks it.
 export const deriveUserRoomMembershipStatus = (url: string, h: string) =>
   derived(
-    [
-      user,
-      rooms.get().forRoom(url, h),
-      deriveEventsForUrl(url, [{kinds: [ROOM_ADD_MEMBER, ROOM_REMOVE_MEMBER], "#h": [h]}]),
-      deriveEventsForUrl(url, [{kinds: [ROOM_JOIN, ROOM_LEAVE], "#h": [h]}]),
-      deriveUserIsRoomAdmin(url, h),
-    ],
-    ([$user, $room, $addRemoveEvents, $joinLeaveEvents, $isAdmin]) => {
-      if ($isAdmin) {
-        return MembershipStatus.Granted
-      }
-
-      let isMember = false
-
-      if ($room?.members) {
-        isMember = $room.members.isMember($user.pubkey)
-      } else {
-        for (const event of sortEventsAsc($addRemoveEvents)) {
-          if (event.pubkey === $user.pubkey) {
-            isMember = event.kind === ROOM_ADD_MEMBER
-          }
-        }
-      }
-
-      for (const event of $joinLeaveEvents) {
-        if (event.pubkey === $user.pubkey) {
-          if (event.kind === ROOM_JOIN) {
-            return isMember ? MembershipStatus.Granted : MembershipStatus.Pending
-          }
-
-          return MembershipStatus.Initial
-        }
-      }
-
-      return isMember ? MembershipStatus.Granted : MembershipStatus.Initial
-    },
+    [rooms.get().membershipStatus(url, h).$, deriveUserIsRoomAdmin(url, h)],
+    ([$status, $isAdmin]) => ($isAdmin ? MembershipStatus.Granted : $status),
   )
 
 export const deriveUserRoomSearch = () =>

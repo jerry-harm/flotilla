@@ -10,7 +10,7 @@
   import type {Maybe} from "@welshman/lib"
   import type {TrustedEvent, EventContent} from "@welshman/util"
   import {makeEvent, MESSAGE, RELAY_ADD_MEMBER, ROOM_ADD_MEMBER} from "@welshman/util"
-  import {publish} from "@welshman/app"
+  import {MembershipStatus, publish} from "@welshman/app"
   import AltArrowDown from "@assets/icons/alt-arrow-down.svg?dataurl"
   import ClockCircle from "@assets/icons/clock-circle.svg?dataurl"
   import Login2 from "@assets/icons/login-3.svg?dataurl"
@@ -37,7 +37,6 @@
     PROTECTED,
     RoomType,
     deriveUserRoomMembershipStatus,
-    MembershipStatus,
     getRoomType,
     prependParent,
   } from "@app/rooms"
