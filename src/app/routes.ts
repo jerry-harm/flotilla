@@ -14,6 +14,7 @@ import {
   THREAD,
   ZAP_GOAL,
   getAddress,
+  getIdOrAddress,
   hexTags,
   tagSpec,
   tagValue,
@@ -138,6 +139,24 @@ export const makePollPath = (url: string, id?: string) => makeSpacePath(url, "po
 export const makeLibraryPath = (url: string, address?: string) =>
   makeSpacePath(url, "library", address)
 
+/** Path to a content item by kind, or to its listing when `idOrAddress` is omitted. */
+export const getContentPath = (url: string, kind: number, idOrAddress?: string) => {
+  switch (kind) {
+    case ZAP_GOAL:
+      return makeGoalPath(url, idOrAddress)
+    case THREAD:
+      return makeThreadPath(url, idOrAddress)
+    case CLASSIFIED:
+      return makeClassifiedPath(url, idOrAddress)
+    case EVENT_TIME:
+      return makeCalendarPath(url, idOrAddress)
+    case PINBOARD:
+      return makeLibraryPath(url, idOrAddress)
+    case POLL:
+      return makePollPath(url, idOrAddress)
+  }
+}
+
 export const scrollToEvent = (id: string) => {
   const element = document.querySelector(`[data-event="${id}"]`) as any
 
@@ -249,19 +268,5 @@ export const makeEventPermalink = (event: TrustedEvent, url?: string) => {
   return `${PLATFORM_URL}${path}#${nip19.neventEncode({id: event.id, relays: urls})}`
 }
 
-export const getRoomItemPath = (url: string, event: TrustedEvent) => {
-  switch (event.kind) {
-    case THREAD:
-      return makeThreadPath(url, event.id)
-    case CLASSIFIED:
-      return makeClassifiedPath(url, getAddress(event))
-    case ZAP_GOAL:
-      return makeGoalPath(url, event.id)
-    case EVENT_TIME:
-      return makeCalendarPath(url, getAddress(event))
-    case PINBOARD:
-      return makeLibraryPath(url, getAddress(event))
-    case POLL:
-      return makePollPath(url, event.id)
-  }
-}
+export const getRoomItemPath = (url: string, event: TrustedEvent) =>
+  getContentPath(url, event.kind, getIdOrAddress(event))

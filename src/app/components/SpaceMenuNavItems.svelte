@@ -72,27 +72,27 @@
   </SecondaryNavItem>
 {/if}
 {#if ENABLE_ZAPS && $spaceKinds.has(ZAP_GOAL)}
-  <SecondaryNavItem href={goalsPath}>
+  <SecondaryNavItem href={goalsPath} notification={$notifications.has(goalsPath)}>
     <Icon icon={StarFallMinimalistic} /> Goals
   </SecondaryNavItem>
 {/if}
 {#if $spaceKinds.has(THREAD)}
-  <SecondaryNavItem href={threadsPath}>
+  <SecondaryNavItem href={threadsPath} notification={$notifications.has(threadsPath)}>
     <Icon icon={NotesMinimalistic} /> Threads
   </SecondaryNavItem>
 {/if}
 {#if $spaceKinds.has(CLASSIFIED)}
-  <SecondaryNavItem href={classifiedsPath}>
+  <SecondaryNavItem href={classifiedsPath} notification={$notifications.has(classifiedsPath)}>
     <Icon icon={CaseMinimalistic} /> Classifieds
   </SecondaryNavItem>
 {/if}
 {#if $spaceKinds.has(EVENT_TIME)}
-  <SecondaryNavItem href={calendarPath}>
+  <SecondaryNavItem href={calendarPath} notification={$notifications.has(calendarPath)}>
     <Icon icon={CalendarMinimalistic} /> Calendar
   </SecondaryNavItem>
 {/if}
 {#if $spaceKinds.has(POLL)}
-  <SecondaryNavItem href={pollsPath}>
+  <SecondaryNavItem href={pollsPath} notification={$notifications.has(pollsPath)}>
     <Icon icon={Revote} /> Polls
   </SecondaryNavItem>
 {/if}

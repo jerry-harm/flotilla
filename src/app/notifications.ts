@@ -4,9 +4,11 @@ import {page} from "$app/stores"
 import {assoc, prop, first, identity, groupBy, now, throttle, parseJson, gt} from "@welshman/lib"
 import type {SignedEvent, TrustedEvent} from "@welshman/util"
 import {
+  getIdOrAddress,
   sortEventsDesc,
   tagSpec,
   tagValue,
+  COMMENT,
   MESSAGE,
   makeHttpAuth,
   makeHttpAuthHeader,
@@ -15,7 +17,13 @@ import {synced, throttled, withGetter} from "@welshman/store"
 import {Relays, RoomLists} from "@welshman/app"
 import {deriveEventsByIdByUrl} from "@app/repository"
 import {app, fromApp} from "@app/core"
-import {makeSpacePath, makeRoomPath, makeSpaceChatPath, makeChatPath} from "@app/routes"
+import {
+  makeSpacePath,
+  makeRoomPath,
+  makeSpaceChatPath,
+  makeChatPath,
+  getContentPath,
+} from "@app/routes"
 import {CONTENT_KINDS, makeCommentFilter} from "@app/content"
 import {notificationSettings} from "@app/settings"
 import {chatsById} from "@app/chats"
@@ -174,6 +182,42 @@ export const syncCheckedRemote = () => {
 
 // Derived notifications state
 
+// The content item an event belongs to - either the content event itself, or the root of a comment
+const getContentTarget = (event: TrustedEvent) => {
+  if (CONTENT_KINDS.includes(event.kind)) {
+    return {kind: event.kind, idOrAddress: getIdOrAddress(event)}
+  }
+
+  if (event.kind === COMMENT) {
+    const kind = parseInt(tagValue(tagSpec("K"), event.tags) || "")
+    const idOrAddress = tagValue(tagSpec("A"), event.tags) || tagValue(tagSpec("E"), event.tags)
+
+    if (CONTENT_KINDS.includes(kind) && idOrAddress) {
+      return {kind, idOrAddress}
+    }
+  }
+}
+
+// Assumes `events` is sorted descending, so the first event seen per content item wins.
+const latestEventByContentPath = (url: string, events: TrustedEvent[]) => {
+  const byPath = new Map<string, {listPath: string; latestEvent: TrustedEvent}>()
+
+  for (const event of events) {
+    const target = getContentTarget(event)
+
+    if (!target) continue
+
+    const path = getContentPath(url, target.kind, target.idOrAddress)
+    const listPath = getContentPath(url, target.kind)
+
+    if (path && listPath && !byPath.has(path)) {
+      byPath.set(path, {listPath, latestEvent: event})
+    }
+  }
+
+  return byPath
+}
+
 export const allNotifications = derived(
   throttled(
     1000,
@@ -250,6 +294,17 @@ export const allNotifications = derived(
 
         if (hasNotification(messagesPath, latestEvent)) {
           paths.add(messagesPath)
+
+          if (hasNotification(spacePath, latestEvent)) {
+            paths.add(spacePath)
+          }
+        }
+      }
+
+      for (const [path, {listPath, latestEvent}] of latestEventByContentPath(url, events)) {
+        if (hasNotification(path, latestEvent)) {
+          paths.add(path)
+          paths.add(listPath)
 
           if (hasNotification(spacePath, latestEvent)) {
             paths.add(spacePath)
