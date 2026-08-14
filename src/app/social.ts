@@ -12,18 +12,16 @@ import {
 import type {TrustedEvent} from "@welshman/util"
 import {withGetter} from "@welshman/store"
 import {getCommentTagValues, getReplyTagValues} from "@welshman/domain"
-import {followLists, muteLists, profiles, user} from "@app/core"
+import {FollowLists, MuteLists} from "@welshman/app"
+import {deriveUserItem, profiles, user} from "@app/core"
 import {DEFAULT_PUBKEYS} from "@app/env"
 
-export const bootstrapPubkeys = derived(
-  [user, followLists.get().index.$],
-  ([$user, $followLists]) => {
-    const appPubkeys = DEFAULT_PUBKEYS.split(",")
-    const userPubkeys = shuffle($followLists.get($user.pubkey)?.pubkeys() ?? [])
+export const bootstrapPubkeys = derived(deriveUserItem(FollowLists), $userFollowList => {
+  const appPubkeys = DEFAULT_PUBKEYS.split(",")
+  const userPubkeys = shuffle($userFollowList?.pubkeys() ?? [])
 
-    return userPubkeys.length > 5 ? userPubkeys : [...userPubkeys, ...appPubkeys]
-  },
-)
+  return userPubkeys.length > 5 ? userPubkeys : [...userPubkeys, ...appPubkeys]
+})
 
 // Ids and addresses of an event's immediate parents, falling back to its thread roots.
 const getParents = ({kind, tags}: TrustedEvent) => {
@@ -33,9 +31,8 @@ const getParents = ({kind, tags}: TrustedEvent) => {
 }
 
 export const isEventMuted = withGetter(
-  derived([user, muteLists.get().index.$], ([$user, $muteLists]) => {
-    const muteList = $muteLists.get($user.pubkey)
-    const tags = muteList?.tags() ?? []
+  derived([user, deriveUserItem(MuteLists)], ([$user, $muteList]) => {
+    const tags = $muteList?.tags() ?? []
     const mutedEvents = new Set(tagValues(hexTags("e"), tags))
     const mutedPubkeys = new Set(tagValues(hexTags("p"), tags))
     const mutedAddresses = new Set(tagValues(addressTags("a"), tags))
@@ -47,7 +44,7 @@ export const isEventMuted = withGetter(
         : undefined
 
     return (e: TrustedEvent) => {
-      if (!muteList) return false
+      if (!$muteList) return false
       if ($user.pubkey === e.pubkey) return false
       if (mutedPubkeys.has(e.pubkey)) return true
       if (mutedEvents.has(e.id)) return true
