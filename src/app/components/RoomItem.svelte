@@ -47,7 +47,6 @@
 
   const {url, event, replyTo = undefined, showPubkey = false, canEdit, onEdit}: Props = $props()
 
-  const path = makeContentPath(url, event.kind, getIdOrAddress(event))
   const h = tagValue(tagSpec("h"), event.tags)
   const today = formatTimestampAsDate(now())
   const profileDisplay = $profiles.display(event.pubkey, [url]).$
@@ -63,7 +62,12 @@
     : readable([])
   const innerEvent = isQuoteOnly ? deriveEvent(qTag![1], [url]) : readable(undefined)
 
+  const path = $derived(
+    $innerEvent && makeContentPath(url, $innerEvent.kind, getIdOrAddress($innerEvent)),
+  )
+
   const reply = () => replyTo!(event)
+
   const edit = canEdit(event) ? () => onEdit(event) : undefined
 
   const onTap = () => pushModal(RoomItemMenuMobile, {url, event, reply, edit})
