@@ -264,7 +264,12 @@ export const leaveVoiceRoom = async () => {
   // Only reset shared UI state if this session is still current. A slow leave
   // that was superseded by a new join (bounded by a timeout in joinVoiceRoom)
   // must not clobber the freshly-joined session when it finally completes.
-  if (get(currentCallSession) === session) {
+  //
+  // Compare the LiveKit room rather than the session object: turning off the
+  // screen share above emits LocalTrackUnpublished, whose handler replaces the
+  // store value with a new object for the same call. An identity check would
+  // fail there and leave the UI stuck in a connected state.
+  if (get(currentCallSession)?.livekit === session.livekit) {
     callState.set(CallState.Disconnected)
     callMicMuted.set(true)
     currentCallSession.set(undefined)
