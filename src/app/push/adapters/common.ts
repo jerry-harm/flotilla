@@ -25,7 +25,7 @@ import {User} from "@welshman/app"
 import {app, messagingRelayLists, network, roomLists} from "@app/core"
 import {DM_KINDS, CONTENT_KINDS, makeCommentFilter} from "@app/content"
 import {notificationSettings, shouldNotify, userSettingsValues} from "@app/settings"
-import {getEventPath, goToSpace} from "@app/routes"
+import {makeEventPath, goToSpace} from "@app/routes"
 
 export type PushSubscription = {
   key: string
@@ -110,7 +110,7 @@ export const onPushNotificationAction = async (action: ActionPerformed) => {
   })
 
   if (event) {
-    goto(await getEventPath(event, [relay]))
+    goto(await makeEventPath(event, [relay]))
   } else {
     goToSpace(relay)
   }

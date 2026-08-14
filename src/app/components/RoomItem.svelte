@@ -10,7 +10,7 @@
     formatTimestampAsDate,
   } from "@welshman/lib"
   import type {TrustedEvent, EventContent} from "@welshman/util"
-  import {MESSAGE, COMMENT, matchTag, tagSpec, tagValue} from "@welshman/util"
+  import {MESSAGE, COMMENT, getIdOrAddress, matchTag, tagSpec, tagValue} from "@welshman/util"
   import {isMobile} from "@lib/html"
   import Pen from "@assets/icons/pen.svg?dataurl"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
@@ -33,7 +33,7 @@
   import {colors} from "@app/theme"
   import {ENABLE_ZAPS} from "@app/env"
   import {deriveEvent, deriveEventsForUrl} from "@app/repository"
-  import {getRoomItemPath} from "@app/routes"
+  import {makeContentPath} from "@app/routes"
   import {pushModal} from "@app/modal"
 
   type Props = {
@@ -47,7 +47,7 @@
 
   const {url, event, replyTo = undefined, showPubkey = false, canEdit, onEdit}: Props = $props()
 
-  const path = getRoomItemPath(url, event)
+  const path = makeContentPath(url, event.kind, getIdOrAddress(event))
   const h = tagValue(tagSpec("h"), event.tags)
   const today = formatTimestampAsDate(now())
   const profileDisplay = $profiles.display(event.pubkey, [url]).$

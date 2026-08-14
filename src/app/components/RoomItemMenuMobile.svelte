@@ -1,7 +1,7 @@
 <script lang="ts">
   import type {NativeEmoji} from "emoji-picker-element/shared"
   import type {TrustedEvent} from "@welshman/util"
-  import {tagSpec, tagValue} from "@welshman/util"
+  import {getIdOrAddress, tagSpec, tagValue} from "@welshman/util"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
@@ -21,7 +21,7 @@
   import {reactions, relays, roomPinLists, user} from "@app/core"
   import {ROOM, deriveUserIsRoomAdmin} from "@app/rooms"
   import {ENABLE_ZAPS} from "@app/env"
-  import {getRoomItemPath} from "@app/routes"
+  import {makeContentPath} from "@app/routes"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
 
@@ -34,7 +34,7 @@
   const {url, event, reply}: Props = $props()
 
   const h = tagValue(tagSpec(ROOM), event.tags) ?? ""
-  const path = getRoomItemPath(url, event)
+  const path = makeContentPath(url, event.kind, getIdOrAddress(event))
   const pinIds = $roomPinLists.pins(url, h).$
   const userIsRoomAdmin = deriveUserIsRoomAdmin(url, h)
   const isPinned = $derived($pinIds.includes(event.id))

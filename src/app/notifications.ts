@@ -22,7 +22,7 @@ import {
   makeRoomPath,
   makeSpaceChatPath,
   makeChatPath,
-  getContentPath,
+  makeContentPath,
 } from "@app/routes"
 import {CONTENT_KINDS, makeCommentFilter} from "@app/content"
 import {notificationSettings} from "@app/settings"
@@ -207,8 +207,8 @@ const latestEventByContentPath = (url: string, events: TrustedEvent[]) => {
 
     if (!target) continue
 
-    const path = getContentPath(url, target.kind, target.idOrAddress)
-    const listPath = getContentPath(url, target.kind)
+    const path = makeContentPath(url, target.kind, target.idOrAddress)
+    const listPath = makeContentPath(url, target.kind)
 
     if (path && listPath && !byPath.has(path)) {
       byPath.set(path, {listPath, latestEvent: event})

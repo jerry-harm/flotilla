@@ -13,7 +13,6 @@ import {
   POLL,
   THREAD,
   ZAP_GOAL,
-  getAddress,
   getIdOrAddress,
   hexTags,
   tagSpec,
@@ -139,8 +138,7 @@ export const makePollPath = (url: string, id?: string) => makeSpacePath(url, "po
 export const makeLibraryPath = (url: string, address?: string) =>
   makeSpacePath(url, "library", address)
 
-/** Path to a content item by kind, or to its listing when `idOrAddress` is omitted. */
-export const getContentPath = (url: string, kind: number, idOrAddress?: string) => {
+export const makeContentPath = (url: string, kind: number, idOrAddress?: string) => {
   switch (kind) {
     case ZAP_GOAL:
       return makeGoalPath(url, idOrAddress)
@@ -155,6 +153,55 @@ export const getContentPath = (url: string, kind: number, idOrAddress?: string) 
     case POLL:
       return makePollPath(url, idOrAddress)
   }
+}
+
+export const makeEventPath = (event: TrustedEvent, urls: string[]) => {
+  if (DM_KINDS.includes(event.kind)) {
+    return makeChatPath([event.pubkey, ...tagValues(hexTags("p"), event.tags)])
+  }
+
+  if (urls.length > 0) {
+    const url = urls[0]
+
+    if (event.kind === MESSAGE) {
+      return makeMessagePath(url, event)
+    }
+
+    const path = makeContentPath(url, event.kind, getIdOrAddress(event))
+
+    if (path) {
+      return path
+    }
+
+    const parentKind = tagValue(tagSpec("K"), event.tags)
+    const parentIdOrAddress =
+      tagValue(tagSpec("A"), event.tags) ?? tagValue(tagSpec("E"), event.tags)
+
+    if (parentKind && parentIdOrAddress) {
+      if (parseInt(parentKind) === MESSAGE) {
+        return makeMessagePath(url, event)
+      }
+
+      const parentPath = makeContentPath(url, parseInt(parentKind), parentIdOrAddress)
+
+      if (parentPath) {
+        return parentPath
+      }
+    }
+  }
+
+  return entityLink(nip19.neventEncode({id: event.id, relays: urls}))
+}
+
+export const makeEventPermalink = (event: TrustedEvent, url?: string) => {
+  const urls = url ? [url] : Array.from(app.get().tracker.getRelays(event.id))
+  const path = makeEventPath(event, urls)
+
+  if (path.includes("://")) {
+    return path
+  }
+
+  return `${PLATFORM_URL}${path}#${nip19.neventEncode({id: event.id, relays: urls})}`
 }
 
 export const scrollToEvent = (id: string) => {
@@ -178,7 +225,7 @@ export const scrollToEvent = (id: string) => {
 
 export const goToEvent = (event: TrustedEvent, options: Record<string, any> = {}) => {
   const urls = Array.from(app.get().tracker.getRelays(event.id))
-  const path = getEventPath(event, urls)
+  const path = makeEventPath(event, urls)
 
   if (path.includes("://")) {
     window.open(path)
@@ -188,85 +235,3 @@ export const goToEvent = (event: TrustedEvent, options: Record<string, any> = {}
     goto(path, {replaceState, ...options})
   }
 }
-
-export const getEventPath = (event: TrustedEvent, urls: string[]) => {
-  if (DM_KINDS.includes(event.kind)) {
-    return makeChatPath([event.pubkey, ...tagValues(hexTags("p"), event.tags)])
-  }
-
-  if (urls.length > 0) {
-    const url = urls[0]
-
-    if (event.kind === ZAP_GOAL) {
-      return makeGoalPath(url, event.id)
-    }
-
-    if (event.kind === THREAD) {
-      return makeThreadPath(url, event.id)
-    }
-
-    if (event.kind === CLASSIFIED) {
-      return makeClassifiedPath(url, getAddress(event))
-    }
-
-    if (event.kind === EVENT_TIME) {
-      return makeCalendarPath(url, getAddress(event))
-    }
-
-    if (event.kind === PINBOARD) {
-      return makeLibraryPath(url, getAddress(event))
-    }
-
-    if (event.kind === POLL) {
-      return makePollPath(url, event.id)
-    }
-
-    if (event.kind === MESSAGE) {
-      return makeMessagePath(url, event)
-    }
-
-    const address = tagValue(tagSpec("A"), event.tags)
-    const kind = tagValue(tagSpec("K"), event.tags)
-    const id = tagValue(tagSpec("E"), event.tags)
-
-    if (id && kind) {
-      if (parseInt(kind) === ZAP_GOAL) {
-        return makeGoalPath(url, id)
-      }
-
-      if (parseInt(kind) === THREAD) {
-        return makeThreadPath(url, id)
-      }
-
-      if (parseInt(kind) === MESSAGE) {
-        return makeMessagePath(url, event)
-      }
-    }
-
-    if (address && kind) {
-      if (parseInt(kind) === CLASSIFIED) {
-        return makeClassifiedPath(url, address)
-      }
-
-      if (parseInt(kind) === EVENT_TIME) {
-        return makeCalendarPath(url, address)
-      }
-    }
-  }
-
-  return entityLink(nip19.neventEncode({id: event.id, relays: urls}))
-}
-
-export const makeEventPermalink = (event: TrustedEvent, url?: string) => {
-  const urls = url ? [url] : Array.from(app.get().tracker.getRelays(event.id))
-  const path = getEventPath(event, urls)
-
-  if (path.includes("://")) {
-    return path
-  }
-
-  return `${PLATFORM_URL}${path}#${nip19.neventEncode({id: event.id, relays: urls})}`
-}
-
-export const getRoomItemPath = (url: string, event: TrustedEvent) =>
-  getContentPath(url, event.kind, getIdOrAddress(event))
