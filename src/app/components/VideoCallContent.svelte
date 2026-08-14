@@ -19,6 +19,8 @@
     participantMediaState,
     pubkeyFromLiveKitIdentity,
     videoTrackRevision,
+    computeAdaptiveGrid,
+    type AdaptiveTileGrid,
   } from "@app/call"
   import {profiles} from "@app/core"
 
@@ -38,7 +40,7 @@
     source: Track.Source.Camera | Track.Source.ScreenShare
   }
 
-  type TileLayout = "spotlight" | "default" | "strip"
+  type TileLayoutVariant = "spotlight" | "default" | "strip"
 
   const {layout, mobile = false, url, h, class: className = ""}: Props = $props()
 
@@ -149,13 +151,15 @@
     return videoTiles.filter(t => tileKey(t) !== pk)
   })
 
+  let gridWidth = $state(0)
+  let gridHeight = $state(0)
+
   const useSpotlightLayout = $derived(primaryTile !== undefined)
-  // 2 tiles stacked full-width felt like they were "overlapping" each other rather
-  // than tiling — put 2+ side by side in a grid, same as everyone else's call UI.
-  // Chat (Split) floats over the video as an overlay card rather than shrinking
-  // this panel's width, so the tile grid doesn't need to collapse for it either.
-  const useMultiGrid = $derived(!useSpotlightLayout && videoTiles.length > 1)
-  const multiGridClass = "grid-cols-1 sm:grid-cols-2"
+  const useMultiGrid = $derived(!useSpotlightLayout)
+
+  const tileGrid = $derived<AdaptiveTileGrid | undefined>(
+    useMultiGrid ? computeAdaptiveGrid(videoTiles.length, gridWidth, gridHeight) : undefined,
+  )
 
   $effect(() => {
     const k = $videoPrimaryTileKey
@@ -195,7 +199,7 @@
   )
 </script>
 
-{#snippet videoTile(tile: VideoTileData, layout: TileLayout)}
+{#snippet videoTile(tile: VideoTileData, layout: TileLayoutVariant)}
   {@const media = $mediaStateByIdentity(tile.liveKitIdentity)}
   {@const label = labelFor(tile.liveKitIdentity, tile.source)}
   <div
@@ -204,7 +208,7 @@
       // camera-off tile reads as its own card instead of blending into the panel.
       "relative isolate overflow-hidden rounded-2xl border border-line shadow-sm",
       layout === "spotlight" && "min-h-0 flex-1",
-      layout === "default" && "aspect-video w-full min-h-0",
+      layout === "default" && "min-h-0 h-full w-full",
       layout === "strip" && "aspect-video w-44 shrink-0",
       tile.source === Track.Source.ScreenShare ? "bg-black" : "bg-surface-more",
     )}>
@@ -265,16 +269,30 @@
         {/if}
       </div>
     {:else if useMultiGrid}
-      <div class={cx("grid min-h-0 flex-1 content-start gap-2 overflow-y-auto", multiGridClass)}>
-        {#each videoTiles as tile (tileKey(tile))}
-          {@render videoTile(tile, "default")}
-        {/each}
-      </div>
-    {:else}
-      <div class="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
-        {#each videoTiles as tile (tileKey(tile))}
-          {@render videoTile(tile, "default")}
-        {/each}
+      <div
+        bind:clientWidth={gridWidth}
+        bind:clientHeight={gridHeight}
+        class="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
+        {#if tileGrid}
+          <div class="flex flex-col items-center gap-2">
+            {#each tileGrid.rows as row, rowIndex}
+              {@const offset = tileGrid.rows
+                .slice(0, rowIndex)
+                .reduce((sum, r) => sum + r.columnCount, 0)}
+              <div
+                class="flex flex-nowrap justify-center gap-2"
+                style={`max-width: ${row.rowWidth}px`}>
+                {#each videoTiles.slice(offset, offset + row.columnCount) as tile (tileKey(tile))}
+                  <div
+                    class="overflow-hidden rounded-2xl shrink-0"
+                    style={`width: ${row.tileWidth}px; height: ${row.tileHeight}px`}>
+                    {@render videoTile(tile, "default")}
+                  </div>
+                {/each}
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
     {/if}
   {:else}
