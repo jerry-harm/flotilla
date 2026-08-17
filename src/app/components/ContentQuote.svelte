@@ -29,7 +29,7 @@
 
   const {value, event, url}: Props = $props()
 
-  const {id, identifier, kind, pubkey, relays = []} = value
+  const {id, identifier, kind, pubkey = value.author, relays = []} = value
   const idOrAddress = id || new Address(kind, pubkey, identifier).toString()
   const ref = {id, pubkey, kind, identifier, relays}
   const hints = removeUndefined([...relays, url])
