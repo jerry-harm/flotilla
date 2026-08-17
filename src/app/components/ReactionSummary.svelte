@@ -110,12 +110,11 @@
     pushModal(ProfileList, {title, subtitle, pubkeys, url})
 
   const onReactionClick = (events: TrustedEvent[], pubkeys: string[], info: string) => {
-    if (isMobile) {
+    if (isMobile && !pubkeys.includes($user.pubkey)) {
       showReactors(pubkeys, info.replace(" reacted", ""), "Reacted to this message")
-      return
+    } else {
+      toggleReaction(events)
     }
-
-    toggleReaction(events)
   }
 
   const onZapClick = (pubkeys: string[], info: string) => {
