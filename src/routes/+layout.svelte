@@ -6,11 +6,14 @@
   import type {Unsubscriber} from "svelte/store"
   import {get} from "svelte/store"
   import {App, type URLOpenListenerEvent} from "@capacitor/app"
+  import {Capacitor} from "@capacitor/core"
+  import {NostrSignerPlugin} from "nostr-signer-capacitor-plugin"
   import {dev} from "$app/environment"
   import {goto} from "$app/navigation"
   import {page} from "$app/stores"
   import {context as pomadeContext} from "@pomade/core"
   import {sync, throttled} from "@welshman/store"
+  import {setNip55Plugin} from "@welshman/signer"
   import * as domain from "@welshman/domain"
   import * as util from "@welshman/util"
   import * as lib from "@welshman/lib"
@@ -67,6 +70,10 @@
   // Set up context for various modules
   pomadeContext.setSignerUrls(env.POMADE_SIGNERS)
   pomadeContext.setArgonWorker(import("@pomade/core/argon-worker.js?worker"))
+
+  if (Capacitor.isNativePlatform()) {
+    setNip55Plugin(NostrSignerPlugin)
+  }
 
   // Handle a deep link (universal/app link or custom scheme). Used for both
   // warm-start links (via the appUrlOpen event) and cold-start links (via
