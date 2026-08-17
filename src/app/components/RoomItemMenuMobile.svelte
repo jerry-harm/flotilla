@@ -9,6 +9,7 @@
   import SmileCircle from "@assets/icons/smile-circle.svg?dataurl"
   import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
   import Pin from "@assets/icons/pin.svg?dataurl"
+  import NotesMinimalistic from "@assets/icons/notes-minimalistic.svg?dataurl"
   import Button from "@lib/components/Button.svelte"
   import Link from "@lib/components/Link.svelte"
   import Icon from "@lib/components/Icon.svelte"
@@ -18,6 +19,7 @@
   import ZapButton from "@app/components/ZapButton.svelte"
   import EventInfo from "@app/components/EventInfo.svelte"
   import EventDeleteConfirm from "@app/components/EventDeleteConfirm.svelte"
+  import ThreadCreate from "@app/components/ThreadCreate.svelte"
   import {reactions, relays, roomPinLists, user} from "@app/core"
   import {ROOM, deriveUserIsRoomAdmin} from "@app/rooms"
   import {ENABLE_ZAPS} from "@app/env"
@@ -49,6 +51,8 @@
   }
 
   const showEmojiPicker = () => pushModal(EmojiPicker, {onClick: onEmoji}, {replaceState: true})
+
+  const createThread = () => pushModal(ThreadCreate, {url, h, parent: event}, {replaceState: true})
 
   const sendReply = () => {
     history.back()
@@ -99,6 +103,12 @@
         <Button class="button button-neutral w-full" onclick={togglePin}>
           <Icon size={4} icon={Pin} />
           {isPinned ? "Unpin Message" : "Pin Message"}
+        </Button>
+      {/if}
+      {#if h}
+        <Button class="button button-neutral w-full" onclick={createThread}>
+          <Icon size={4} icon={NotesMinimalistic} />
+          Create a Thread
         </Button>
       {/if}
       {#if ENABLE_ZAPS}

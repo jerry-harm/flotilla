@@ -6,6 +6,7 @@
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
   import Danger from "@assets/icons/danger.svg?dataurl"
   import Pin from "@assets/icons/pin.svg?dataurl"
+  import NotesMinimalistic from "@assets/icons/notes-minimalistic.svg?dataurl"
   import Button from "@lib/components/Button.svelte"
   import Icon from "@lib/components/Icon.svelte"
   import Confirm from "@lib/components/Confirm.svelte"
@@ -13,6 +14,7 @@
   import Report from "@app/components/Report.svelte"
   import PinboardSelect from "@app/components/PinboardSelect.svelte"
   import EventDeleteConfirm from "@app/components/EventDeleteConfirm.svelte"
+  import ThreadCreate from "@app/components/ThreadCreate.svelte"
   import {app, relayManagement, roomPinLists, user} from "@app/core"
   import {deriveUserIsSpaceAdmin} from "@app/management"
   import {ROOM, deriveUserIsRoomAdmin} from "@app/rooms"
@@ -36,6 +38,11 @@
   const addToLibrary = () => {
     onClick()
     pushModal(PinboardSelect, {url, event})
+  }
+
+  const createThread = () => {
+    onClick()
+    pushModal(ThreadCreate, {url, h, parent: event})
   }
 
   const report = () => {
@@ -100,6 +107,14 @@
       Add to Library
     </Button>
   </li>
+  {#if h}
+    <li>
+      <Button onclick={createThread}>
+        <Icon size={4} icon={NotesMinimalistic} />
+        Create a Thread
+      </Button>
+    </li>
+  {/if}
   {#if h && $userIsRoomAdmin}
     <li>
       <Button onclick={togglePin}>
