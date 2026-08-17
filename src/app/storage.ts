@@ -3,7 +3,7 @@ import type {Unsubscriber} from "svelte/store"
 import {deleteDB} from "idb"
 import {SecureStorage} from "@aparajita/capacitor-secure-storage"
 import {Preferences} from "@capacitor/preferences"
-import {noop, on, throttle, batch, call} from "@welshman/lib"
+import {noop, on, throttle, batch, call, makeQueue} from "@welshman/lib"
 import type {Maybe} from "@welshman/lib"
 import {
   ALERT_ANDROID,
@@ -45,7 +45,7 @@ import {IDB} from "@lib/indexeddb"
 import {appPolicies} from "@app/core"
 
 export const kv = call(() => {
-  let p = Promise.resolve()
+  const enqueue = makeQueue()
 
   const get = async <T>(key: string): Promise<T | undefined> => {
     const result = await Preferences.get({key})
@@ -58,22 +58,18 @@ export const kv = call(() => {
   }
 
   const set = async <T>(key: string, value: T): Promise<void> => {
-    p = p.then(() => Preferences.set({key, value: JSON.stringify(value)}))
-
-    await p
+    await enqueue(() => Preferences.set({key, value: JSON.stringify(value)}))
   }
 
   const clear = async () => {
-    p = p.then(() => Preferences.clear())
-
-    await p
+    await enqueue(() => Preferences.clear())
   }
 
   return {get, set, clear}
 })
 
 export const ss = call(() => {
-  let p = Promise.resolve()
+  const enqueue = makeQueue()
 
   const get = async <T>(key: string): Promise<T | undefined> => {
     let value = await SecureStorage.getItem(key)
@@ -97,16 +93,17 @@ export const ss = call(() => {
     }
   }
 
+  // Android's SecureStorage rejects undefined
   const set = async <T>(key: string, value: T): Promise<void> => {
-    p = p.then(() => SecureStorage.setItem(key, JSON.stringify(value)))
-
-    await p
+    await enqueue(() =>
+      value === undefined
+        ? SecureStorage.removeItem(key)
+        : SecureStorage.setItem(key, JSON.stringify(value)),
+    )
   }
 
   const clear = async () => {
-    p = p.then(() => SecureStorage.clear())
-
-    await p
+    await enqueue(() => SecureStorage.clear())
   }
 
   return {get, set, clear}
