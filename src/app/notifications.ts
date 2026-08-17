@@ -1,7 +1,18 @@
 import {derived, get, writable} from "svelte/store"
 import {Badge} from "@capawesome/capacitor-badge"
 import {page} from "$app/stores"
-import {assoc, prop, first, identity, groupBy, now, throttle, parseJson, gt} from "@welshman/lib"
+import {
+  assoc,
+  prop,
+  first,
+  identity,
+  groupBy,
+  now,
+  remove,
+  throttle,
+  parseJson,
+  gt,
+} from "@welshman/lib"
 import type {SignedEvent, TrustedEvent} from "@welshman/util"
 import {
   getIdOrAddress,
@@ -17,13 +28,7 @@ import {synced, throttled, withGetter} from "@welshman/store"
 import {Relays, RoomLists} from "@welshman/app"
 import {deriveEventsByIdByUrl} from "@app/repository"
 import {app, fromApp} from "@app/core"
-import {
-  makeSpacePath,
-  makeRoomPath,
-  makeSpaceChatPath,
-  makeChatPath,
-  makeContentPath,
-} from "@app/routes"
+import {makeRoomPath, makeSpaceChatPath, makeChatPath, makeContentPath} from "@app/routes"
 import {CONTENT_KINDS, makeCommentFilter} from "@app/content"
 import {notificationSettings} from "@app/settings"
 import {chatsById} from "@app/chats"
@@ -49,14 +54,14 @@ export const setChecked = (key: string) => checked.update(assoc(key, now()))
 /** Room path while video call UI hides chat; checked + badge stay active until chat is shown. */
 export const deferredRoomPath = writable<string | undefined>(undefined)
 
+const getPaths = (path: string) =>
+  path
+    .split("/")
+    .map((_, i, segments) => segments.slice(0, i + 1).join("/"))
+    .slice(1)
+
 export const syncChecked = () => {
   let prev = ""
-
-  const getPaths = (path: string) =>
-    path
-      .split("/")
-      .map((_, i, segments) => segments.slice(0, i + 1).join("/"))
-      .slice(1)
 
   return page.subscribe($page => {
     // Set checked when we leave a given page
@@ -200,7 +205,7 @@ const getContentTarget = (event: TrustedEvent) => {
 
 // Assumes `events` is sorted descending, so the first event seen per content item wins.
 const latestEventByContentPath = (url: string, events: TrustedEvent[]) => {
-  const byPath = new Map<string, {listPath: string; latestEvent: TrustedEvent}>()
+  const byPath = new Map<string, TrustedEvent>()
 
   for (const event of events) {
     const target = getContentTarget(event)
@@ -208,23 +213,21 @@ const latestEventByContentPath = (url: string, events: TrustedEvent[]) => {
     if (!target) continue
 
     const path = makeContentPath(url, target.kind, target.idOrAddress)
-    const listPath = makeContentPath(url, target.kind)
 
-    if (path && listPath && !byPath.has(path)) {
-      byPath.set(path, {listPath, latestEvent: event})
+    if (path && !byPath.has(path)) {
+      byPath.set(path, event)
     }
   }
 
   return byPath
 }
 
-export const allNotifications = derived(
+export const latestActivityByPath = derived(
   throttled(
     1000,
     derived(
       [
         app,
-        checked,
         chatsById,
         fromApp($app => $app.use(Relays).index.$),
         fromApp($app => $app.use(RoomLists).index.$),
@@ -236,17 +239,56 @@ export const allNotifications = derived(
       identity,
     ),
   ),
-  ([$app, $checked, $chatsById, $relays, $roomLists, eventsByIdByUrl]) => {
-    const hasNotification = (path: string, latestEvent?: TrustedEvent) => {
-      if (!latestEvent || latestEvent.pubkey === $app.user?.pubkey) {
+  ([$app, $chatsById, $relays, $roomLists, eventsByIdByUrl]) => {
+    const activity = new Map<string, TrustedEvent>()
+
+    for (const {pubkeys, messages} of $chatsById.values()) {
+      if (messages[0]) {
+        activity.set(makeChatPath(pubkeys), messages[0])
+      }
+    }
+
+    const roomList = $app.user?.pubkey ? $roomLists.get($app.user.pubkey) : undefined
+    const urls = PLATFORM_RELAYS.length > 0 ? PLATFORM_RELAYS : (roomList?.urls() ?? [])
+
+    for (const url of urls) {
+      const events = sortEventsDesc((eventsByIdByUrl.get(url) || new Map()).values())
+
+      if ($relays.get(url)?.hasNip(29)) {
+        for (const [h, [latestEvent]] of groupBy(e => tagValue(tagSpec("h"), e.tags), events)) {
+          if (h) {
+            activity.set(makeRoomPath(url, h), latestEvent)
+          }
+        }
+      } else {
+        const latestEvent = first(events)
+
+        if (latestEvent) {
+          activity.set(makeSpaceChatPath(url), latestEvent)
+        }
+      }
+
+      for (const [path, latestEvent] of latestEventByContentPath(url, events)) {
+        activity.set(path, latestEvent)
+      }
+    }
+
+    return activity
+  },
+)
+
+export const allNotifications = derived(
+  [app, latestActivityByPath, checked],
+  ([$app, $latestActivityByPath, $checked]) => {
+    const hasNotification = (path: string, latestEvent: TrustedEvent) => {
+      if (latestEvent.pubkey === $app.user?.pubkey) {
         return false
       }
 
       for (const [entryPath, ts] of Object.entries($checked)) {
-        const isMatch =
-          entryPath === "*" ||
-          entryPath.startsWith(path) ||
-          (entryPath === "/chat/*" && path.startsWith("/chat/"))
+        const isMatch = entryPath.endsWith("*")
+          ? path.startsWith(entryPath.slice(0, -1))
+          : entryPath.startsWith(path)
 
         if (isMatch && ts > latestEvent.created_at) {
           return false
@@ -258,59 +300,13 @@ export const allNotifications = derived(
 
     const paths = new Set<string>()
 
-    for (const {pubkeys, messages} of $chatsById.values()) {
-      const chatPath = makeChatPath(pubkeys)
+    for (const [path, latestEvent] of $latestActivityByPath) {
+      if (hasNotification(path, latestEvent)) {
+        paths.add(path)
 
-      if (hasNotification(chatPath, messages[0])) {
-        paths.add("/chat")
-        paths.add(chatPath)
-      }
-    }
-
-    const roomList = $app.user?.pubkey ? $roomLists.get($app.user?.pubkey) : undefined
-    const urls = PLATFORM_RELAYS.length > 0 ? PLATFORM_RELAYS : (roomList?.urls() ?? [])
-
-    for (const url of urls) {
-      const spacePath = makeSpacePath(url)
-      const events = sortEventsDesc((eventsByIdByUrl.get(url) || new Map()).values())
-
-      if ($relays.get(url)?.hasNip(29)) {
-        for (const [h, [latestEvent]] of groupBy(e => tagValue(tagSpec("h"), e.tags), events)) {
-          if (h) {
-            const roomPath = makeRoomPath(url, h)
-
-            if (hasNotification(roomPath, latestEvent)) {
-              paths.add(roomPath)
-
-              if (hasNotification(spacePath, latestEvent)) {
-                paths.add(spacePath)
-              }
-            }
-          }
-        }
-      } else {
-        const messagesPath = makeSpaceChatPath(url)
-        const latestEvent = first(events)
-
-        if (hasNotification(messagesPath, latestEvent)) {
-          paths.add(messagesPath)
-
-          if (hasNotification(spacePath, latestEvent)) {
-            paths.add(spacePath)
-          }
-        }
-      }
-
-      for (const [path, {listPath, latestEvent}] of latestEventByContentPath(url, events)) {
-        if (hasNotification(path, latestEvent)) {
-          paths.add(path)
-
-          if (hasNotification(listPath, latestEvent)) {
-            paths.add(listPath)
-          }
-
-          if (hasNotification(spacePath, latestEvent)) {
-            paths.add(spacePath)
+        for (const branchPath of remove(path, getPaths(path.split("?")[0]))) {
+          if (hasNotification(branchPath, latestEvent)) {
+            paths.add(branchPath)
           }
         }
       }
@@ -335,11 +331,15 @@ export const notifications = derived(
 // Badges
 
 export const syncBadges = () =>
-  derived([notifications, notificationSettings], identity).subscribe(
-    async ([$notifications, $notificationSettings]) => {
+  derived([latestActivityByPath, notifications, notificationSettings], identity).subscribe(
+    async ([$latestActivityByPath, $notifications, $notificationSettings]) => {
       if ($notificationSettings.badge) {
+        const count = [...$latestActivityByPath.keys()].filter(path =>
+          $notifications.has(path),
+        ).length
+
         try {
-          await Badge.set({count: $notifications.size})
+          await Badge.set({count})
         } catch (err) {
           // pass - firefox doesn't support badges
         }
