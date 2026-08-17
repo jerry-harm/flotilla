@@ -3,9 +3,12 @@
   import {formatTimestamp, max} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
   import {COMMENT, tagSpec, tagValue} from "@welshman/util"
+  import {fade} from "@lib/transition"
+  import Link from '@lib/components/Link.svelte'
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
   import {deriveEventsForUrl} from "@app/repository"
+  import {notifications} from "@app/notifications"
   import {makeThreadPath} from "@app/routes"
 
   type Props = {
@@ -22,15 +25,15 @@
   const lastActive = $derived(max([...$replies, event].map(e => e.created_at)))
   const title = tagValue(tagSpec("title"), event.tags)
   const path = makeThreadPath(url, event.id)
+  const onClick = () => goto(path)
+  //  notification={$notifications.has(path)}
 
-  const goToThread = () => goto(path)
 </script>
 
 {#if mobile}
-  <button
-    type="button"
-    class="hover:bg-surface-less flex w-full flex-col gap-2 border-b border-solid border-line px-4 py-3 text-left text-sm transition-colors"
-    onclick={goToThread}>
+  <Link
+    href={path}
+    class="hover:bg-surface-less flex w-full flex-col gap-2 border-b border-solid border-line px-4 py-3 text-left text-sm transition-colors">
     <p class="truncate font-medium">{title || "Untitled thread"}</p>
     <div class="text-content-muted flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
       <span class="flex min-w-0 items-center gap-1.5">
@@ -42,12 +45,15 @@
       <span>{replyCount} {replyCount === 1 ? "reply" : "replies"}</span>
       <span>{formatTimestamp(lastActive)}</span>
     </div>
-  </button>
+  </Link>
 {:else}
   <tr
-    class="hover:bg-surface-less cursor-pointer border-b border-solid border-line text-sm transition-colors"
-    onclick={goToThread}>
+    onclick={onClick}
+    class="hover:bg-surface-less cursor-pointer border-b border-solid border-line text-sm transition-colors">
     <td class="max-w-0 truncate px-4 py-3 align-top">
+      {#if $notifications.has(path)}
+        <div class="h-2 w-2 rounded-full bg-primary inline-block mr-1" transition:fade></div>
+      {/if}
       {title || "Untitled thread"}
     </td>
     <td class="w-32 px-4 py-3 align-middle">

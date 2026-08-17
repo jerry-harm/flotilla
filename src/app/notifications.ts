@@ -304,7 +304,10 @@ export const allNotifications = derived(
       for (const [path, {listPath, latestEvent}] of latestEventByContentPath(url, events)) {
         if (hasNotification(path, latestEvent)) {
           paths.add(path)
-          paths.add(listPath)
+
+          if (hasNotification(listPath, latestEvent)) {
+            paths.add(listPath)
+          }
 
           if (hasNotification(spacePath, latestEvent)) {
             paths.add(spacePath)
