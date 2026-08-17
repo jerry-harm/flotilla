@@ -642,6 +642,11 @@ export const participantKey = (p: CallParticipant) => p.pubkey ?? p.liveKitIdent
 let activeRoom: LiveKitRoom | undefined
 let reconnectTimeout: ReturnType<typeof setTimeout> | undefined
 let reconnectAttempt = 0
+// Captured from the dropped session so a full rejoin (as opposed to LiveKit's
+// own internal reconnect, which reuses the existing tracks) restores the
+// user's mic state instead of always rejoining muted.
+let reconnectMicMuted = true
+let reconnectMicDeviceId: string | undefined
 let joinAbortController: AbortController | undefined
 let hadCallSession = false
 
@@ -814,7 +819,7 @@ const attemptReconnect = async () => {
   if (!target) return
 
   try {
-    await joinVoiceRoom(target.url, target.h)
+    await joinVoiceRoom(target.url, target.h, reconnectMicMuted, reconnectMicDeviceId)
   } catch {
     if (reconnectAttempt >= RECONNECT_DELAYS.length) {
       pushToast({theme: "error", message: "Voice connection lost."})
@@ -854,6 +859,12 @@ const makeOnRoomDisconnected = (livekit: LiveKitRoom) => (reason?: DisconnectRea
   // onTrackUnsubscribed has already removed their audio elements by now.
   activeRoom = undefined
   livekit.removeAllListeners()
+
+  // Capture mic state before resetting it, so a subsequent full rejoin (see
+  // scheduleReconnect/attemptReconnect below) can restore it instead of
+  // silently coming back muted regardless of what the user had set.
+  reconnectMicMuted = get(callMicMuted)
+  reconnectMicDeviceId = livekit.getActiveDevice(DeviceKind.AudioInput)
 
   callMicMuted.set(true)
   currentCallSession.set(undefined)
