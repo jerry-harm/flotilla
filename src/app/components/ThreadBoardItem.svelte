@@ -4,7 +4,7 @@
   import type {TrustedEvent} from "@welshman/util"
   import {COMMENT, tagSpec, tagValue} from "@welshman/util"
   import {fade} from "@lib/transition"
-  import Link from '@lib/components/Link.svelte'
+  import Link from "@lib/components/Link.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
   import {deriveEventsForUrl} from "@app/repository"
@@ -27,7 +27,6 @@
   const path = makeThreadPath(url, event.id)
   const onClick = () => goto(path)
   //  notification={$notifications.has(path)}
-
 </script>
 
 {#if mobile}
