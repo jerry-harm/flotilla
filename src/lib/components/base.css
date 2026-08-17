@@ -413,6 +413,12 @@ emoji-picker {
   max-width: 100%;
 }
 
+/* In a popover the border is what separates the picker from the page, but in a dialog
+   it sits on a surface of its own color, so it reads as a stray box. */
+.dialog emoji-picker {
+  --border-size: 0;
+}
+
 [data-tippy-root]:has(emoji-picker) {
   max-width: min(352px, calc(100vw - 2rem));
 }
