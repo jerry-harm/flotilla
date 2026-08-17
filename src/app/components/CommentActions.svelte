@@ -11,7 +11,7 @@
   type Props = {
     url: string
     event: TrustedEvent
-    segment: string
+    segment?: string
     showActivity?: boolean
   }
 
@@ -19,7 +19,7 @@
 
   const h = tagValue(tagSpec("h"), event.tags)
 
-  const path = makeSpacePath(url, segment, event.id)
+  const path = segment && makeSpacePath(url, segment, event.id)
 
   const deleteReaction = (reaction: TrustedEvent) => retractReaction(reaction, {url, h})
 
@@ -30,7 +30,7 @@
   <div class="flex grow flex-wrap justify-end gap-2">
     <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
     <ThunkStatusOrDeleted {event} />
-    {#if showActivity}
+    {#if showActivity && path}
       <EventActivity {url} {path} {event} />
     {/if}
     <EventActions {url} {event} noun="Comment" />

@@ -1,0 +1,72 @@
+@layer components {
+  /* Rendered markdown is raw html, so it can't carry utility classes — style the tags. */
+  .content-markdown {
+    h1 {
+      @apply text-2xl leading-tight;
+      font-family: var(--font-heading);
+    }
+
+    h2 {
+      @apply text-xl leading-tight;
+      font-family: var(--font-heading);
+    }
+
+    h3 {
+      @apply text-lg leading-snug;
+      font-family: var(--font-heading);
+    }
+
+    ul {
+      @apply list-inside list-disc;
+    }
+
+    ol {
+      @apply list-inside list-decimal;
+    }
+
+    li {
+      @apply my-2;
+    }
+
+    /* Markdown wraps loose list items in a paragraph, which would break the line */
+    li p {
+      @apply inline;
+    }
+
+    a {
+      @apply text-primary underline;
+    }
+
+    img {
+      @apply max-w-full rounded-2xl;
+    }
+
+    hr {
+      @apply bg-line rounded-full;
+      border: none;
+      height: var(--border-thin);
+    }
+
+    code {
+      @apply bg-surface-less rounded px-1;
+      box-decoration-break: clone;
+    }
+
+    pre code {
+      @apply block overflow-x-auto p-3;
+    }
+
+    blockquote {
+      @apply border-line text-content-muted border-l-4 border-solid pl-4;
+    }
+
+    table {
+      @apply block w-full border-collapse overflow-x-auto;
+    }
+
+    th,
+    td {
+      @apply border-line border border-solid px-3 py-2 text-left;
+    }
+  }
+}

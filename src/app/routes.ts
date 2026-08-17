@@ -8,6 +8,7 @@ import type {TrustedEvent} from "@welshman/util"
 import {
   CLASSIFIED,
   EVENT_TIME,
+  LONG_FORM,
   MESSAGE,
   PINBOARD,
   POLL,
@@ -130,6 +131,9 @@ export const makeThreadPath = (url: string, id?: string) => makeSpacePath(url, "
 export const makeClassifiedPath = (url: string, address?: string) =>
   makeSpacePath(url, "classifieds", address)
 
+export const makeArticlePath = (url: string, address?: string) =>
+  makeSpacePath(url, "articles", address)
+
 export const makeCalendarPath = (url: string, address?: string) =>
   makeSpacePath(url, "calendar", address)
 
@@ -155,6 +159,8 @@ export const makeContentPath = (url: string, kind: number, idOrAddress?: string)
       return makeThreadPath(url, idOrAddress)
     case CLASSIFIED:
       return makeClassifiedPath(url, idOrAddress)
+    case LONG_FORM:
+      return makeArticlePath(url, idOrAddress)
     case EVENT_TIME:
       return makeCalendarPath(url, idOrAddress)
     case PINBOARD:

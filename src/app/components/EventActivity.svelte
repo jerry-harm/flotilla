@@ -1,7 +1,7 @@
 <script lang="ts">
   import {onMount} from "svelte"
   import {max, gt, formatTimestampRelative} from "@welshman/lib"
-  import {COMMENT} from "@welshman/util"
+  import {getCommentFiltersForRoot} from "@welshman/util"
   import type {TrustedEvent} from "@welshman/util"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -12,7 +12,7 @@
   const {url, path, event}: {url: string; path: string; event: TrustedEvent} = $props()
 
   const checked = deriveChecked(path)
-  const filters = [{kinds: [COMMENT], "#E": [event.id]}]
+  const filters = getCommentFiltersForRoot([event])
   const replies = deriveEvents(filters)
   const lastActive = $derived(max([...$replies, event].map(e => e.created_at)))
 

@@ -10,7 +10,14 @@
     formatTimestampAsDate,
   } from "@welshman/lib"
   import type {TrustedEvent, EventContent} from "@welshman/util"
-  import {MESSAGE, COMMENT, getIdOrAddress, matchTag, tagSpec, tagValue} from "@welshman/util"
+  import {
+    MESSAGE,
+    getCommentFiltersForParent,
+    getIdOrAddress,
+    matchTag,
+    tagSpec,
+    tagValue,
+  } from "@welshman/util"
   import {isMobile} from "@lib/html"
   import Pen from "@assets/icons/pen.svg?dataurl"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
@@ -57,10 +64,10 @@
   const isQuoteOnly = Boolean(
     gte(qTag?.length, 2) && event.content.trim().match(/^nostr:n(event|addr)1\w+\s*$/),
   )
-  const innerComments = isQuoteOnly
-    ? deriveEventsForUrl(url, [{kinds: [COMMENT], "#e": [qTag![1]]}])
-    : readable([])
   const innerEvent = isQuoteOnly ? deriveEvent(qTag![1], [url]) : readable(undefined)
+  const innerComments = $derived(
+    $innerEvent ? deriveEventsForUrl(url, getCommentFiltersForParent([$innerEvent])) : readable([]),
+  )
 
   const path = $derived(
     $innerEvent && makeContentPath(url, $innerEvent.kind, getIdOrAddress($innerEvent)),

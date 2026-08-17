@@ -1,10 +1,9 @@
 <script lang="ts">
   import {derived} from "svelte/store"
-  import {onMount} from "svelte"
   import {page} from "$app/stores"
   import {sortBy, sleep} from "@welshman/lib"
   import type {MakeNonOptional} from "@welshman/lib"
-  import {COMMENT} from "@welshman/util"
+  import {getCommentFiltersForRoot} from "@welshman/util"
   import {TimeEvent} from "@welshman/domain"
   import SortVertical from "@assets/icons/sort-vertical.svg?dataurl"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
@@ -29,8 +28,8 @@
   const url = decodeRelay(relay)
   const event = deriveEvent(address, [url])
   const timeEvent = derived(event, $event => ($event ? reader(TimeEvent)($event) : undefined))
-  const filters = [{kinds: [COMMENT], "#A": [address]}]
-  const replies = deriveEvents(filters)
+  const filters = $derived($event ? getCommentFiltersForRoot([$event]) : [])
+  const replies = $derived(deriveEvents(filters))
 
   const back = () => history.back()
 
@@ -49,13 +48,13 @@
   let showAll = $state(false)
   let showReply = $state(false)
 
-  onMount(() => {
-    const controller = new AbortController()
+  $effect(() => {
+    if (filters.length > 0) {
+      const controller = new AbortController()
 
-    $network.request({relays: [url], filters, signal: controller.signal})
+      $network.request({relays: [url], filters, signal: controller.signal})
 
-    return () => {
-      controller.abort()
+      return () => controller.abort()
     }
   })
 </script>

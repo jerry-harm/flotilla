@@ -1,5 +1,4 @@
 <script lang="ts">
-  import {onMount} from "svelte"
   import * as nip19 from "nostr-tools/nip19"
   import {page} from "$app/stores"
   import {goto} from "$app/navigation"
@@ -7,7 +6,7 @@
   import type {MakeNonOptional} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
   import {deriveEventsAsc} from "@welshman/store"
-  import {COMMENT, tagValue, tagSpec} from "@welshman/util"
+  import {getCommentFiltersForRoot, tagValue, tagSpec} from "@welshman/util"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import PageContent from "@lib/components/PageContent.svelte"
@@ -29,8 +28,8 @@
   const {relay, id} = $page.params as MakeNonOptional<typeof $page.params>
   const url = decodeRelay(relay)
   const event = deriveEvent(id, [url])
-  const filters = [{kinds: [COMMENT], "#E": [id]}]
-  const replies = deriveEventsAsc(deriveEventsById(filters))
+  const filters = $derived($event ? getCommentFiltersForRoot([$event]) : [])
+  const replies = $derived(deriveEventsAsc(deriveEventsById(filters)))
 
   const back = () => history.back()
 
@@ -135,13 +134,13 @@
     setTimeout(() => scrollToEvent(posts[index]!.id), 100)
   })
 
-  onMount(() => {
-    const controller = new AbortController()
+  $effect(() => {
+    if (filters.length > 0) {
+      const controller = new AbortController()
 
-    $network.request({relays: [url], filters, signal: controller.signal})
+      $network.request({relays: [url], filters, signal: controller.signal})
 
-    return () => {
-      controller.abort()
+      return () => controller.abort()
     }
   })
 </script>

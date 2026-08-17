@@ -3,7 +3,7 @@
   import {page} from "$app/stores"
   import {sleep} from "@welshman/lib"
   import type {MakeNonOptional} from "@welshman/lib"
-  import {COMMENT, POLL, POLL_RESPONSE} from "@welshman/util"
+  import {POLL, POLL_RESPONSE, getCommentFiltersForRoot} from "@welshman/util"
   import {deriveEventsAsc} from "@welshman/store"
   import SortVertical from "@assets/icons/sort-vertical.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -22,8 +22,8 @@
   const {relay, id} = $page.params as MakeNonOptional<typeof $page.params>
   const url = decodeRelay(relay)
   const event = deriveEvent(id, [url])
-  const filters = [{kinds: [COMMENT], "#E": [id]}]
-  const comments = deriveEventsAsc(deriveEventsById(filters))
+  const filters = $derived($event ? getCommentFiltersForRoot([$event]) : [])
+  const comments = $derived(deriveEventsAsc(deriveEventsById(filters)))
 
   const back = () => history.back()
 
@@ -47,12 +47,25 @@
 
     $network.request({
       relays: [url],
-      filters: [{kinds: [POLL], ids: [id]}, {kinds: [POLL_RESPONSE], "#e": [id]}, ...filters],
+      filters: [
+        {kinds: [POLL], ids: [id]},
+        {kinds: [POLL_RESPONSE], "#e": [id]},
+      ],
       signal: controller.signal,
     })
 
     return () => {
       controller.abort()
+    }
+  })
+
+  $effect(() => {
+    if (filters.length > 0) {
+      const controller = new AbortController()
+
+      $network.request({relays: [url], filters, signal: controller.signal})
+
+      return () => controller.abort()
     }
   })
 </script>

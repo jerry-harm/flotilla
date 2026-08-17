@@ -1,10 +1,9 @@
 <script lang="ts">
   import {derived} from "svelte/store"
-  import {onMount} from "svelte"
   import {page} from "$app/stores"
   import {sleep} from "@welshman/lib"
   import type {MakeNonOptional} from "@welshman/lib"
-  import {COMMENT} from "@welshman/util"
+  import {getCommentFiltersForRoot} from "@welshman/util"
   import {deriveEventsAsc} from "@welshman/store"
   import {ZapGoal} from "@welshman/domain"
   import SortVertical from "@assets/icons/sort-vertical.svg?dataurl"
@@ -26,8 +25,8 @@
   const {relay, id} = $page.params as MakeNonOptional<typeof $page.params>
   const url = decodeRelay(relay)
   const event = deriveEvent(id, [url])
-  const filters = [{kinds: [COMMENT], "#E": [id]}]
-  const replies = deriveEventsAsc(deriveEventsById(filters))
+  const filters = $derived($event ? getCommentFiltersForRoot([$event]) : [])
+  const replies = $derived(deriveEventsAsc(deriveEventsById(filters)))
   const goal = derived(event, $event => ($event ? reader(ZapGoal)($event) : undefined))
   const summary = $derived($goal?.summary() ?? "")
 
@@ -48,13 +47,13 @@
   let showAll = $state(false)
   let showReply = $state(false)
 
-  onMount(() => {
-    const controller = new AbortController()
+  $effect(() => {
+    if (filters.length > 0) {
+      const controller = new AbortController()
 
-    $network.request({relays: [url], filters, signal: controller.signal})
+      $network.request({relays: [url], filters, signal: controller.signal})
 
-    return () => {
-      controller.abort()
+      return () => controller.abort()
     }
   })
 </script>

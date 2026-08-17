@@ -1,9 +1,10 @@
 import {derived} from "svelte/store"
-import {shuffle} from "@welshman/lib"
+import {pushToMapKey, shuffle, sortBy, uniqBy} from "@welshman/lib"
 import {
   COMMENT,
   addressTags,
   getAddress,
+  getIdAndAddress,
   hexTags,
   tagSpec,
   tagValues,
@@ -28,6 +29,54 @@ const getParents = ({kind, tags}: TrustedEvent) => {
   const {roots, replies} = kind === COMMENT ? getCommentTagValues(tags) : getReplyTagValues(tags)
 
   return replies.length > 0 ? replies : roots
+}
+
+export type CommentNode = {
+  comment: TrustedEvent
+  children: CommentNode[]
+}
+
+export const buildCommentTree = (root: TrustedEvent, comments: TrustedEvent[]) => {
+  const byParent = new Map<string, TrustedEvent[]>()
+
+  // A comment names its parent by id, and by address too when the parent is addressable, so
+  // index it under every value it gives and dedupe on the way back out.
+  for (const comment of comments) {
+    for (const parent of getParents(comment)) {
+      pushToMapKey(byParent, parent, comment)
+    }
+  }
+
+  // Nothing stops a comment from naming several parents, which would let the tree cycle, so
+  // walk down from the root and keep each comment at the first place it turns up.
+  const seen = new Set<string>()
+
+  const build = (parent: TrustedEvent): CommentNode[] => {
+    const children = uniqBy(
+      e => e.id,
+      getIdAndAddress(parent).flatMap(value => byParent.get(value) ?? []),
+    ).filter(e => !seen.has(e.id))
+
+    for (const child of children) {
+      seen.add(child.id)
+    }
+
+    return children.map(comment => ({comment, children: build(comment)}))
+  }
+
+  const nodes = build(root)
+
+  // A comment can name a parent we don't have — a superseded version of an addressable root,
+  // or a parent that failed to load — so adopt whatever's left rather than dropping it.
+  // `comments` is oldest first, so a parent is always adopted before its own children.
+  for (const comment of comments) {
+    if (!seen.has(comment.id)) {
+      seen.add(comment.id)
+      nodes.push({comment, children: build(comment)})
+    }
+  }
+
+  return sortBy(node => node.comment.created_at, nodes)
 }
 
 export const isEventMuted = withGetter(

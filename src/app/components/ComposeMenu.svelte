@@ -4,12 +4,14 @@
   import StarFallMinimalistic from "@assets/icons/star-fall-minimalistic.svg?dataurl"
   import NotesMinimalistic from "@assets/icons/notes-minimalistic.svg?dataurl"
   import CaseMinimalistic from "@assets/icons/case-minimalistic.svg?dataurl"
+  import DocumentText from "@assets/icons/document-text.svg?dataurl"
   import Revote from "@assets/icons/revote.svg?dataurl"
   import Button from "@lib/components/Button.svelte"
   import Icon from "@lib/components/Icon.svelte"
   import {pushModal} from "@app/modal"
   import CalendarEventCreate from "@app/components/CalendarEventCreate.svelte"
   import ThreadCreate from "@app/components/ThreadCreate.svelte"
+  import ArticleCreate from "@app/components/ArticleCreate.svelte"
   import ClassifiedCreate from "@app/components/ClassifiedCreate.svelte"
   import GoalCreate from "@app/components/GoalCreate.svelte"
   import PollCreate from "@app/components/PollCreate.svelte"
@@ -31,6 +33,8 @@
   const createClassified = () => pushModal(ClassifiedCreate, {url, h, shareToChat: true})
 
   const createPoll = () => pushModal(PollCreate, {url, h, shareToChat: true})
+
+  const createArticle = () => pushModal(ArticleCreate, {url, h, shareToChat: true})
 
   let ul: Element
 
@@ -62,6 +66,12 @@
     <Button onclick={createThread}>
       <Icon size={4} icon={NotesMinimalistic} />
       Create Thread
+    </Button>
+  </li>
+  <li>
+    <Button onclick={createArticle}>
+      <Icon size={4} icon={DocumentText} />
+      Write an Article
     </Button>
   </li>
   <li>

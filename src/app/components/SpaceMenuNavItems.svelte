@@ -1,7 +1,7 @@
 <script lang="ts">
   import {derived} from "svelte/store"
   import {getJson, setJson} from "@welshman/lib"
-  import {EVENT_TIME, ZAP_GOAL, THREAD, CLASSIFIED, PINBOARD, POLL} from "@welshman/util"
+  import {EVENT_TIME, ZAP_GOAL, THREAD, CLASSIFIED, PINBOARD, POLL, LONG_FORM} from "@welshman/util"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import UsersGroup from "@assets/icons/users-group-rounded.svg?dataurl"
   import Home from "@assets/icons/home.svg?dataurl"
@@ -12,6 +12,7 @@
   import NotesMinimalistic from "@assets/icons/notes-minimalistic.svg?dataurl"
   import CalendarMinimalistic from "@assets/icons/calendar-minimalistic.svg?dataurl"
   import CaseMinimalistic from "@assets/icons/case-minimalistic.svg?dataurl"
+  import DocumentText from "@assets/icons/document-text.svg?dataurl"
   import Revote from "@assets/icons/revote.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import SecondaryNavItem from "@lib/components/SecondaryNavItem.svelte"
@@ -36,6 +37,7 @@
   const goalsPath = makeSpacePath(url, "goals")
   const threadsPath = makeSpacePath(url, "threads")
   const classifiedsPath = makeSpacePath(url, "classifieds")
+  const articlesPath = makeSpacePath(url, "articles")
   const calendarPath = makeSpacePath(url, "calendar")
   const pollsPath = makeSpacePath(url, "polls")
 
@@ -86,6 +88,11 @@
 {#if $spaceKinds.has(THREAD)}
   <SecondaryNavItem href={threadsPath} notification={$notifications.has(threadsPath)}>
     <Icon icon={NotesMinimalistic} /> Threads
+  </SecondaryNavItem>
+{/if}
+{#if $spaceKinds.has(LONG_FORM)}
+  <SecondaryNavItem href={articlesPath} notification={$notifications.has(articlesPath)}>
+    <Icon icon={DocumentText} /> Articles
   </SecondaryNavItem>
 {/if}
 {#if $spaceKinds.has(CLASSIFIED)}

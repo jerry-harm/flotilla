@@ -1,9 +1,19 @@
 <script lang="ts">
   import type {ComponentProps} from "svelte"
-  import {EVENT_TIME, ZAP_GOAL, THREAD, CLASSIFIED, POLL, PINBOARD, PIN} from "@welshman/util"
+  import {
+    EVENT_TIME,
+    ZAP_GOAL,
+    THREAD,
+    CLASSIFIED,
+    LONG_FORM,
+    POLL,
+    PINBOARD,
+    PIN,
+  } from "@welshman/util"
   import NoteContentMinimalEventTime from "@app/components/NoteContentMinimalEventTime.svelte"
   import NoteContentMinimalThread from "@app/components/NoteContentMinimalThread.svelte"
   import NoteContentMinimalClassified from "@app/components/NoteContentMinimalClassified.svelte"
+  import NoteContentMinimalArticle from "@app/components/NoteContentMinimalArticle.svelte"
   import NoteContentMinimalGoal from "@app/components/NoteContentMinimalGoal.svelte"
   import NoteContentMinimalPoll from "@app/components/NoteContentMinimalPoll.svelte"
   import NoteContentMinimalBoard from "@app/components/NoteContentMinimalBoard.svelte"
@@ -20,6 +30,8 @@
     <NoteContentMinimalThread {...props} />
   {:else if props.event.kind === CLASSIFIED}
     <NoteContentMinimalClassified {...props} />
+  {:else if props.event.kind === LONG_FORM}
+    <NoteContentMinimalArticle {...props} />
   {:else if props.event.kind === ZAP_GOAL}
     <NoteContentMinimalGoal {...props} />
   {:else if props.event.kind === POLL}

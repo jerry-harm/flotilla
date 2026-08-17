@@ -20,6 +20,7 @@ const staticTitles = new Map<string, string>([
   ["/spaces/[relay]/recent", "Recent Activity"],
   ["/spaces/[relay]/threads", "Threads"],
   ["/spaces/[relay]/classifieds", "Classifieds"],
+  ["/spaces/[relay]/articles", "Articles"],
   ["/spaces/[relay]/calendar", "Calendar"],
   ["/spaces/[relay]/goals", "Goals"],
   ["/spaces/[relay]/polls", "Polls"],
@@ -43,6 +44,7 @@ const eventRoutes = new Set([
   "/spaces/[relay]/goals/[id]",
   "/spaces/[relay]/calendar/[address]",
   "/spaces/[relay]/classifieds/[address]",
+  "/spaces/[relay]/articles/[address]",
   "/spaces/[relay]/polls/[id]",
 ])
 
@@ -148,6 +150,10 @@ export const getPageTitle = ({page, pubkey}: PageTitleContext) => {
 
   if (routeId === "/spaces/[relay]/classifieds/[address]") {
     return makeTitle(tagValue(tagSpec("title"), event?.tags || []) || "Listing")
+  }
+
+  if (routeId === "/spaces/[relay]/articles/[address]") {
+    return makeTitle(tagValue(tagSpec("title"), event?.tags || []) || "Article")
   }
 
   if (routeId === "/spaces/[relay]/goals/[id]") {

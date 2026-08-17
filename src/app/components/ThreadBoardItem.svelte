@@ -2,7 +2,7 @@
   import {goto} from "$app/navigation"
   import {formatTimestamp, max} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {COMMENT, tagSpec, tagValue} from "@welshman/util"
+  import {getCommentFiltersForRoot, tagSpec, tagValue} from "@welshman/util"
   import {fade} from "@lib/transition"
   import Link from "@lib/components/Link.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
@@ -19,8 +19,7 @@
 
   const {url, event, mobile = false}: Props = $props()
 
-  const filters = [{kinds: [COMMENT], "#E": [event.id]}]
-  const replies = deriveEventsForUrl(url, filters)
+  const replies = deriveEventsForUrl(url, getCommentFiltersForRoot([event]))
   const replyCount = $derived($replies.length)
   const lastActive = $derived(max([...$replies, event].map(e => e.created_at)))
   const title = tagValue(tagSpec("title"), event.tags)
