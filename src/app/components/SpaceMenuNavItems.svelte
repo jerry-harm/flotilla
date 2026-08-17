@@ -1,5 +1,6 @@
 <script lang="ts">
   import {derived} from "svelte/store"
+  import {getJson, setJson} from "@welshman/lib"
   import {EVENT_TIME, ZAP_GOAL, THREAD, CLASSIFIED, PINBOARD, POLL} from "@welshman/util"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import UsersGroup from "@assets/icons/users-group-rounded.svg?dataurl"
@@ -38,17 +39,23 @@
   const calendarPath = makeSpacePath(url, "calendar")
   const pollsPath = makeSpacePath(url, "polls")
 
+  // Content events aren't retained across page loads, so seed with the kinds seen last time
+  // to keep the nav from re-populating as they load in the background.
+  const spaceKindsKey = `space-kinds:${url}`
+  const cachedKinds: number[] = getJson(spaceKindsKey) ?? []
+
   const spaceKinds = derived(
     deriveEventsForUrl(url, [{kinds: CONTENT_KINDS}]),
-    $events => new Set($events.map(e => e.kind)),
+    $events => new Set([...cachedKinds, ...$events.map(e => e.kind)]),
   )
 
-  const boardEvents = deriveEventsForUrl(url, [{kinds: [PINBOARD]}])
   const hasNip29 = $derived($relay?.hasNip(29) ?? false)
   const supportedMethods = deriveSpaceSupportedMethods(url)
-  const showLibrary = $derived($boardEvents.length > 0 || $supportedMethods.includes("signevent"))
+  const showLibrary = $derived($spaceKinds.has(PINBOARD) || $supportedMethods.includes("signevent"))
 
   const openSearch = () => pushModal(SpaceSearch, {url})
+
+  $effect(() => setJson(spaceKindsKey, [...$spaceKinds]))
 </script>
 
 <SecondaryNavItem href={makeSpacePath(url, "about")}>

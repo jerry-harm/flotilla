@@ -250,7 +250,8 @@ class Storage {
   }
 
   private syncEvents = () => {
-    const table = this.db.table<TrustedEvent>("events")
+    const eventsTable = this.db.table<TrustedEvent>("events")
+    const trackerTable = this.db.table<TrackerItem>("tracker")
 
     return on(
       this.app.repository,
@@ -273,11 +274,26 @@ class Storage {
         }
 
         if (add.length > 0) {
-          await table.bulkPut(add)
+          // The ingest policy tracks an event before publishing it, so by the time the
+          // repository reports it, its provenance is already in the tracker — persist the
+          // two together so an event is never saved without the relays it came from.
+          const items: TrackerItem[] = []
+
+          for (const {id} of add) {
+            const relays = Array.from(this.app.tracker.getRelays(id))
+
+            if (relays.length > 0) {
+              items.push({id, relays})
+            }
+          }
+
+          await eventsTable.bulkPut(add)
+          await trackerTable.bulkPut(items)
         }
 
         if (remove.size > 0) {
-          await table.bulkDelete(remove)
+          await eventsTable.bulkDelete(remove)
+          await trackerTable.bulkDelete(remove)
         }
       }),
     )
@@ -312,6 +328,9 @@ class Storage {
       for (const id of ids) {
         const event = this.app.repository.getEvent(id)
 
+        // A brand-new event is tracked before it's published, so it isn't queryable here —
+        // syncEvents persists its provenance along with the event itself. This pass only
+        // records additional relays for events we already have.
         if (!event || !shouldPersistEvent(event)) continue
 
         const relays = Array.from(this.app.tracker.getRelays(id))
