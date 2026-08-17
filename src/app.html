@@ -25,6 +25,19 @@
     <link rel="icon" href="/pwa-192x192.png" sizes="192x192" type="image/png" />
     <link rel="icon" href="/pwa-512x512.png" sizes="512x512" type="image/png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
+    <!-- Android's WebView can go arbitrarily long without an idle period, and both
+         emoji-picker-element and our own storage writes hand work to requestIdleCallback
+         without a timeout, so on a phone that work never ran. Giving one to every caller
+         only ever makes a callback run sooner. Must precede sveltekit's module scripts:
+         emoji-picker-element reads the global once, when it is imported. -->
+    <script>
+      const idle = window.requestIdleCallback
+
+      if (idle) {
+        window.requestIdleCallback = (callback, options) =>
+          idle.call(window, callback, {timeout: 200, ...options})
+      }
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover" data-sveltekit-preload-code="eager">
