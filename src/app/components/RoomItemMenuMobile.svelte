@@ -1,7 +1,8 @@
 <script lang="ts">
   import type {NativeEmoji} from "emoji-picker-element/shared"
   import type {TrustedEvent} from "@welshman/util"
-  import {getIdOrAddress, tagSpec, tagValue} from "@welshman/util"
+  import * as nip19 from "nostr-tools/nip19"
+  import {getIdOrAddress, tagSpec, tagValue, toNostrURI} from "@welshman/util"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
@@ -52,7 +53,12 @@
 
   const showEmojiPicker = () => pushModal(EmojiPicker, {onClick: onEmoji}, {replaceState: true})
 
-  const createThread = () => pushModal(ThreadCreate, {url, h, parent: event}, {replaceState: true})
+  const createThread = () =>
+    pushModal(
+      ThreadCreate,
+      {url, h, initialValues: {content: toNostrURI(nip19.neventEncode({...event, relays: [url]}))}},
+      {replaceState: true},
+    )
 
   const sendReply = () => {
     history.back()

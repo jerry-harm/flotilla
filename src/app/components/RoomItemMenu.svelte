@@ -1,6 +1,7 @@
 <script lang="ts">
+  import * as nip19 from "nostr-tools/nip19"
   import type {TrustedEvent} from "@welshman/util"
-  import {tagSpec, tagValue} from "@welshman/util"
+  import {tagSpec, tagValue, toNostrURI} from "@welshman/util"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
   import GalleryWide from "@assets/icons/gallery-wide.svg?dataurl"
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
@@ -42,7 +43,11 @@
 
   const createThread = () => {
     onClick()
-    pushModal(ThreadCreate, {url, h, parent: event})
+    pushModal(ThreadCreate, {
+      url,
+      h,
+      initialValues: {content: toNostrURI(nip19.neventEncode({...event, relays: [url]}))},
+    })
   }
 
   const report = () => {

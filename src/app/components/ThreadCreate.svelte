@@ -1,10 +1,7 @@
 <script lang="ts">
   import {writable} from "svelte/store"
-  import * as nip19 from "nostr-tools/nip19"
   import {Thread} from "@welshman/domain"
   import {publish} from "@welshman/app"
-  import {toNostrURI} from "@welshman/util"
-  import type {TrustedEvent} from "@welshman/util"
   import {isMobile, preventDefault} from "@lib/html"
   import Paperclip from "@assets/icons/paperclip-2.svg?dataurl"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
@@ -34,18 +31,12 @@
     url: string
     h?: string
     shareToChat?: boolean
-    // pre-fills the thread body with an embedded quote of this event (see
-    // "Create a Thread" in RoomItemMenu/RoomItemMenuMobile) — an unrelated
-    // in-progress draft still wins, same as opening this modal any other way.
-    parent?: TrustedEvent
+    initialValues?: Values
   }
 
-  const {url, h, shareToChat = false, parent}: Props = $props()
-  const pointerContent = parent
-    ? toNostrURI(nip19.neventEncode({...parent, relays: [url]}))
-    : undefined
+  const {url, h, shareToChat = false, initialValues}: Props = $props()
   const draftKey = new DraftKey<Values>(`thread:${url}:${h ?? ""}`)
-  const initialValues = draftKey.get()
+  const draft = draftKey.get()
   const shouldProtect = $relays.hasNip(url, 70)
 
   const uploading = writable(false)
@@ -109,8 +100,8 @@
 
   let loading = $state(false)
 
-  let title = $state(initialValues?.title ?? "")
-  let content = $state(initialValues?.content ?? pointerContent ?? "")
+  let title = $state(initialValues?.title ?? draft?.title ?? "")
+  let content = $state(initialValues?.content ?? draft?.content ?? "")
 
   const onChange = (json: object) => {
     content = json
