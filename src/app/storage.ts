@@ -3,7 +3,7 @@ import type {Unsubscriber} from "svelte/store"
 import {deleteDB} from "idb"
 import {SecureStorage} from "@aparajita/capacitor-secure-storage"
 import {Preferences} from "@capacitor/preferences"
-import {noop, on, throttle, batch, call, addToMapKey, makeQueue} from "@welshman/lib"
+import {noop, on, throttle, batch, call, makeQueue} from "@welshman/lib"
 import type {Maybe} from "@welshman/lib"
 import {
   ALERT_ANDROID,
@@ -111,7 +111,6 @@ export const ss = call(() => {
 
 const TABLES = [
   {name: "events", keyPath: "id"},
-  {name: "tracker", keyPath: "id"},
   {name: "relays", keyPath: "url"},
   {name: "relayStats", keyPath: "url"},
   {name: "handles", keyPath: "nip05"},
@@ -154,7 +153,7 @@ const isRelayScoped = (event: TrustedEvent) =>
 const shouldPersistEvent = (event: TrustedEvent) =>
   kinds.meta.includes(event.kind) || kinds.alert.includes(event.kind) || isRelayScoped(event)
 
-type TrackerItem = {id: string; relays: string[]}
+type EventItem = {id: string; event: TrustedEvent; relays: string[]}
 
 type PlaintextItem = {key: string; value: string}
 
@@ -225,62 +224,53 @@ class Storage {
   }
 
   /**
-   * Events load together with the relays they came from, since a relay-scoped event that lost
-   * its provenance can never be keyed to a space again — it sits in the repository invisible,
-   * and negentropy reconciles it away as already-present, so it never comes back. Drop those
-   * and let the next sync pull them down again.
+   * Each row holds an event together with the relays it came from, since a relay-scoped event
+   * that lost its provenance can never be keyed to a space again — it sits in the repository
+   * invisible, and negentropy reconciles it away as already-present, so it never comes back.
+   * Drop those and let the next sync pull them down again.
    */
   private loadCriticalData = async () => {
-    const eventsTable = this.db.table<TrustedEvent>("events")
-    const trackerTable = this.db.table<TrackerItem>("tracker")
-    const [storedEvents, storedItems] = await Promise.all([
-      eventsTable.getAll(),
-      trackerTable.getAll(),
-    ])
+    const table = this.db.table<EventItem>("events")
+    const items: EventItem[] = []
+    const stale: string[] = []
 
-    const relaysById = new Map(storedItems.map(({id, relays}) => [id, new Set(relays)]))
-    const events: TrustedEvent[] = []
-    const staleEvents: string[] = []
-
-    for (const event of storedEvents) {
-      if (shouldPersistEvent(event) && (!isRelayScoped(event) || relaysById.has(event.id))) {
-        event[verifiedSymbol] = true
-        events.push(event)
+    for (const item of await table.getAll()) {
+      // Rows written before provenance was stored inline hold a bare event
+      if (
+        item.event &&
+        shouldPersistEvent(item.event) &&
+        (!isRelayScoped(item.event) || item.relays.length > 0)
+      ) {
+        item.event[verifiedSymbol] = true
+        items.push(item)
       } else {
-        staleEvents.push(event.id)
+        stale.push(item.id)
       }
     }
 
-    for (const [id, relays] of this.app.tracker.relaysById) {
-      for (const relay of relays) {
-        addToMapKey(relaysById, id, relay)
+    this.app.repository.load(items.map(item => item.event))
+
+    const relaysById = new Map<string, Set<string>>()
+
+    for (const {id, relays} of items) {
+      // Anything the repository rejected was superseded by an event that arrived before we
+      // finished loading
+      if (this.app.repository.getEvent(id)) {
+        relaysById.set(id, new Set(relays))
+      } else {
+        stale.push(id)
       }
-    }
-
-    this.app.repository.load([...this.app.repository.dump(), ...events])
-
-    const staleItems = storedItems
-      .map(item => item.id)
-      .filter(id => !this.app.repository.getEvent(id))
-
-    for (const id of staleItems) {
-      relaysById.delete(id)
     }
 
     this.app.tracker.load(relaysById)
 
-    if (staleEvents.length > 0) {
-      void eventsTable.bulkDelete(staleEvents)
-    }
-
-    if (staleItems.length > 0) {
-      void trackerTable.bulkDelete(staleItems)
+    if (stale.length > 0) {
+      void table.bulkDelete(stale)
     }
   }
 
   private syncEvents = () => {
-    const eventsTable = this.db.table<TrustedEvent>("events")
-    const trackerTable = this.db.table<TrackerItem>("tracker")
+    const table = this.db.table<EventItem>("events")
 
     return on(
       this.app.repository,
@@ -304,73 +294,55 @@ class Storage {
 
         if (add.length > 0) {
           // The ingest policy tracks an event before publishing it, so by the time the
-          // repository reports it, its provenance is already in the tracker — persist the
-          // two together so an event is never saved without the relays it came from.
-          const items: TrackerItem[] = []
-
-          for (const {id} of add) {
-            const relays = Array.from(this.app.tracker.getRelays(id))
-
-            if (relays.length > 0) {
-              items.push({id, relays})
-            }
-          }
-
-          await eventsTable.bulkPut(add)
-          await trackerTable.bulkPut(items)
+          // repository reports it, its provenance is already in the tracker
+          await table.bulkPut(
+            add.map(event => ({
+              id: event.id,
+              event,
+              relays: Array.from(this.app.tracker.getRelays(event.id)),
+            })),
+          )
         }
 
         if (remove.size > 0) {
-          await eventsTable.bulkDelete(remove)
-          await trackerTable.bulkDelete(remove)
+          await table.bulkDelete(remove)
         }
       }),
     )
   }
 
   private syncTracker = () => {
-    const table = this.db.table<TrackerItem>("tracker")
+    const table = this.db.table<EventItem>("events")
 
-    const _onAdd = async (ids: Iterable<string>) => {
-      const items: TrackerItem[] = []
+    const _onChange = async (ids: Iterable<string>) => {
+      const items: EventItem[] = []
 
       for (const id of ids) {
         const event = this.app.repository.getEvent(id)
 
         // A brand-new event is tracked before it's published, so it isn't queryable here —
         // syncEvents persists its provenance along with the event itself. This pass only
-        // records additional relays for events we already have.
-        if (!event || !shouldPersistEvent(event)) continue
-
-        const relays = Array.from(this.app.tracker.getRelays(id))
-
-        if (relays.length === 0) continue
-
-        items.push({id, relays})
+        // records relay changes for events we already have.
+        if (event && shouldPersistEvent(event)) {
+          items.push({id, event, relays: Array.from(this.app.tracker.getRelays(id))})
+        }
       }
 
       await table.bulkPut(items)
     }
 
-    const _onRemove = async (ids: Iterable<string>) => {
-      await table.bulkDelete(Array.from(ids))
-    }
-
-    const onAdd = batch(3000, _onAdd)
-    const onRemove = batch(3000, _onRemove)
-    const onLoad = () => _onAdd(this.app.tracker.relaysById.keys())
-    const onClear = () => _onRemove(this.app.tracker.relaysById.keys())
+    const onAdd = batch(3000, _onChange)
+    const onRemove = batch(3000, _onChange)
+    const onLoad = () => _onChange(this.app.tracker.relaysById.keys())
 
     this.app.tracker.on("add", onAdd)
     this.app.tracker.on("remove", onRemove)
     this.app.tracker.on("load", onLoad)
-    this.app.tracker.on("clear", onClear)
 
     return () => {
       this.app.tracker.off("add", onAdd)
       this.app.tracker.off("remove", onRemove)
       this.app.tracker.off("load", onLoad)
-      this.app.tracker.off("clear", onClear)
     }
   }
 

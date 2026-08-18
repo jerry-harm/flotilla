@@ -213,8 +213,8 @@
     unsubscribers.push(Push.sync())
 
     // Logging in swaps in a fresh app — its policies rebind themselves, we just have to sync
-    // application data against the new identity's relays. Loading the new app's storage
-    // replaces its repository and tracker wholesale, so wait for it the way startup does.
+    // application data against the new identity's relays. Wait for the new app's storage to
+    // load the way startup does, so sync reconciles against cached events.
     let currentApp = core.app.get()
 
     const resync = async () => {

@@ -1,5 +1,6 @@
 import {openDB, deleteDB} from "idb"
 import type {IDBPDatabase} from "idb"
+import {spec} from "@welshman/lib"
 import type {Maybe} from "@welshman/lib"
 
 export type IDBStore = {
@@ -19,14 +20,17 @@ export class IDB {
   constructor(readonly options: IDBOptions) {}
 
   // Object stores can only be created during a version change, and which stores we need depends
-  // on who is logged in, so open at whatever version exists and bump it to add missing ones.
+  // on who is logged in, so open at whatever version exists and bump it to reconcile the schema.
   private open = async () => {
     const {name, stores} = this.options
     const blocking = () => this.close()
     const db = await openDB(name, undefined, {blocking})
     const missing = stores.filter(store => !db.objectStoreNames.contains(store.name))
+    const obsolete = Array.from(db.objectStoreNames).filter(
+      storeName => !stores.some(spec({name: storeName})),
+    )
 
-    if (missing.length === 0) {
+    if (missing.length === 0 && obsolete.length === 0) {
       return db
     }
 
@@ -38,6 +42,10 @@ export class IDB {
       upgrade(idbDb: IDBPDatabase) {
         for (const {name, keyPath} of missing) {
           idbDb.createObjectStore(name, {keyPath})
+        }
+
+        for (const storeName of obsolete) {
+          idbDb.deleteObjectStore(storeName)
         }
       },
       blocked: (currentVersion, blockedVersion) =>
