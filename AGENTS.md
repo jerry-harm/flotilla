@@ -206,7 +206,7 @@ pnpm run check            # Type check
 **Welshman Development:**
 
 - Clone welshman to parent directory
-- Use `./link_deps` script to link local welshman packages
+- Use `./scripts/link-deps.mjs` to link local welshman packages
 - Avoid committing `pnpm.overrides` changes
 
 **Git Workflow:**

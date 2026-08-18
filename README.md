@@ -37,7 +37,7 @@ You can also optionally create an `.env.local` file and populate it with the fol
 - `VITE_POMADE_SIGNERS` - A comma-separated list of Pomade signer server URLs (3+ required to enable email signup)
 - `VITE_THUMBNAIL_URL` - URL of the image thumbnail service
 
-These values **won't** be used for a built version. Instead, env variables should be provided to `build.sh` directly or to the built container.
+These values **won't** be used for a built version. Instead, env variables should be provided to `scripts/build.sh` directly or to the built container.
 
 If you're deploying a custom version of flotilla, be sure to remove the `plausible.coracle.social` script from `app.html`. This sends analytics to a server hosted by the developer.
 

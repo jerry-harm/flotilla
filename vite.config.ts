@@ -9,7 +9,7 @@ config({path: ".env"})
 
 export default defineConfig({
   // @welshman/editor takes tiptap as peer dependencies, so an installed copy resolves them from
-  // here and there is one prosemirror. link_deps symlinks its source instead, and that directory
+  // here and there is one prosemirror. link-deps.mjs symlinks its source instead, and that directory
   // carries node_modules from welshman's own install — a second prosemirror, whose Plugin and
   // PluginKey classes tiptap refuses to mix with ours ("Adding different instances of a keyed
   // plugin"). Deduping resolves these to this project's copy wherever they are imported from, and

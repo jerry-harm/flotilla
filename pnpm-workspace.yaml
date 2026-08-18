@@ -1,4 +1,4 @@
-# Allow link_deps to change stuff in the working tree
+# Allow link-deps.mjs to change stuff in the working tree
 verifyDepsBeforeRun: warn
 
 allowBuilds:
@@ -7,6 +7,7 @@ allowBuilds:
   esbuild: false
   sharp: true
   nostr-signer-capacitor-plugin@https://codeload.github.com/coracle-social/nostr-signer-capacitor-plugin/tar.gz/436adec9ed1e71569748cd56aa697f361e7a8d47: true
+  yarn: false
 minimumReleaseAgeExclude:
   - '@pomade/core'
   - '@welshman/app'
