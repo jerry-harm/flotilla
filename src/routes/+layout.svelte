@@ -14,14 +14,13 @@
   import {context as pomadeContext} from "@pomade/core"
   import {sync, throttled} from "@welshman/store"
   import {setNip55Plugin} from "@welshman/signer"
-  import * as domain from "@welshman/domain"
   import * as util from "@welshman/util"
   import * as lib from "@welshman/lib"
   import {Logger} from "@welshman/app"
   import {isMobile, documentActive} from "@lib/html"
   import AppContainer from "@app/components/AppContainer.svelte"
   import ModalContainer from "@app/components/ModalContainer.svelte"
-  import {app} from "@app/core"
+  import * as core from "@app/core"
   import {setupHistory} from "@app/routes"
   import {setupAnalytics} from "@app/analytics"
   import {setupLogging} from "@app/logger"
@@ -65,7 +64,7 @@
   )
 
   // Add stuff to window for convenience
-  Object.assign(window, {get, nip19, theme, app, domain, Logger, ...lib, ...util})
+  Object.assign(window, {get, nip19, theme, Logger, ...lib, ...util, ...core})
 
   // Set up context for various modules
   pomadeContext.setSignerUrls(env.POMADE_SIGNERS)
@@ -214,14 +213,21 @@
     unsubscribers.push(Push.sync())
 
     // Logging in swaps in a fresh app — its policies rebind themselves, we just have to sync
-    // application data against the new identity's relays.
-    let currentApp = app.get()
+    // application data against the new identity's relays. Loading the new app's storage
+    // replaces its repository and tracker wholesale, so wait for it the way startup does.
+    let currentApp = core.app.get()
+
+    const resync = async () => {
+      await storage.get()?.ready
+
+      syncApplicationData()
+    }
 
     unsubscribers.push(
-      app.subscribe($app => {
+      core.app.subscribe($app => {
         if ($app !== currentApp) {
           currentApp = $app
-          syncApplicationData()
+          resync()
         }
       }),
     )
@@ -282,7 +288,8 @@
   })
 
   $effect(() => {
-    const title = getPageTitle({page: $page, pubkey: $app.user?.pubkey})
+    const {user} = core.app.get()
+    const title = getPageTitle({page: $page, pubkey: user?.pubkey})
     // While the tab isn't actively focused the user isn't actually looking at the
     // active page, so count notifications for it too rather than treating it as read.
     const paths = $documentActive ? $notificationPaths : $allNotifications

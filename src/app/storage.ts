@@ -3,7 +3,7 @@ import type {Unsubscriber} from "svelte/store"
 import {deleteDB} from "idb"
 import {SecureStorage} from "@aparajita/capacitor-secure-storage"
 import {Preferences} from "@capacitor/preferences"
-import {noop, on, throttle, batch, call, makeQueue} from "@welshman/lib"
+import {noop, on, throttle, batch, call, addToMapKey, makeQueue} from "@welshman/lib"
 import type {Maybe} from "@welshman/lib"
 import {
   ALERT_ANDROID,
@@ -146,11 +146,13 @@ const kinds = {
   ],
 }
 
+// Space and room events mean nothing apart from the relay they came from — welshman keys them
+// per relay, and only counts room state the relay itself signed.
+const isRelayScoped = (event: TrustedEvent) =>
+  kinds.space.includes(event.kind) || kinds.room.includes(event.kind)
+
 const shouldPersistEvent = (event: TrustedEvent) =>
-  kinds.meta.includes(event.kind) ||
-  kinds.alert.includes(event.kind) ||
-  kinds.space.includes(event.kind) ||
-  kinds.room.includes(event.kind)
+  kinds.meta.includes(event.kind) || kinds.alert.includes(event.kind) || isRelayScoped(event)
 
 type TrackerItem = {id: string; relays: string[]}
 
@@ -191,9 +193,7 @@ class Storage {
   private start = async () => {
     await this.db.connect()
 
-    const [, unsubscribeRelays] = await Promise.all([this.loadCriticalEvents(), this.initRelays()])
-
-    await this.loadCriticalTracker()
+    const [, unsubscribeRelays] = await Promise.all([this.loadCriticalData(), this.initRelays()])
 
     this.addUnsubscriber(this.syncEvents())
     this.addUnsubscriber(this.syncTracker())
@@ -224,25 +224,57 @@ class Storage {
     }
   }
 
-  private loadCriticalEvents = async () => {
-    const table = this.db.table<TrustedEvent>("events")
-    const initialEvents = await table.getAll()
-    const keep: TrustedEvent[] = []
-    const drop: string[] = []
+  /**
+   * Events load together with the relays they came from, since a relay-scoped event that lost
+   * its provenance can never be keyed to a space again — it sits in the repository invisible,
+   * and negentropy reconciles it away as already-present, so it never comes back. Drop those
+   * and let the next sync pull them down again.
+   */
+  private loadCriticalData = async () => {
+    const eventsTable = this.db.table<TrustedEvent>("events")
+    const trackerTable = this.db.table<TrackerItem>("tracker")
+    const [storedEvents, storedItems] = await Promise.all([
+      eventsTable.getAll(),
+      trackerTable.getAll(),
+    ])
 
-    for (const event of initialEvents) {
-      if (shouldPersistEvent(event)) {
+    const relaysById = new Map(storedItems.map(({id, relays}) => [id, new Set(relays)]))
+    const events: TrustedEvent[] = []
+    const staleEvents: string[] = []
+
+    for (const event of storedEvents) {
+      if (shouldPersistEvent(event) && (!isRelayScoped(event) || relaysById.has(event.id))) {
         event[verifiedSymbol] = true
-        keep.push(event)
+        events.push(event)
       } else {
-        drop.push(event.id)
+        staleEvents.push(event.id)
       }
     }
 
-    this.app.repository.load(keep)
+    for (const [id, relays] of this.app.tracker.relaysById) {
+      for (const relay of relays) {
+        addToMapKey(relaysById, id, relay)
+      }
+    }
 
-    if (drop.length > 0) {
-      void table.bulkDelete(drop)
+    this.app.repository.load([...this.app.repository.dump(), ...events])
+
+    const staleItems = storedItems
+      .map(item => item.id)
+      .filter(id => !this.app.repository.getEvent(id))
+
+    for (const id of staleItems) {
+      relaysById.delete(id)
+    }
+
+    this.app.tracker.load(relaysById)
+
+    if (staleEvents.length > 0) {
+      void eventsTable.bulkDelete(staleEvents)
+    }
+
+    if (staleItems.length > 0) {
+      void trackerTable.bulkDelete(staleItems)
     }
   }
 
@@ -294,26 +326,6 @@ class Storage {
         }
       }),
     )
-  }
-
-  private loadCriticalTracker = async () => {
-    const table = this.db.table<TrackerItem>("tracker")
-    const relaysById = new Map<string, Set<string>>()
-    const stale: string[] = []
-
-    for (const {id, relays} of await table.getAll()) {
-      if (this.app.repository.getEvent(id)) {
-        relaysById.set(id, new Set(relays))
-      } else {
-        stale.push(id)
-      }
-    }
-
-    this.app.tracker.load(relaysById)
-
-    if (stale.length > 0) {
-      void table.bulkDelete(stale)
-    }
   }
 
   private syncTracker = () => {
