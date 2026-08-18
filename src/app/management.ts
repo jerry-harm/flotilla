@@ -21,9 +21,6 @@ export const deriveSpaceBannedPubkeyItems = (url: string) => {
   return store
 }
 
-// A relay only answers NIP-86 for its admins, so the methods it reports double as the user's
-// permissions. This costs a signature and an http round trip, so share one store per url and
-// only re-check when the answer has had time to go stale (or when a check failed).
 export const deriveSpaceSupportedMethods = simpleCache(([url]: [string | undefined]) => {
   let checkedAt = 0
 

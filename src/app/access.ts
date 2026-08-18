@@ -10,13 +10,13 @@ import {
   FOLLOWS,
   MESSAGING_RELAYS,
   PROFILE,
-  RELAY_INVITE,
   RELAYS,
+  type ManagementResponse,
 } from "@welshman/util"
-import {RelayInvite, RelayJoin, RelayLeave, RoomJoin} from "@welshman/domain"
+import {RelayJoin, RelayLeave, RoomJoin} from "@welshman/domain"
 import {Sync, User, publish} from "@welshman/app"
 import {stripPrefix} from "@lib/util"
-import {app, command, network, reader, roomLists, thunks, writer} from "@app/core"
+import {app, command, relayManagement, roomLists, thunks, writer} from "@app/core"
 import {PLATFORM_URL} from "@app/env"
 import {relaysMostlyRestricted} from "@app/policies"
 import {Push} from "@app/push"
@@ -347,34 +347,44 @@ export class Access {
   async prepareInvite(h?: string) {
     this.loading.set(true)
 
-    // A request that times out or hits a closed socket resolves with no events, so an
-    // empty result is the only signal we get that the relay never answered.
-    const [events, roomInviteResult] = await Promise.all([
-      network.get().request({
-        relays: [this.url],
-        autoClose: true,
-        signal: AbortSignal.timeout(10000),
-        filters: [{kinds: [RELAY_INVITE]}],
-      }),
-      h ? publishRoomInvite(this.url, h) : Promise.resolve({code: undefined, error: undefined}),
-      // Keep the spinner up long enough that a fast relay doesn't make it flash
-      sleep(300),
-    ])
+    try {
+      const management = relayManagement.get().forUrl(this.url)
 
-    if (events[0]) {
-      const eventReader = reader(RelayInvite)
-      const invite = await eventReader(events[0])
+      const [{result: methods}, roomInviteResult] = await Promise.all([
+        management.supportedMethods().catch((error): ManagementResponse => {
+          console.error(error)
+          return {}
+        }),
+        h ? publishRoomInvite(this.url, h) : Promise.resolve({code: undefined, error: undefined}),
+        // Keep the spinner up long enough that a fast relay doesn't make it flash
+        sleep(300),
+      ])
 
-      this.claim.set(invite.claim() ?? "")
+      // The relay reports methods relay-wide rather than per-user, so a listed method can
+      // still come back "blocked" for this particular user — treat that as having no claim.
+      if (methods?.includes("createclaim")) {
+        const {result: claims} = await management.listClaims()
+
+        if (claims?.[0]) {
+          this.claim.set(claims[0])
+        } else {
+          const claim = randomId()
+          const {error} = await management.createClaim(claim)
+
+          if (error) {
+            this.claimFailed.set(true)
+          } else {
+            this.claim.set(claim)
+          }
+        }
+      }
+
+      if (h) {
+        this.roomCode.set(roomInviteResult.code)
+        this.roomInviteError.set(roomInviteResult.error)
+      }
+    } finally {
+      this.loading.set(false)
     }
-
-    this.claimFailed.set(events.length === 0)
-
-    if (h) {
-      this.roomCode.set(roomInviteResult.code)
-      this.roomInviteError.set(roomInviteResult.error)
-    }
-
-    this.loading.set(false)
   }
 }
