@@ -1,5 +1,20 @@
 # Changelog
 
+# 1.9.1
+
+* Re-work how claims work under the hood
+* Fix storage and synchronization bugs
+* Update welshman library to 0.9.0
+* And long-form articles
+* Fix quote loading, rendering, and comments
+* Add "create thread" from chat message
+* Fix voice chat bugs
+* Fix notification bugs
+* Improve video tiling and chrome
+* Add ability to send logs to developer
+* Add theme selector
+* Add native sharing registration
+
 # 1.9.0
 
 * Fix nav safe are inset, qr code reactivity
