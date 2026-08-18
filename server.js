@@ -5,8 +5,8 @@ import {fileURLToPath} from "node:url"
 import "dotenv/config"
 import {serve} from "@hono/node-server"
 import {serveStatic} from "@hono/node-server/serve-static"
-import {loadRelay} from "@welshman/app"
-import {displayRelayUrl, normalizeRelayUrl} from "@welshman/util"
+import {App, Relays} from "@welshman/app"
+import {normalizeRelayUrl} from "@welshman/util"
 import {load} from "cheerio"
 import {Hono} from "hono"
 
@@ -55,10 +55,12 @@ const requestUrlFromContext = context => {
   return requestUrl
 }
 
+const relays = new App().use(Relays)
+
 const fetchRelayMeta = async relayUrl => {
   if (!relayUrl) return undefined
   try {
-    return await loadRelay(normalizeRelayUrl(relayUrl))
+    return await relays.load(normalizeRelayUrl(relayUrl))
   } catch (err) {
     console.error(`Failed to fetch relay metadata for ${relayUrl}:`, err)
     return undefined
@@ -76,7 +78,7 @@ const getMetadataForInvite = async (url, match) => {
   const relayMetadata = await fetchRelayMeta(relayParam)
   if (!relayMetadata) return undefined
 
-  const relayDisplay = displayRelayUrl(relayParam)
+  const relayDisplay = relayMetadata.displayUrl()
   const spaceName = relayMetadata.name
   const relayDescription = relayMetadata.description
 
@@ -97,10 +99,7 @@ const getMetadataForInvite = async (url, match) => {
 
   const description = parts.join(" ")
   const image =
-    relayMetadata.icon ||
-    relayMetadata.picture ||
-    relayMetadata.image ||
-    buildDefaultImage(url)
+    relayMetadata.icon || relayMetadata.picture || relayMetadata.image || buildDefaultImage(url)
 
   return {
     title,
@@ -118,16 +117,13 @@ const getMetadataForSpace = async (url, match) => {
   const relayMetadata = await fetchRelayMeta(relayParam)
   if (!relayMetadata) return undefined
 
-  const spaceName = relayMetadata.name || displayRelayUrl(relayParam)
+  const spaceName = relayMetadata.display()
 
   return {
     title: `${spaceName} on ${PLATFORM_NAME}`,
     description: relayMetadata.description || PLATFORM_DESCRIPTION,
     image:
-      relayMetadata.icon ||
-      relayMetadata.picture ||
-      relayMetadata.image ||
-      buildDefaultImage(url),
+      relayMetadata.icon || relayMetadata.picture || relayMetadata.image || buildDefaultImage(url),
     url: url.toString(),
     site: url.origin,
   }
@@ -170,8 +166,14 @@ const getMetadataForRoom = async (url, match) => {
 
 const routes = [
   [/^\/join\/?$/, getMetadataForInvite],
-  [/^\/spaces\/([^/]+)\/(calendar|chat|threads|polls|goals|classifieds|recent)\/?$/, getMetadataForSpaceSection],
-  [/^\/spaces\/([^/]+)\/(calendar|threads|polls|goals|classifieds)\/([^/]+)\/?$/, getMetadataForSpaceItem],
+  [
+    /^\/spaces\/([^/]+)\/(calendar|chat|threads|polls|goals|classifieds|recent)\/?$/,
+    getMetadataForSpaceSection,
+  ],
+  [
+    /^\/spaces\/([^/]+)\/(calendar|threads|polls|goals|classifieds)\/([^/]+)\/?$/,
+    getMetadataForSpaceItem,
+  ],
   [/^\/spaces\/([^/]+)\/([^/]+)\/?$/, getMetadataForRoom],
   [/^\/spaces\/([^/]+)\/?$/, getMetadataForSpace],
 ]
