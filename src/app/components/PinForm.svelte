@@ -9,6 +9,7 @@
 
 <script lang="ts">
   import {writable} from "svelte/store"
+  import {slide} from "@lib/transition"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import GallerySend from "@assets/icons/gallery-send.svg?dataurl"
   import Spinner from "@lib/components/Spinner.svelte"
@@ -85,45 +86,6 @@
     </ModalHeader>
     <Field>
       {#snippet label()}
-        Title
-      {/snippet}
-      {#snippet input()}
-        <input bind:value={title} class="input w-full" placeholder="Optional title" />
-      {/snippet}
-    </Field>
-    <Field>
-      {#snippet label()}
-        Description
-      {/snippet}
-      {#snippet input()}
-        <div class="relative z-feature flex gap-2">
-          <div class="input-editor grow overflow-hidden">
-            <EditorContent {editor} />
-          </div>
-          <Button
-            data-tip="Add an image"
-            class="button button-neutral button-input tip"
-            onclick={selectFiles}
-            disabled={loading}>
-            {#if $uploading}
-              <Spinner size="xs" />
-            {:else}
-              <Icon icon={GallerySend} />
-            {/if}
-          </Button>
-        </div>
-      {/snippet}
-    </Field>
-    <Field>
-      {#snippet label()}
-        Topics
-      {/snippet}
-      {#snippet input()}
-        <StringMultiInput bind:value={topics} placeholder="Add a topic..." />
-      {/snippet}
-    </Field>
-    <Field>
-      {#snippet label()}
         Link
       {/snippet}
       {#snippet info()}
@@ -133,6 +95,49 @@
         <input bind:value class="input w-full" placeholder="URL or nevent..." />
       {/snippet}
     </Field>
+    {#if value.trim()}
+      <div transition:slide class="card card-sm flex flex-col gap-4 opacity-75">
+        <Field>
+          {#snippet label()}
+            Title
+          {/snippet}
+          {#snippet input()}
+            <input bind:value={title} class="input w-full" placeholder="Optional title" />
+          {/snippet}
+        </Field>
+        <Field>
+          {#snippet label()}
+            Description
+          {/snippet}
+          {#snippet input()}
+            <div class="relative z-feature flex gap-2">
+              <div class="input-editor grow overflow-hidden">
+                <EditorContent {editor} />
+              </div>
+              <Button
+                data-tip="Add an image"
+                class="button button-neutral button-input tip"
+                onclick={selectFiles}
+                disabled={loading}>
+                {#if $uploading}
+                  <Spinner size="xs" />
+                {:else}
+                  <Icon icon={GallerySend} />
+                {/if}
+              </Button>
+            </div>
+          {/snippet}
+        </Field>
+        <Field>
+          {#snippet label()}
+            Topics
+          {/snippet}
+          {#snippet input()}
+            <StringMultiInput bind:value={topics} placeholder="Add a topic..." />
+          {/snippet}
+        </Field>
+      </div>
+    {/if}
   </ModalBody>
   <ModalFooter>
     <Button class="button button-link" onclick={back}>
