@@ -5,13 +5,15 @@ import {
   ROOM_ADD_MEMBER,
   Resolver,
   makeEvent,
+  prep,
   tagSpec,
   tagValue,
   toNostrURI,
 } from "@welshman/util"
-import type {SignedEvent, StampedEvent} from "@welshman/util"
-import {EventWriter, Profile} from "@welshman/domain"
-import type {BaseEventReader} from "@welshman/domain"
+import type {EventTemplate, HashedEvent, SignedEvent, StampedEvent} from "@welshman/util"
+import {Nip59} from "@welshman/signer"
+import {DirectMessage, EventWriter, Profile} from "@welshman/domain"
+import type {BaseEventReader, ConfiguredKind, KindFactory} from "@welshman/domain"
 import type {RoomOptions, TestRelay} from "../zooid/types"
 import type {Zooid} from "../zooid/relay"
 import type {TenantName} from "../zooid/config"
@@ -29,6 +31,18 @@ export type SeededEvent = {
   readonly event: SignedEvent
   readonly id: string
 }
+
+// The kind-14 a direct message really is. It is never published — each participant gets it inside
+// a gift wrap — so this, rather than anything on the wire, is what a spec asserts on.
+export type SeededRumor = {
+  readonly rumor: HashedEvent
+  readonly id: string
+}
+
+// An event to seed, either already rendered or built when its turn comes up. A domain writer needs
+// a relay url to resolve its hints against, and this space has none until the queue has drained,
+// so anything built by one has to be deferred.
+export type SeededTemplate = StampedEvent | (() => MaybeAsync<EventTemplate>)
 
 export type ProfileValues = {
   name?: string
@@ -61,7 +75,16 @@ export type SeededSpace = {
   message(user: TestUser, h: string, content: string, createdAt?: number): SeededEvent
   reply(user: TestUser, parent: SeededEvent, content: string, createdAt?: number): SeededEvent
   profile(user: TestUser, values: ProfileValues, createdAt?: number): SeededEvent
-  event(user: TestUser, template: StampedEvent): SeededEvent
+  event(user: TestUser, template: SeededTemplate, createdAt?: number): SeededEvent
+  // A nip-17 conversation: one kind-14 rumor, gift-wrapped once per participant — the sender
+  // included, since their own copy is the half of the thread their client reads back.
+  dm(from: TestUser, to: TestUser[], content: string, createdAt?: number): SeededRumor
+  // This space's domain kinds, bound to a resolver that answers with its url, so a writer built
+  // here renders its relay hints as this space. For everything `event()` takes a template for:
+  // `space.event(user, () => space.kind(Article).writer().setTitle("x").renderTemplate())`.
+  kind<R extends BaseEventReader, W extends EventWriter<R>>(
+    factory: KindFactory<R, W>,
+  ): ConfiguredKind<R, W>
 }
 
 export type SeedSpaceOptions = {
@@ -91,18 +114,24 @@ export const seedSpace = ({zooid, enqueue, startedAt, name}: SeedSpaceOptions): 
   // Every fixture is published to this space, so a relay hint always resolves to its url.
   const context = {resolver: new Resolver(() => [relay().url])}
 
-  const publish = (write: () => Promise<SignedEvent>): SeededEvent => {
-    let signed: Maybe<SignedEvent>
+  // Queues a write and hands back a getter for whatever it produced, which only reads once the
+  // scenario's queue has drained.
+  const seeded = <T>(write: () => Promise<T>) => {
+    let value: Maybe<T>
 
-    const event = () => {
-      if (signed) return signed
+    enqueue(async () => {
+      value = await write()
+    })
+
+    return () => {
+      if (value) return value
 
       throw new Error(`An event seeded into "${name}" was read before seed() published it`)
     }
+  }
 
-    enqueue(async () => {
-      signed = await write()
-    })
+  const publish = (write: () => Promise<SignedEvent>): SeededEvent => {
+    const event = seeded(write)
 
     return {
       get event() {
@@ -122,7 +151,14 @@ export const seedSpace = ({zooid, enqueue, startedAt, name}: SeedSpaceOptions): 
 
   const member = (user: TestUser, h?: string) => enqueue(() => relay().member(user, h, startedAt))
 
-  const event = (user: TestUser, template: StampedEvent) => publishTemplate(user, () => template)
+  const event = (user: TestUser, template: SeededTemplate, createdAt = startedAt) =>
+    publishTemplate(user, async () => {
+      if (typeof template === "function") {
+        return {...(await template()), created_at: createdAt}
+      }
+
+      return template
+    })
 
   const join = (user: TestUser, ...roomIds: string[]) => {
     memberships.push({user, rooms: roomIds})
@@ -174,6 +210,41 @@ export const seedSpace = ({zooid, enqueue, startedAt, name}: SeedSpaceOptions): 
       created_at: createdAt,
     }))
 
+  const kind = <R extends BaseEventReader, W extends EventWriter<R>>(factory: KindFactory<R, W>) =>
+    factory.configure(context)
+
+  // Every wrap is published over the sender's own connection: a gift wrap is signed by an
+  // ephemeral key, so its author is nobody this process can authenticate as. zooid stores it
+  // anyway, because it authorizes a kind-1059 by the member named in its p tag.
+  const dm = (from: TestUser, to: TestUser[], content: string, createdAt = startedAt) => {
+    const rumor = seeded(async () => {
+      const writer = kind(DirectMessage).writer().setContent(content)
+
+      for (const user of to) {
+        writer.addRecipient(user.pubkey)
+      }
+
+      const template = {...(await writer.renderTemplate()), created_at: createdAt}
+      const nip59 = Nip59.fromSigner(from.signer)
+
+      for (const {pubkey} of [from, ...to]) {
+        await relay().publish(await nip59.wrap(pubkey, template), {as: from})
+      }
+
+      // The same template the wraps were built from, so this is the id they decrypt to.
+      return prep(template, from.pubkey)
+    })
+
+    return {
+      get rumor() {
+        return rumor()
+      },
+      get id() {
+        return rumor().id
+      },
+    }
+  }
+
   return {
     name,
     get url() {
@@ -187,5 +258,7 @@ export const seedSpace = ({zooid, enqueue, startedAt, name}: SeedSpaceOptions): 
     reply,
     profile,
     event,
+    dm,
+    kind,
   }
 }

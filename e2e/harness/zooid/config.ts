@@ -14,6 +14,10 @@
 export const tenants = {
   space: "space.test",
   other: "other.test",
+  // Policy that space.toml cannot express at the same time: one that refuses a join without an
+  // invite, and one that serves events with their signatures stripped.
+  closed: "closed.test",
+  unsigned: "unsigned.test",
 } as const
 
 export type TenantName = keyof typeof tenants

@@ -2,6 +2,13 @@ import type {SignedEvent, StampedEvent} from "@welshman/util"
 import type {ClientMessage, RelayMessage} from "@welshman/net"
 import type {TestUser} from "../keys"
 
+export type PublishOptions = {
+  // Which identity the seeding connection authenticates as. Defaults to the event's own author,
+  // which then has to be a test identity — a gift wrap is signed by an ephemeral key, so nothing
+  // in this process can sign as its author and the connection has to belong to the sender.
+  as?: TestUser
+}
+
 export type RoomOptions = {
   name?: string
   about?: string
@@ -23,6 +30,9 @@ export type TestRelay = {
   member(user: TestUser, h: string | undefined, createdAt: number): Promise<void>
   // Escape hatch for kinds with no affordance of their own: profiles, reactions, threads, DMs.
   event(user: TestUser, event: StampedEvent): Promise<SignedEvent>
+  // An event this process did not sign, sent over `as`'s connection — a gift wrap, whose author
+  // is the ephemeral key that wrapped it.
+  publish(event: SignedEvent, options: PublishOptions): Promise<void>
 }
 
 // One client's connection to a relay. Every connection to a url reaches the same container, which

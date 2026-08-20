@@ -20,11 +20,14 @@ export type BootOptions = {
   // What this user's client already has in local storage, e.g. their room list.
   events?: TrustedEvent[]
   path?: string
+  // VITE_ values the scenario sets for itself, applied over the relay-derived ones below. Anything
+  // named here still has to be something the test owns, or the app will reach for it.
+  env?: Record<string, string>
 }
 
 export const boot = async (
   context: BrowserContext,
-  {relays, spaces = [], user, events = [], path = "/"}: BootOptions,
+  {relays, spaces = [], user, events = [], path = "/", env = {}}: BootOptions,
 ) => {
   const urls = relays.join(",")
 
@@ -55,6 +58,7 @@ export const boot = async (
         // Nothing serves this url, so a push bridge connection is reported as a leak instead of
         // blending into the traffic of a relay the scenario did create.
         VITE_PUSH_BRIDGE: "ws://localhost:1/",
+        ...env,
       },
     ] as const,
   )

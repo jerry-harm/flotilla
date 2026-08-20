@@ -9,12 +9,12 @@ import {
 import type {SignedEvent, StampedEvent} from "@welshman/util"
 import {users} from "../keys"
 import type {TestUser} from "../keys"
-import type {TestRelay} from "./types"
+import type {PublishOptions, TestRelay} from "./types"
 
 export type TestRelayOptions = {
   name: string
   url: string
-  publish: (event: SignedEvent) => Promise<void>
+  publish: (event: SignedEvent, options?: PublishOptions) => Promise<void>
 }
 
 // Seeding signs the events a real client would send and publishes them over a socket. Room
@@ -36,6 +36,7 @@ export const makeTestRelay = ({name, url, publish}: TestRelayOptions): TestRelay
     name,
     url,
     event,
+    publish,
     room: async (h, meta, createdAt) => {
       // A relay stamps the metadata it derives from these ops with the op's own created_at, so
       // creation has to be strictly older than the edit or the edit is dropped as stale.

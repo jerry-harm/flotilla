@@ -10,22 +10,32 @@ import {
   mockHosting,
   mockImages,
   mockPushServer,
+  mockRelayInfo,
 } from "./net/http"
+import type {HostingFixtures, RelayInfoOverrides} from "./net/http"
 import {assertNoLeaks, installWebSocketRoutes} from "./net/websocket"
 import {boot} from "./app/boot"
+import {injectNip07} from "./app/nip07"
 import {seed} from "./seed/scenario"
 import type {Scenario, SeedTools} from "./seed/scenario"
 import type {TestUser} from "./keys"
 
 export {expect}
-export {users} from "./keys"
+export {makeTestUser, users} from "./keys"
 export type {TestUser} from "./keys"
 export type {Scenario} from "./seed/scenario"
-export type {SeededSpace} from "./seed/space"
+export type {SeededRumor, SeededSpace} from "./seed/space"
 export type {TenantName} from "./zooid/config"
 export type {TranscriptEntry} from "./net/websocket"
 export {formatTranscript, getTranscript} from "./net/websocket"
-export {assertNoBlockedRequests, mockBlossom, mockLivekit} from "./net/http"
+export {
+  assertNoBlockedRequests,
+  getHosting,
+  mockBlossom,
+  mockDufflepud,
+  mockLivekit,
+} from "./net/http"
+export type {DufflepudFixtures, HostingFixtures, HostingHandle, HostingRecord} from "./net/http"
 
 // Mirrors encodeRelay in src/app/relays.ts, which can't be imported here — it reaches the app's
 // module graph, and with it sveltekit.
@@ -40,19 +50,40 @@ export const spacePath = (url: string) => `/spaces/${encodeRelay(url)}`
 
 export const roomPath = (url: string, h: string) => `${spacePath(url)}/${h}`
 
+// What a page is opened with, over and above the scenario's own relays.
+export type PageOptions = {
+  // Overrides the project's context options, for a spec that needs a viewport, a colour scheme or
+  // a permission of its own.
+  context?: BrowserContextOptions
+  // VITE_ values applied over the ones derived from the scenario's relays, e.g. a platform space
+  // or the domain hosted relays are created under. Whatever is named here has to be something the
+  // scenario owns, or the app will reach for it and the test will fail on a leak.
+  env?: Record<string, string>
+  // A NIP-07 provider signing as this user, for a login that goes through an extension.
+  nip07?: TestUser
+  // Fields merged over a relay's own nip-11 document, keyed by relay url.
+  relayInfo?: RelayInfoOverrides
+  // What the hosting backend already knows about this user. Read `getHosting(page.context())` for
+  // the handle that changes it mid-test.
+  hosting?: HostingFixtures
+}
+
 export type Harness = {
   zooid: Zooid
   seed(build: (tools: SeedTools) => MaybeAsync<void>): Promise<Scenario>
   // A logged-in page for a user: its own browser context, its own storage, its own sockets into
-  // the relays every other user is talking to. `options` overrides the project's context options,
-  // for a spec that needs a viewport or colour scheme of its own.
-  as(user: TestUser, path?: string, options?: BrowserContextOptions): Promise<Page>
+  // the relays every other user is talking to.
+  as(user: TestUser, path?: string, options?: PageOptions): Promise<Page>
+  // The same page with no session injected — the app as someone who has never logged in sees it,
+  // and the only way to watch a login, a reload or a logout happen.
+  visit(path?: string, options?: PageOptions): Promise<Page>
 }
 
 export type HarnessFixtures = {
   harness: Harness
   seed: Harness["seed"]
   as: Harness["as"]
+  visit: Harness["visit"]
 }
 
 export type HarnessWorkerFixtures = {
@@ -63,11 +94,13 @@ export const test = base.extend<HarnessFixtures, HarnessWorkerFixtures>({
   // Playwright's own context — and the `page` fixture built on it — is unrouted: no websocket
   // interception, no http block-all, no injected env, and nothing collecting leaks from it. A page
   // born there boots the app against the relays baked into .env, which is the one thing this suite
-  // exists to prevent, so it is refused outright and `as()` is the only way to get a page.
+  // exists to prevent, so it is refused outright and `as()`/`visit()` are the only ways to get a
+  // page.
   context: async () => {
     throw new Error(
       "The built-in `context` and `page` fixtures reach the real network. Open a page with the " +
-        "harness's `as(user, path)` fixture, which installs interception before it navigates.",
+        "harness's `as(user, path)` or `visit(path)` fixture, which install interception before " +
+        "they navigate.",
     )
   },
   // Playwright builds this one with `playwright.request.newContext()`, so it is an http client in
@@ -111,7 +144,7 @@ export const test = base.extend<HarnessFixtures, HarnessWorkerFixtures>({
       throw new Error("Seed a scenario before opening a page for a user")
     }
 
-    const as = async (user: TestUser, path = "/", options: BrowserContextOptions = {}) => {
+    const open = async (path: string, options: PageOptions, user?: TestUser) => {
       const {urls, cache} = requireScenario()
       // The project's own `use` first, so a viewport, colour scheme or device descriptor set in
       // playwright.config.ts reaches the context rather than being silently dropped.
@@ -123,7 +156,7 @@ export const test = base.extend<HarnessFixtures, HarnessWorkerFixtures>({
       const context = await browser.newContext({
         ...testInfo.project.use,
         serviceWorkers: "block",
-        ...options,
+        ...options.context,
       })
 
       contexts.push(context)
@@ -133,18 +166,31 @@ export const test = base.extend<HarnessFixtures, HarnessWorkerFixtures>({
       // recognize, so the mocks have to be registered last to be reachable at all.
       await installHttpRoutes(context)
       await installWebSocketRoutes(context, zooid)
+      await mockRelayInfo(context, options.relayInfo ?? {})
       await mockAnalytics(context)
       await mockDufflepud(context)
-      await mockHosting(context)
+      await mockHosting(context, options.hosting)
       await mockPushServer(context)
       await mockImages(context)
 
-      return boot(context, {user, path, relays: urls, spaces: urls, events: cache(user)})
+      if (options.nip07) {
+        await injectNip07(context, options.nip07)
+      }
+
+      return boot(context, {
+        user,
+        path,
+        env: options.env,
+        relays: urls,
+        spaces: urls,
+        events: user ? cache(user) : [],
+      })
     }
 
     await use({
       zooid,
-      as,
+      as: (user, path = "/", options = {}) => open(path, options, user),
+      visit: (path = "/", options = {}) => open(path, options),
       seed: async build => {
         scenario = await seed(zooid, build)
 
@@ -162,4 +208,5 @@ export const test = base.extend<HarnessFixtures, HarnessWorkerFixtures>({
   },
   seed: async ({harness}, use) => use(harness.seed),
   as: async ({harness}, use) => use(harness.as),
+  visit: async ({harness}, use) => use(harness.visit),
 })

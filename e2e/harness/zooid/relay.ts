@@ -1,4 +1,7 @@
 import {execFile} from "node:child_process"
+import {chmod, cp, readdir, rm} from "node:fs/promises"
+import {tmpdir} from "node:os"
+import {join} from "node:path"
 import {fileURLToPath} from "node:url"
 import {promisify} from "node:util"
 import {ms, sleep} from "@welshman/lib"
@@ -7,10 +10,12 @@ import {makeRelayAuth} from "@welshman/util"
 import type {SignedEvent} from "@welshman/util"
 import {ClientMessageType, isRelayAuth, isRelayOk} from "@welshman/net"
 import type {ClientMessage} from "@welshman/net"
-import {users} from "../keys"
+import {testUsersByPubkey} from "../keys"
+import type {TestUser} from "../keys"
 import {tenantNames, tenantUrl, tenants} from "./config"
 import type {TenantName} from "./config"
 import {makeTestRelay} from "./testRelay"
+import type {PublishOptions} from "./types"
 import {connectToZooid, requestZooid} from "./transport"
 import type {ZooidConnection} from "./transport"
 
@@ -18,7 +23,14 @@ const image = "gitea.coracle.social/coracle/zooid:latest"
 
 const composeFile = fileURLToPath(new URL("docker/compose.yaml", import.meta.url))
 
-const testUsersByPubkey = new Map(Object.values(users).map(user => [user.pubkey, user]))
+const configSource = fileURLToPath(new URL("docker/config", import.meta.url))
+
+// What the container mounts as /app/config. zooid saves a relay's toml back whenever a nip-86 call
+// edits that relay's name, description or icon, so it is handed a copy rather than the repo's own
+// directory: a read-only mount fails those calls, and a writable one would leave the fixtures every
+// other test reads rewritten by whatever the last one did. The copy is staged here rather than in
+// an entrypoint because the image is distroless — there is no shell in it to copy anything with.
+const configDir = join(tmpdir(), "flotilla-e2e-zooid-config")
 
 const execFileAsync = promisify(execFile)
 
@@ -27,7 +39,11 @@ const execFileAsync = promisify(execFile)
 // typed. Name the executable to drive with E2E_DOCKER in that case.
 const dockerCommand = process.env.E2E_DOCKER ?? "docker"
 
-const docker = (...args: string[]) => execFileAsync(dockerCommand, args)
+// Every invocation carries ZOOID_CONFIG, `down` included: the compose file names it without a
+// default, so a call that left it out would fail to interpolate rather than quietly mounting
+// something else.
+const docker = (...args: string[]) =>
+  execFileAsync(dockerCommand, args, {env: {...process.env, ZOOID_CONFIG: configDir}})
 
 const compose = (...args: string[]) => docker("compose", "-f", composeFile, ...args)
 
@@ -56,6 +72,17 @@ const probeDocker = async () => {
       (stderr?.trim() || String(error))
     )
   }
+}
+
+const getTestUser = (pubkey: string) => {
+  const user = testUsersByPubkey.get(pubkey)
+
+  if (user) return user
+
+  throw new Error(
+    `Cannot publish as ${pubkey}: zooid authenticates every write, so seeded events must be ` +
+      "signed by one of the test identities in e2e/harness/keys.ts",
+  )
 }
 
 let problem: Maybe<Promise<Maybe<string>>>
@@ -125,17 +152,17 @@ export class Zooid {
     makeTestRelay({
       name,
       url: tenantUrl(name),
-      publish: event => this.publish(tenantUrl(name), event),
+      publish: (event, options) => this.publish(tenantUrl(name), event, options),
     })
 
-  publish = async (url: string, event: SignedEvent) => {
+  publish = async (url: string, event: SignedEvent, {as}: PublishOptions = {}) => {
     const relay = this.relays.get(url)
 
     if (!relay) {
       throw new Error(`Attempted to publish to ${url}, which is not one of this container's relays`)
     }
 
-    const connection = await this.authenticate(relay.host, event.pubkey)
+    const connection = await this.authenticate(relay.host, as ?? getTestUser(event.pubkey))
     const {ok, detail} = await this.send(connection, [ClientMessageType.Event, event], event.id)
 
     if (!ok) {
@@ -176,6 +203,19 @@ export class Zooid {
   // Recreating rather than restarting is what makes this a reset: with storage in tmpfs and no
   // volume mounted for it, a new container is a new database.
   private up = async () => {
+    // A fresh copy on every recreate is what makes a reset restore pristine relay metadata after a
+    // test has edited some through nip-86. The modes are permissive because the container runs as
+    // uid 65532 while the copy belongs to whoever ran the suite, and a runtime that keeps host
+    // ownership — rootless podman, docker on linux — would otherwise leave zooid unable to write
+    // the file it was told to save.
+    await rm(configDir, {recursive: true, force: true})
+    await cp(configSource, configDir, {recursive: true})
+    await chmod(configDir, 0o777)
+
+    for (const name of await readdir(configDir)) {
+      await chmod(join(configDir, name), 0o666)
+    }
+
     try {
       await compose("up", "-d", "--force-recreate", "--wait")
     } catch (error) {
@@ -215,20 +255,11 @@ export class Zooid {
   // url signed into the auth event is the one the client uses, because that is the one khatru
   // rebuilds from the headers transport.ts sends — a fixture is written over the same relay the app
   // talks to.
-  private authenticate = async (host: string, pubkey: string) => {
-    const key = `${host} ${pubkey}`
+  private authenticate = async (host: string, user: TestUser) => {
+    const key = `${host} ${user.pubkey}`
     const session = this.sessions.get(key)
 
     if (session) return session
-
-    const user = testUsersByPubkey.get(pubkey)
-
-    if (!user) {
-      throw new Error(
-        `Cannot publish as ${pubkey}: zooid authenticates every write, so seeded events must be ` +
-          "signed by one of the test identities in e2e/harness/keys.ts",
-      )
-    }
 
     const connection = connectToZooid(host)
     const [, challenge] = await connection.wait(isRelayAuth)

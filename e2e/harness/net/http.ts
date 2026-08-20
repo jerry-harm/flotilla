@@ -1,6 +1,6 @@
 import {createHash} from "node:crypto"
 import type {BrowserContext} from "@playwright/test"
-import {now} from "@welshman/lib"
+import {HOUR, int, now, omit} from "@welshman/lib"
 import type {Handle} from "@welshman/util"
 import type {ZapperValues} from "@welshman/domain"
 import {tenantByUrl} from "../zooid/config"
@@ -16,6 +16,10 @@ const HOSTING_ORIGIN = "https://api.hosting.coracle.social"
 // Hard-coded in src/app.html, so every navigation asks for it whatever the scenario is doing.
 const PLAUSIBLE_ORIGIN = "https://plausible.coracle.social"
 
+// Where the hosting api sends a browser to pay. Nothing serves it — `.test` resolves nowhere and
+// the block-all aborts the navigation — so a spec sees the redirect without one leaving.
+const CHECKOUT_ORIGIN = "https://checkout.test"
+
 // Relay-hosted livekit lives under a well-known path rather than an origin of its own.
 const LIVEKIT_PATH = "/.well-known/nip29/livekit"
 
@@ -30,6 +34,13 @@ const PNG = Buffer.from(
 // keep working.
 export const isDevServerUrl = (url: URL) =>
   url.port === "1847" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
+
+// A relay is reached over wss and its own http origin is where nip-11 and nip-86 live.
+const relayOrigin = (url: string) => new URL(url.replace(/^ws/, "http")).origin
+
+const hostByOrigin = new Map(
+  Array.from(tenantByUrl, ([url, host]): [string, string] => [relayOrigin(url), host]),
+)
 
 export type BlockedRequest = {
   method: string
@@ -57,12 +68,6 @@ export const getBlockedRequests = (context: BrowserContext) => {
  */
 export const installHttpRoutes = (context: BrowserContext) => {
   const blocked: BlockedRequest[] = []
-  const hostByOrigin = new Map(
-    Array.from(tenantByUrl, ([url, host]): [string, string] => [
-      new URL(url.replace(/^ws/, "http")).origin,
-      host,
-    ]),
-  )
 
   blockedByContext.set(context, blocked)
 
@@ -114,6 +119,56 @@ export const assertNoBlockedRequests = (context: BrowserContext) => {
   }
 }
 
+// Fields to merge over a relay's own nip-11 document, keyed by its url.
+export type RelayInfoOverrides = Record<string, object>
+
+/**
+ * A relay's real document with a few fields replaced: a `redirect_to`, a `limitation`, a NIP the
+ * relay does not implement. Merged rather than fabricated, because `self`, `pubkey`, `name` and
+ * `supported_nips` are what room state is trusted from — a hand-written document breaks every
+ * room on the page.
+ *
+ * Install it before the page navigates: the document is read at startup and cached from then on.
+ */
+export const mockRelayInfo = (context: BrowserContext, overrides: RelayInfoOverrides) => {
+  const overrideByOrigin = new Map(
+    Object.entries(overrides).map(([url, override]): [string, object] => [
+      relayOrigin(url),
+      override,
+    ]),
+  )
+
+  return context.route(
+    url => url.pathname === "/" && overrideByOrigin.has(url.origin),
+    async route => {
+      const request = route.request()
+      const {origin} = new URL(request.url())
+      const host = hostByOrigin.get(origin)
+      const override = overrideByOrigin.get(origin)
+
+      // The nip-86 management api posts to this same path, and what it answers decides what the
+      // admin ui offers, so only the document request is touched.
+      if (request.method() === "GET" && host && override) {
+        const {status, headers, body} = await requestZooid(host, "GET", "/", {
+          ...request.headers(),
+          // The merge has to read the document, and khatru will compress it if invited to.
+          "accept-encoding": "identity",
+        })
+
+        return route.fulfill({
+          status,
+          // khatru's Access-Control-Allow-Origin is what makes the fetch legal, so the relay's own
+          // headers are kept — all but the length of a body that is about to change.
+          headers: omit(["content-length"], headers),
+          body: JSON.stringify({...JSON.parse(body.toString()), ...override}),
+        })
+      }
+
+      return route.fallback()
+    },
+  )
+}
+
 /**
  * The analytics script src/app.html loads on every page. Answering with an empty body leaves
  * `window.plausible` as the queueing shim src/app/analytics.ts installs, so pageviews accumulate
@@ -135,6 +190,12 @@ export type DufflepudFixtures = {
   zappers?: {lnurl: string; info?: Omit<ZapperValues, "lnurl">}[]
 }
 
+/**
+ * Dufflepud, whose origin is the one service url the app hard-codes rather than reading from a
+ * `VITE_` value. `as()` installs it with no fixtures, so a spec that needs one — a zapper for a zap
+ * receipt, a link preview — calls this again with its own: playwright matches the most recently
+ * registered route first, so the spec's answers win over the empty defaults.
+ */
 export const mockDufflepud = (context: BrowserContext, fixtures: DufflepudFixtures = {}) =>
   context.route(`${DUFFLEPUD_ORIGIN}/**`, route => {
     const {pathname} = new URL(route.request().url())
@@ -232,47 +293,210 @@ export const mockPushServer = (context: BrowserContext) =>
     return route.fallback()
   })
 
-// Records straight off the hosting api, whose shapes live in src/app/hosting.ts. They're typed as
-// plain objects here so that mocking a payment flow doesn't pull the app's module graph — and
-// with it import.meta.env — into the node process.
+// One record straight off the hosting api, whose shapes live in src/app/hosting.ts. They're left
+// as loose objects here so that mocking a payment flow doesn't pull the app's module graph — and
+// with it import.meta.env — into the node process. A relay record may also carry `members` and
+// `activity`, and an invoice `items` and `bolt11`, which is where those endpoints answer from.
+export type HostingRecord = Record<string, unknown>
+
+// The backend's state when the page opens. Everything after that is what the app wrote, plus
+// whatever the handle below changed.
 export type HostingFixtures = {
-  plans?: object[]
+  plans?: HostingRecord[]
   // Provisioning runs on every login and ignores what it gets back, so the empty default carries
   // any spec that isn't actually exercising the hosting ui.
-  tenant?: object
-  relays?: object[]
-  invoices?: object[]
-  draftInvoice?: object
+  tenant?: HostingRecord
+  relays?: HostingRecord[]
+  invoices?: HostingRecord[]
+  draftInvoice?: HostingRecord
 }
 
-export const mockHosting = (context: BrowserContext, fixtures: HostingFixtures = {}) =>
-  context.route(`${HOSTING_ORIGIN}/**`, route => {
-    const [resource, id, sub, detail] = new URL(route.request().url()).pathname
-      .split("/")
-      .filter(Boolean)
+// The backend changing its mind between two of the user's clicks — a custom domain that verifies,
+// an invoice that gets paid — which is the half of those flows no click can reach.
+export type HostingHandle = {
+  setTenant(patch: HostingRecord): void
+  setRelay(id: string, patch: HostingRecord): void
+  setInvoice(id: string, patch: HostingRecord): void
+}
+
+const hostingByContext = new WeakMap<BrowserContext, HostingHandle>()
+
+export const getHosting = (context: BrowserContext) => {
+  const handle = hostingByContext.get(context)
+
+  if (handle) {
+    return handle
+  }
+
+  throw new Error("mockHosting was never called for this browser context")
+}
+
+/**
+ * The hosting api as a small stateful fake: a write mutates the record it names and the next read
+ * sees it, which is what makes editing a space's details, deactivating it, changing its plan or
+ * saving a custom domain observable at all. Each browser context gets its own store, so one user's
+ * spaces are not another's.
+ */
+export const mockHosting = async (context: BrowserContext, fixtures: HostingFixtures = {}) => {
+  const plans = fixtures.plans ?? []
+  const relays = new Map((fixtures.relays ?? []).map(relay => [String(relay.id), relay]))
+  const invoices = new Map((fixtures.invoices ?? []).map(invoice => [String(invoice.id), invoice]))
+
+  let tenant: HostingRecord = {
+    pubkey: "",
+    return_url: "",
+    nwc_is_set: false,
+    stripe_customer_id: "",
+    created_at: now(),
+    ...fixtures.tenant,
+  }
+
+  const handle: HostingHandle = {
+    setTenant: patch => {
+      tenant = {...tenant, ...patch}
+    },
+    setRelay: (id, patch) => {
+      relays.set(id, {...relays.get(id), ...patch})
+    },
+    setInvoice: (id, patch) => {
+      invoices.set(id, {...invoices.get(id), ...patch})
+    },
+  }
+
+  hostingByContext.set(context, handle)
+
+  await context.route(`${HOSTING_ORIGIN}/**`, route => {
+    const request = route.request()
+    const method = request.method()
+    const body: HostingRecord = request.postDataJSON() ?? {}
+    const [resource, id, sub, detail] = new URL(request.url()).pathname.split("/").filter(Boolean)
+
+    const missing = (what: string) => route.fulfill({status: 404, json: {error: `No such ${what}`}})
 
     if (resource === "plans") {
-      return route.fulfill({json: {data: fixtures.plans ?? []}})
+      return route.fulfill({json: {data: plans}})
     }
 
     if (resource === "tenants") {
-      if (sub) {
-        if (sub === "relays") {
-          return route.fulfill({json: {data: fixtures.relays ?? []}})
-        }
-
-        if (sub === "invoices") {
-          const data = detail === "draft" ? fixtures.draftInvoice : (fixtures.invoices ?? [])
-
-          return route.fulfill({json: {data}})
-        }
+      // Provisioning is the one tenant route with no pubkey in the path.
+      if (id) {
+        tenant = {...tenant, pubkey: id}
       } else {
-        return route.fulfill({json: {data: {pubkey: id, ...fixtures.tenant}}})
+        tenant = {...tenant, ...body}
+
+        return route.fulfill({json: {data: tenant}})
       }
+
+      if (sub === "relays") {
+        return route.fulfill({json: {data: Array.from(relays.values())}})
+      }
+
+      if (sub === "invoices") {
+        const data = detail === "draft" ? fixtures.draftInvoice : Array.from(invoices.values())
+
+        return route.fulfill({json: {data}})
+      }
+
+      if (sub === "stripe") {
+        return route.fulfill({json: {data: {url: `${CHECKOUT_ORIGIN}/portal/${id}`}}})
+      }
+
+      // A wallet is the only thing the app updates a tenant with, so saving one is what sets it.
+      if (method === "PUT") {
+        tenant = {...tenant, ...body, nwc_is_set: Boolean(body.nwc_url)}
+      }
+
+      // GET and reconcile both answer with the tenant as it now stands.
+      return route.fulfill({json: {data: tenant}})
+    }
+
+    if (resource === "relays") {
+      if (!id) {
+        const relay = {
+          id: `relay-${relays.size + 1}`,
+          status: "active",
+          sync_error: "",
+          synced: now(),
+          custom_domain: "",
+          custom_domain_verified: 0,
+          ...body,
+          // A created space is opened straight away, so its url has to be one the container
+          // serves. The client names the domain from VITE_HOSTING_RELAY_DOMAIN.
+          zooid_domain: body.zooid_domain || "test",
+        }
+
+        relays.set(String(relay.id), relay)
+
+        return route.fulfill({json: {data: relay}})
+      }
+
+      const relay = relays.get(id)
+
+      if (!relay) {
+        return missing(`relay ${id}`)
+      }
+
+      if (sub === "members") {
+        return route.fulfill({json: {data: {members: relay.members ?? []}}})
+      }
+
+      if (sub === "activity") {
+        return route.fulfill({json: {data: {activity: relay.activity ?? []}}})
+      }
+
+      const updated = {...relay, ...(method === "PUT" ? body : {})}
+
+      if (sub === "deactivate") {
+        updated.status = "inactive"
+      }
+
+      if (sub === "reactivate") {
+        updated.status = "active"
+      }
+
+      relays.set(id, updated)
+
+      return route.fulfill({json: {data: updated}})
+    }
+
+    if (resource === "invoices") {
+      const invoice = invoices.get(id)
+
+      if (!invoice) {
+        return missing(`invoice ${id}`)
+      }
+
+      if (sub === "items") {
+        return route.fulfill({json: {data: invoice.items ?? []}})
+      }
+
+      if (sub === "bolt11") {
+        const bolt11 = invoice.bolt11 ?? {
+          id: `bolt11-${id}`,
+          invoice_id: id,
+          lnbc: `lnbc${id}`,
+          msats: 0,
+          created_at: now(),
+          expires_at: now() + int(1, HOUR),
+        }
+
+        return route.fulfill({json: {data: bolt11}})
+      }
+
+      if (sub === "checkout") {
+        return route.fulfill({json: {data: {url: `${CHECKOUT_ORIGIN}/invoices/${id}`}}})
+      }
+
+      // GET and reconcile both answer with the invoice as it now stands, which is how a spec
+      // marks one paid: flip `paid_at` with the handle and let the dialog's next poll find it.
+      return route.fulfill({json: {data: invoice}})
     }
 
     return route.fallback()
   })
+
+  return handle
+}
 
 export type LivekitOptions = {
   // Where the client is told to connect. Point it at something the test owns — the token this

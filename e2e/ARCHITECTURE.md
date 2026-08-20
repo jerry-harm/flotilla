@@ -17,7 +17,12 @@ what keeps outbox routing and cross-space isolation testable.
 
 A relay's policy is its toml and nothing else. A scenario says what is _on_ a relay — its rooms, its
 members, its messages — never what the relay _is_, so there is no policy negotiation anywhere in the
-harness.
+harness. `space` and `other` are the same permissive policy twice over, for the specs that need two
+of them; `closed` refuses a join that carries no invite claim, which is what raises "Request
+Access"; `unsigned` serves events with their signatures stripped, which is what raises "Do you trust
+this space?". Seeding a membership on `closed` is therefore not possible — `join()` and `member()`
+publish a claimless join and the relay refuses it — so a scenario there seeds admin-created rooms
+and lets the spec do the joining.
 
 ### Why the relays are called `<name>.test`
 
@@ -63,11 +68,11 @@ Every socket the browser opens is terminated here, in this process, and the only
 is the loopback connection `zooid/transport.ts` makes to the container the test started.
 `assertNoLeaks()` fails a test that touched a url the scenario never declared.
 
-Interception is installed by `as()`, on a context it creates, so a page that came from anywhere else
-has none of it. Playwright's own `context` fixture — and the `page` fixture built on it — is
-therefore overridden to throw, so a spec written the ordinary way fails immediately with a message
-saying so rather than quietly dialling the relays in `.env`. The built-in `request` fixture goes the
-same way: an `APIRequestContext` is an http client in the node process that belongs to no browser
+Interception is installed by `as()` and `visit()`, on a context each of them creates, so a page that
+came from anywhere else has none of it. Playwright's own `context` fixture — and the `page` fixture
+built on it — is therefore overridden to throw, so a spec written the ordinary way fails immediately
+with a message saying so rather than quietly dialling the relays in `.env`. The built-in `request`
+fixture goes the same way: an `APIRequestContext` is an http client in the node process that belongs to no browser
 context, so the block-all below cannot see it and nothing records what it sent.
 
 `playwright` is the one fixture left alone, and it has to be: it is where the run's own browser comes
@@ -111,6 +116,15 @@ rather than ambient noise: Dufflepud (`dufflepud.coracle.social`), Blossom uploa
 analytics script hard-coded in `src/app.html` is mocked with an empty body: it is requested on every
 navigation whatever the scenario is doing, so leaving it to the block-all would make
 `assertNoBlockedRequests()` a statement about the page shell rather than about the test.
+
+Two of those answers are the scenario's own. NIP-11 fields a spec names are merged over the relay's
+real document — a `redirect_to`, a `limitation`, a NIP the relay does not implement — rather than
+replacing it, because `self`, `pubkey` and `supported_nips` are what room state is trusted from, and
+the merge is installed with the page, since the document is read at startup and cached from then on.
+The hosting API is a small stateful fake rather than fixed answers: a write mutates the record it
+names and the next read sees it, so editing a space, deactivating it or paying an invoice is
+observable. `getHosting(context)` changes the backend's mind between two of the user's clicks — a
+custom domain that verifies, an invoice that gets paid.
 
 ## Containment
 
@@ -199,6 +213,8 @@ would have refused fails the test instead of appearing in a query.
 
 Test identities are deterministic secp256k1 keypairs derived from fixed secrets (`alice`, `bob`,
 `carol`, `admin`), so a pubkey is stable across runs and can be asserted on directly.
+`makeTestUser(name)` derives a fifth, sixth or hundredth one from its name and registers it, for the
+directory and search specs that need more people than there are named ones.
 
 A logged-in user is created by injecting a NIP-01 session before the app boots. `src/app/session.ts`
 carries a DEV-only hook: `restoreSession()` prefers `window.__TEST_SESSION__` when it is present, and
@@ -232,6 +248,24 @@ in for an indexer.
 Each user is a separate `BrowserContext`, which also gives each one its own IndexedDB and
 localStorage, so nothing bleeds between users.
 
+An injected session is re-applied on every navigation, so through `as()` a reload, a logout and a
+login are all unobservable. `visit(path, options)` is the same page without one — same context, same
+interception, same env — and it is what a spec that watches someone arrive, sign in and come back
+starts from. Both take the same options, over and above the scenario's own relays:
+
+| option      | what it does                                                                         |
+| ----------- | ------------------------------------------------------------------------------------ |
+| `context`   | merged over the project's context options: a viewport, a colour scheme, a permission |
+| `env`       | `VITE_` values applied over the ones derived from the scenario's relays              |
+| `nip07`     | a `window.nostr` backed by that identity's own signer, for an extension login        |
+| `relayInfo` | fields merged over a relay's own NIP-11 document, keyed by relay url                 |
+| `hosting`   | what the hosting backend already knows about this user                               |
+
+Whatever `env` names still has to be something the scenario owns — a platform relay, the domain
+hosted spaces are created under — or the app dials a host nothing serves and the test fails on a
+leak. The NIP-07 provider is a real signer rather than a stub, because the session it produces has to
+sign the NIP-42 challenges the members-only relays send.
+
 ## Layout
 
 ```
@@ -256,9 +290,11 @@ e2e/
       boot.ts              env overrides, navigate, wait for mount and for the app to have read
                            the overrides
       session.ts           NIP-01 session injection
+      nip07.ts             a window.nostr backed by a test identity's own signer
     seed/
       scenario.ts          the `seed()` builder and relative-time helpers
-      space.ts             one space's fixtures: rooms, members, messages, replies, profiles
+      space.ts             one space's fixtures: rooms, members, messages, replies, profiles,
+                           direct messages, and anything a domain writer renders
   specs/
     *.spec.ts
 ```
@@ -272,13 +308,23 @@ importing anything under `src` would pull sveltekit into the node process.
 
 `Zooid.reset()` recreates the container rather than restarting it: with no volume mounted for
 `/app/data`, storage lives in the container's writable layer and a tmpfs, so a fresh container is a
-fresh database. The configs are bind-mounted read-only and survive, so every test starts against the
-same relays with nothing in them. The container is a worker fixture, so the docker start-up cost is
-paid once per worker rather than once per test.
+fresh database. What it mounts as its config is a copy of `docker/config`, staged outside the repo
+and refreshed on the way up — zooid saves a relay's toml back when a NIP-86 call edits its name — so
+every test starts against the same relays with nothing in them. The container is a worker fixture,
+so the docker start-up cost is paid once per worker rather than once per test.
 
 Seeding then writes over a real authenticated socket, one per identity per relay, held open for the
-rest of the test. A fixture must therefore be signed by one of the identities in `harness/keys.ts`,
-since zooid authenticates every write.
+rest of the test. A fixture must therefore be signed by an identity `harness/keys.ts` holds, since
+zooid authenticates every write.
+
+Anything richer than a room message is built by the domain writers the app itself publishes with:
+`space.kind(Article)` hands back the kind configured against this space, and `space.event(user, () =>
+…renderTemplate())` defers the render until the space has a url to render hints against, which is
+only true once the queue has drained. A NIP-17 conversation is `space.dm(from, to, content)`: it
+gift-wraps one rumor per participant and publishes each wrap over the sender's connection, since a
+wrap is signed by an ephemeral key nobody here can authenticate as. zooid stores it anyway, because
+it authorizes a kind-1059 by the member named in its `p` tag — and refuses one addressed to a
+stranger.
 
 ## Running
 
