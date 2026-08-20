@@ -1,8 +1,7 @@
 # Flotilla user stories
 
 The catalog e2e specs are written from. Each story is a slice of behavior a
-person can observe in the running app, with acceptance criteria stated as
-visible outcomes rather than internals. Specs reference stories by their stable
+person can observe in the running app. Specs reference stories by stable
 id (`US-042`), so numbers are never reused or renumbered.
 
 **Personas** come from `e2e/harness/keys.ts`, which defines four deterministic
@@ -14,13 +13,10 @@ identities:
 - **admin** — the space admin, recognized by the relay's NIP-86 answers, which
   is what unlocks the space, room, event and directory management surfaces.
 
-**How tests run** is described in `e2e/ARCHITECTURE.md`: the real app against
-real zooid relays in docker, with every socket and every http request terminated
-in the test process. Services with a mock seam — Blossom, Dufflepud, the hosting
-API, LiveKit token endpoints, the push server — are mocked per scenario, so a
-story can be written up to that boundary. Everything else is blocked, and the
-features that live past a boundary with no seam are listed under "Out of scope"
-at the end.
+The test architecture is described in `e2e/ARCHITECTURE.md`: real zooid relays in
+docker, with every socket and http request terminated in the test process.
+Services with a mock seam are mocked per scenario. Features that live past a
+boundary with no seam are listed under "Out of scope" below.
 
 ## Onboarding & authentication
 
@@ -1519,8 +1515,7 @@ Acceptance:
 
 ## Out of scope
 
-These are real user-facing features that the e2e suite cannot exercise. Each is
-listed with what stops it, so a story is never written against one by mistake.
+Features the e2e suite cannot exercise, and what stops it.
 
 **Lightning payments and wallets.** Sending a zap on a message, article, thread
 post, comment, or note; contributing to a funding goal; connecting a wallet over
@@ -1559,10 +1554,9 @@ custody to self-custody. All of it talks to the external Pomade signer network,
 which has no mock seam; the harness only injects local-key sessions, and the
 email option is hidden when `POMADE_SIGNERS` is unset.
 
-**Card payments.** Paying a hosting invoice by card, which navigates to Stripe's
-own hosted checkout and is confirmed by a backend webhook — entirely outside
-anything the harness can seed or observe. The Lightning path for the same
-invoice is covered by US-102.
+**Card payments.** Paying a hosting invoice by card navigates to Stripe's
+hosted checkout and is confirmed by a backend webhook. The Lightning path for
+the same invoice is covered by US-102.
 
 **External link-outs.** Self-hosted and third-party options on the
 space-creation page, the About page's source, blog, podcast and support links,
@@ -1575,5 +1569,4 @@ whose relays are not part of the sealed test network.
 
 **Internals with no user-visible surface.** The legacy session-storage format
 migration, which has no observable difference and no supported way to seed the
-old shape, and the unused `ProfileFeed` / `ProfileLatest` components, which no
-route reaches.
+old shape. `ProfileFeed` and `ProfileLatest` components that no route reaches.

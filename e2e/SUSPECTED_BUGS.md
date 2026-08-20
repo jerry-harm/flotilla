@@ -1,8 +1,7 @@
 # Suspected app bugs
 
 Places where the app source contradicts a story in `USER_STORIES.md`. The spec for each asserts
-the story, so it fails until the bug is fixed. None of this has been confirmed by running the
-suite.
+the story, so it fails until the bug is fixed.
 
 ## Rooms & membership
 
@@ -95,14 +94,12 @@ suite.
 - **US-041 — the article list card lacks the "Posted in #room" badge** the story names for both
   surfaces; `ArticleItem` never passes `showRoom` and renders the room inline in the byline
   instead.
-- **US-092 — possible over-broad admin gate (inferred, unverified).** `deriveUserIsSpaceAdmin` is
-  `supportedMethods().length > 0`, and zooid's migration writes
-  `member_methods = ["listclaims", "createclaim"]` — if applied, every member reports as an admin.
+- **US-092 — `deriveUserIsSpaceAdmin` gates on `supportedMethods().length > 0`.** zooid's migration writes `member_methods = ["listclaims", "createclaim"]` — if applied, every member reports as an admin.
 
 ## Known coverage gaps (not bugs)
 
-- **US-070 bullet 3** (article/comment retry succeeds and clears the indicator) is uncoverable:
-  no UI path makes an article publish fail then succeed in one session without discarding
-  `$thunks.history`.
-- **US-065's "briefly shows a loading state"** is inherently racy (sync may already hold the
-  quoted event); the assertion stands as the story requires but may flake.
+- **US-070 bullet 3** (article/comment retry succeeds and clears the indicator) cannot be
+  exercised: no UI path makes an article publish fail then succeed in one session without
+  discarding `$thunks.history`.
+- **US-065's "briefly shows a loading state"** depends on timing. Sync may already hold the
+  quoted event when the assertion runs.

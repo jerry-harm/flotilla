@@ -1,8 +1,7 @@
 # E2E architecture
 
 Flotilla's end-to-end suite runs the real app against a relay network that is entirely under the
-test's control. Nothing in this directory may ever open a connection to a host the test did not
-create. That is the single invariant everything else is arranged around.
+test's control. Nothing in this directory opens a connection to a host the test did not create.
 
 ## The relay
 
@@ -17,8 +16,7 @@ what keeps outbox routing and cross-space isolation testable.
 
 A relay's policy is its toml and nothing else. A scenario says what is _on_ a relay — its rooms, its
 members, its messages — never what the relay _is_, so there is no policy negotiation anywhere in the
-harness. `space` and `other` are the same permissive policy twice over, for the specs that need two
-of them; `closed` refuses a join that carries no invite claim, which is what raises "Request
+harness. `space` and `other` are the same permissive policy, for specs that need two relays; `closed` refuses a join that carries no invite claim, which is what raises "Request
 Access"; `unsigned` serves events with their signatures stripped, which is what raises "Do you trust
 this space?". Seeding a membership on `closed` is therefore not possible — `join()` and `member()`
 publish a claimless join and the relay refuses it — so a scenario there seeds admin-created rooms
@@ -28,7 +26,7 @@ and lets the spec do the joining.
 
 The container listens on plaintext loopback, but a url that is local or insecure is dropped from
 every relay selection unless the caller opts in — see `isLocalUrl` and `RelaySelection.getUrls` in
-`@welshman/util` — and Flotilla never opts in, since in production neither belongs in a routing
+`@welshman/util` — and the app never opts in, since in production neither belongs in a routing
 decision. Handed `ws://localhost:3334/`, the client would load a space by its explicit url and
 resolve nothing else: no outbox loads for profiles or relay lists, no relay hints.
 
@@ -64,7 +62,7 @@ browser context ──▶ context.routeWebSocket(everything but vite's hmr socke
   relay's virtual host                url is recorded as a leak
 ```
 
-Every socket the browser opens is terminated here, in this process, and the only one that leaves it
+Every socket the browser opens is terminated in the node process, and the only one that leaves
 is the loopback connection `zooid/transport.ts` makes to the container the test started.
 `assertNoLeaks()` fails a test that touched a url the scenario never declared.
 
@@ -75,19 +73,18 @@ with a message saying so rather than quietly dialling the relays in `.env`. The 
 fixture goes the same way: an `APIRequestContext` is an http client in the node process that belongs to no browser
 context, so the block-all below cannot see it and nothing records what it sent.
 
-`playwright` is the one fixture left alone, and it has to be: it is where the run's own browser comes
+`playwright` is the one fixture left alone, because it is where the run's own browser comes
 from, so every test would fail if it threw. A spec that goes around `as()` through
 `playwright.request` or `playwright.chromium.launch()` reaches the network unwatched, and no fixture
 can refuse that without refusing the suite.
 
-Interception in Node rather than in the page is what makes multi-user testing work. Three browser
+Interception in Node rather than in the page enables multi-user testing. Three browser
 contexts logged in as three different users all dispatch into the _same_ relay, so one user
 genuinely observes another user's writes, over the wire, through the client's real socket stack.
 
 ### Why not an `AdapterFactory`
 
-The obvious alternative — `new App({getAdapter})` returning a `Repository`-backed adapter — cannot
-test authentication. NIP-42 lives on `Socket`: `AuthState` listens to `SocketEvent.Receiving`/
+An `AdapterFactory` backed by a `Repository`-backed adapter cannot test authentication. NIP-42 lives on `Socket`: `AuthState` listens to `SocketEvent.Receiving`/
 `Sending`, and `socketPolicyAuthBuffer` replays messages that were rejected with `auth-required:`.
 An `AbstractAdapter` whose `sockets` getter returns `[]` never constructs any of that. Patching the
 transport instead leaves `Pool → Socket → SocketAdapter` untouched, so auth, message buffering,
@@ -97,7 +94,7 @@ replay-after-auth and reconnect are all exercised as written.
 
 Relays are not the only egress. `installHttpRoutes` routes every url that is not the dev server — a
 predicate rather than a `"**/*"` pattern, so the hundreds of module requests a sveltekit page makes
-in dev are never even matched — and aborts what it catches. Two origins get past it: the dev server
+in dev are never matched — and aborts what it catches. Two origins get past it: the dev server
 on `localhost:1847`, which is left unrouted, and each relay's own origin, which is forwarded to the
 container by the same transport carrying the same two headers, so the NIP-11 document and the NIP-86
 management API the app reads are the real relay's answers, signed against the url the client used.
@@ -110,11 +107,10 @@ admin, since a relay refuses management calls from anyone else and the method li
 doubles as the client's permission set — the space, room, event and pin menus, the directory and the
 library are all gated on it.
 
-Services the app talks to are then mocked back in per-scenario, so a blocked request is always a bug
+Services the app talks to are mocked per-scenario, so a blocked request is always a bug
 rather than ambient noise: Dufflepud (`dufflepud.coracle.social`), Blossom uploads, the push server
 (`nps.flotilla.social`), the hosting API, LiveKit token endpoints, and image/thumbnail fetches. The
-analytics script hard-coded in `src/app.html` is mocked with an empty body: it is requested on every
-navigation whatever the scenario is doing, so leaving it to the block-all would make
+analytics script hard-coded in `src/app.html` is mocked with an empty body to avoid making
 `assertNoBlockedRequests()` a statement about the page shell rather than about the test.
 
 Two of those answers are the scenario's own. NIP-11 fields a spec names are merged over the relay's
@@ -161,7 +157,7 @@ values it does not override still name real hosts — the blossom server, the po
 thumbnail service, the push server, the hosting api — and none of them is contacted at boot. Blossom
 is read only when an upload starts, the thumbnail url only on android, pomade only when a signup uses
 it, and the hosting api and dufflepud are mocked. They are contained by the block-all rather than by
-configuration, which is the weaker of the two guarantees.
+configuration.
 
 Grepping the repo for hostnames accounts for all of them, and there are only three kinds. Most are an
 `href` in help text — nostr.com, nostrapps.com, nsec.app, nosta.me, nostr.how, github.com,
@@ -338,9 +334,9 @@ pnpm test                                             # starts and stops the con
 
 Every test skips when docker is unavailable, rather than failing.
 
-One engine per run rather than a project per engine: these specs exercise sockets, auth and sync, so
-a third copy of each buys much less than it costs. `E2E_BROWSER=webkit pnpm test` runs the whole
-suite under another one. The container listens on a fixed port and cannot be sharded, which is why
+One engine per run. These specs exercise sockets, auth and sync, so running them under three
+engines adds little coverage. `E2E_BROWSER=webkit pnpm test` runs the whole
+suite under another one. The container listens on a fixed port and cannot be sharded, so
 `workers` is 1.
 
 `src/app/env.ts` resolves every `VITE_` value through a DEV-only hook that prefers
