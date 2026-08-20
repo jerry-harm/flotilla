@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-check-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: corepack enable && pnpm i --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Check
+        run: pnpm run check
+
+      - name: Build
+        run: pnpm run build
