@@ -1,6 +1,5 @@
 <script lang="ts">
   import {Report} from "@welshman/domain"
-  import {publishToRelays} from "@welshman/app"
   import {preventDefault} from "@lib/html"
   import Spinner from "@lib/components/Spinner.svelte"
   import Button from "@lib/components/Button.svelte"
@@ -37,9 +36,15 @@
       .setReason(reason.toLowerCase())
       .setContent(content)
 
-    await command(eventWriter).then(publishToRelays([url]))
+    const reportCommand = await command(eventWriter)
+    const error = await reportCommand.publishToRelays([url]).waitForError()
 
     loading = false
+
+    if (error) {
+      return pushToast({theme: "error", message: error})
+    }
+
     history.back()
 
     return pushToast({message: "Your report has been sent!"})
