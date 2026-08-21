@@ -18,7 +18,7 @@
 
   const {url, pubkey, roles = []}: Props = $props()
 
-  const profileDisplay = $profiles.display(pubkey).$
+  const profileDisplay = $profiles.display(pubkey, [url]).$
   const supportedMethods = deriveSpaceSupportedMethods(url)
   const canUnallow = $derived($supportedMethods.includes("unallowpubkey"))
   const canBan = $derived($supportedMethods.includes("banpubkey"))

@@ -1,7 +1,7 @@
 <script lang="ts">
   import {onMount} from "svelte"
   import {goto} from "$app/navigation"
-  import {spec} from "@welshman/lib"
+  import {removeUndefined, spec} from "@welshman/lib"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import UserCircle from "@assets/icons/user-circle.svg?dataurl"
   import MinusCircle from "@assets/icons/minus-circle.svg?dataurl"
@@ -48,7 +48,7 @@
   const banMember = () =>
     pushModal(Confirm, {
       title: "Ban User",
-      message: `Are you sure you want to ban @${$profiles.display(pubkey).get()} from the space?`,
+      message: `Are you sure you want to ban @${$profiles.display(pubkey, removeUndefined([url])).get()} from the space?`,
       confirm: async () => {
         const {error} = await $relayManagement.forUrl(url!).banPubkey(pubkey)
 

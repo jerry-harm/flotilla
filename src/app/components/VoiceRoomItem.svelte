@@ -68,7 +68,7 @@
 
   $effect(() => {
     for (const p of $participants) {
-      if (p.pubkey) $profiles.load(p.pubkey)
+      if (p.pubkey) $profiles.load(p.pubkey, [url])
     }
   })
 </script>
@@ -102,7 +102,7 @@
               <ProfileCircle pubkey={p.pubkey} size={5} class="h-5 w-5" />
             </div>
             <span class="truncate min-w-0 flex-1 text-xs opacity-70">
-              {p.pubkey ? $profiles.display(p.pubkey).get() : "Unknown"}
+              {p.pubkey ? $profiles.display(p.pubkey, [url]).get() : "Unknown"}
             </span>
             <VoiceParticipantMediaBadges
               muted={media.muted}

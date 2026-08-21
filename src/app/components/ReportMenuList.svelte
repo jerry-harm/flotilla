@@ -74,7 +74,7 @@
 
     pushModal(Confirm, {
       title: "Ban User",
-      message: `Are you sure you want to ban @${$profiles.display(reported).get()} from the space?`,
+      message: `Are you sure you want to ban @${$profiles.display(reported, [url]).get()} from the space?`,
       confirm: async () => {
         const {error} = await $relayManagement.forUrl(url).banPubkey(reported, reason)
 

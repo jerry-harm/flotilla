@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {removeUndefined} from "@welshman/lib"
   import {displayHandle} from "@welshman/util"
   import {displayPubkey} from "@welshman/domain"
   import {handles, profiles} from "@app/core"
@@ -13,7 +14,7 @@
   const {value, url}: Props = $props()
 
   const pubkey = value
-  const profileDisplay = $profiles.display(pubkey).$
+  const profileDisplay = $profiles.display(pubkey, removeUndefined([url])).$
   const handle = $handles.forPubkey(pubkey).$
 </script>
 

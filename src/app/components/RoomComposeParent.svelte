@@ -8,14 +8,15 @@
   import {profiles} from "@app/core"
 
   type Props = {
+    url: string
     verb: string
     event: TrustedEvent
     clear: () => void
   }
 
-  const {verb, event, clear}: Props = $props()
+  const {url, verb, event, clear}: Props = $props()
 
-  const display = $profiles.display(event.pubkey).$
+  const display = $profiles.display(event.pubkey, [url]).$
 </script>
 
 <div

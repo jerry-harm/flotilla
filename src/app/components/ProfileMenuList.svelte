@@ -1,6 +1,7 @@
 <script lang="ts">
   import {onMount} from "svelte"
   import type {Snippet} from "svelte"
+  import {removeUndefined} from "@welshman/lib"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
   import ShareCircle from "@assets/icons/share-circle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -19,7 +20,7 @@
 
   const {pubkey, url, onClick, customActions}: Props = $props()
 
-  const profile = $profiles.one(pubkey)
+  const profile = $profiles.one(pubkey, removeUndefined([url]))
 
   const showInfo = () => pushModal(ProfileInfo, {event: $profile!.event, url})
 

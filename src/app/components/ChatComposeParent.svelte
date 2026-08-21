@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {removeUndefined} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
   import {slide} from "@lib/transition"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
@@ -8,14 +9,15 @@
   import {profiles} from "@app/core"
 
   type Props = {
+    url?: string
     verb: string
     event: TrustedEvent
     clear: () => void
   }
 
-  const {verb, event, clear}: Props = $props()
+  const {url, verb, event, clear}: Props = $props()
 
-  const display = $profiles.display(event.pubkey).$
+  const display = $profiles.display(event.pubkey, removeUndefined([url])).$
 </script>
 
 <div

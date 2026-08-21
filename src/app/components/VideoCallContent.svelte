@@ -172,13 +172,13 @@
   $effect(() => {
     for (const t of videoTiles) {
       const pk = pubkeyFromLiveKitIdentity(t.liveKitIdentity)
-      if (pk) $profiles.load(pk)
+      if (pk) $profiles.load(pk, [url])
     }
   })
 
   const labelFor = (liveKitIdentity: string, source: VideoTileData["source"]) => {
     const pk = pubkeyFromLiveKitIdentity(liveKitIdentity)
-    const name = pk ? $profiles.display(pk).get() : "Unknown"
+    const name = pk ? $profiles.display(pk, [url]).get() : "Unknown"
     return source === Track.Source.ScreenShare ? `${name} · screen` : name
   }
 

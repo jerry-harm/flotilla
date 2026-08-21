@@ -27,7 +27,7 @@
   const relayRoles = $app.use(RelayRoles).forUrl(url).$
   const roles = $derived(sortBy(role => [role.order(), role.label() ?? ""], $relayRoles))
 
-  const profileDisplay = $profiles.display(pubkey).$
+  const profileDisplay = $profiles.display(pubkey, [url]).$
   const memberRoles = deriveSpaceMemberRoles(url)
   const initial = new Set(get(memberRoles).get(pubkey) ?? [])
 

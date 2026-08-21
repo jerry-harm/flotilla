@@ -34,7 +34,7 @@
   const removeMember = () =>
     pushModal(Confirm, {
       title: "Remove Member",
-      message: `Remove @${$profiles.display(pubkey).get()} from the space?`,
+      message: `Remove @${$profiles.display(pubkey, [url]).get()} from the space?`,
       confirm: async () => {
         const {error} = await $relayManagement.forUrl(url).unallowPubkey(pubkey)
 
@@ -50,7 +50,7 @@
   const banMember = () =>
     pushModal(Confirm, {
       title: "Ban Member",
-      message: `Ban @${$profiles.display(pubkey).get()} from the space?`,
+      message: `Ban @${$profiles.display(pubkey, [url]).get()} from the space?`,
       confirm: async () => {
         const {error} = await $relayManagement.forUrl(url).banPubkey(pubkey)
 

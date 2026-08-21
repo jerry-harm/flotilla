@@ -59,7 +59,7 @@
     event,
     deleteReaction,
     createReaction,
-    url = "",
+    url,
     reactionClass = "",
     noTooltip = false,
     innerEvent = undefined,
@@ -196,7 +196,9 @@
       {@const amount = fromMsats(sum(zaps.map(zap => zap.invoiceAmount)))}
       {@const pubkeys = uniq(zaps.map(zap => zap.request.pubkey))}
       {@const isOwn = pubkeys.includes($user.pubkey)}
-      {@const info = displayList(pubkeys.map(pubkey => $profiles.display(pubkey).get()))}
+      {@const info = displayList(
+        pubkeys.map(pubkey => $profiles.display(pubkey, removeUndefined([url])).get()),
+      )}
       {@const tooltip = `${info} zapped`}
       {@const onZapClickHandler = () => onZapClick(pubkeys, tooltip)}
       <Button
@@ -218,7 +220,9 @@
     {#each groupedReactions.entries() as [key, events]}
       {@const pubkeys = events.map(e => e.pubkey)}
       {@const isOwn = pubkeys.includes($user.pubkey)}
-      {@const info = displayList(pubkeys.map(pubkey => $profiles.display(pubkey).get()))}
+      {@const info = displayList(
+        pubkeys.map(pubkey => $profiles.display(pubkey, removeUndefined([url])).get()),
+      )}
       {@const tooltip = `${info} reacted`}
       {@const onClick = () => onReactionClick(events, pubkeys, info)}
       <Button

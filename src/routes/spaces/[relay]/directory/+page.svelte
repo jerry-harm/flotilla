@@ -64,7 +64,8 @@
   let term = $state("")
 
   const matchesTerm = (pubkey: string, t: string) =>
-    $profiles.display(pubkey).get().toLowerCase().includes(t) || pubkey.toLowerCase().includes(t)
+    $profiles.display(pubkey, [url]).get().toLowerCase().includes(t) ||
+    pubkey.toLowerCase().includes(t)
 
   // In-place search: match by member info or by the name of any role they hold.
   const visibleMembers = $derived.by(() => {

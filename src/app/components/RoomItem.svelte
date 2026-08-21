@@ -140,7 +140,7 @@
     {#if path && $innerComments.length > 0}
       {@const pubkeys = $innerComments.map(e => e.pubkey)}
       {@const isOwn = pubkeys.includes($user.pubkey)}
-      {@const info = displayList(pubkeys.map(pk => $profiles.display(pk).get()))}
+      {@const info = displayList(pubkeys.map(pk => $profiles.display(pk, [url]).get()))}
       {@const tooltip = `${info} commented`}
       <div data-tip={tooltip} class="tip tip-right flex">
         <Link

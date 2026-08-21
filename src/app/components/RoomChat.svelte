@@ -639,10 +639,10 @@
         {:else}
           <div>
             {#if parent}
-              <RoomComposeParent event={parent} clear={clearParent} verb="Replying to" />
+              <RoomComposeParent {url} event={parent} clear={clearParent} verb="Replying to" />
             {/if}
             {#if sharedEvent}
-              <RoomComposeParent event={sharedEvent} clear={clearShare} verb="Sharing" />
+              <RoomComposeParent {url} event={sharedEvent} clear={clearShare} verb="Sharing" />
             {/if}
             {#if eventToEdit}
               <RoomComposeEdit clear={clearEventToEdit} />

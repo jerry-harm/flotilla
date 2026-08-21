@@ -109,7 +109,7 @@
   class="left-content bottom-sai right-sai fixed z-feature mb-14 md:mb-0 w-full md:w-auto pr-2">
   <div class="card mx-2 my-2 shadow-md">
     {#if parent}
-      <ChatComposeParent event={parent} clear={() => onClearParent?.()} verb="Replying to" />
+      <ChatComposeParent {url} event={parent} clear={() => onClearParent?.()} verb="Replying to" />
     {/if}
     <div class="relative">
       <div class="note-editor grow overflow-hidden">
