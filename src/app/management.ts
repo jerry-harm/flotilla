@@ -43,6 +43,8 @@ export const deriveSpaceSupportedMethods = simpleCache(([url]: [string | undefin
 
 // User
 
+// A relay answers supportedmethods with everything it implements rather than with what the
+// caller may use, so all this can tell us is that the call wasn't refused outright.
 export const deriveUserIsSpaceAdmin = (url?: string) =>
   derived(deriveSpaceSupportedMethods(url), $methods => $methods.length > 0)
 

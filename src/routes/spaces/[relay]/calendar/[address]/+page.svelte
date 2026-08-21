@@ -16,6 +16,7 @@
   import NoteContent from "@app/components/NoteContent.svelte"
   import NoteCard from "@app/components/NoteCard.svelte"
   import CalendarEventActions from "@app/components/CalendarEventActions.svelte"
+  import CommentActions from "@app/components/CommentActions.svelte"
   import CalendarEventHeader from "@app/components/CalendarEventHeader.svelte"
   import CalendarEventMeta from "@app/components/CalendarEventMeta.svelte"
   import CalendarEventDate from "@app/components/CalendarEventDate.svelte"
@@ -95,7 +96,7 @@
       <NoteCard event={reply} {url} class="card z-feature w-full">
         <div class="flex flex-col gap-3 ml-12">
           <NoteContent showEntire event={reply} {url} />
-          <CalendarEventActions event={reply} {url} />
+          <CommentActions segment="calendar" event={reply} {url} />
         </div>
       </NoteCard>
     {/each}

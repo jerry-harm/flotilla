@@ -7,7 +7,6 @@
   import Content from "@app/components/Content.svelte"
   import ProfileLink from "@app/components/ProfileLink.svelte"
   import ArticleActions from "@app/components/ArticleActions.svelte"
-  import RoomLink from "@app/components/RoomLink.svelte"
   import {reader} from "@app/core"
   import {makeArticlePath} from "@app/routes"
 
@@ -23,7 +22,6 @@
   const title = article.title()
   const summary = article.summary()
   const image = article.image()
-  const h = article.room()
 </script>
 
 <Link
@@ -48,10 +46,7 @@
     <span class="whitespace-nowrap py-1 text-sm opacity-75">
       Written by
       <ProfileLink pubkey={event.pubkey} {url} />
-      {#if h}
-        in <RoomLink {url} {h} />
-      {/if}
     </span>
-    <ArticleActions showActivity {url} {event} />
+    <ArticleActions showRoom showActivity {url} {event} />
   </div>
 </Link>

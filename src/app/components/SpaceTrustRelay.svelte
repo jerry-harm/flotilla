@@ -18,7 +18,7 @@
   import InfoSignatures from "@app/components/InfoSignatures.svelte"
   import {relaysPendingTrust} from "@app/policies"
   import {addTrustedRelay, removeTrustedRelay} from "@app/settings"
-  import {pushModal} from "@app/modal"
+  import {popModal, pushModal} from "@app/modal"
   import {roomLists} from "@app/core"
 
   type Props = {
@@ -48,6 +48,7 @@
       await addTrustedRelay(url)
 
       relaysPendingTrust.update($r => remove(url, $r))
+      popModal()
     } finally {
       loading = false
     }

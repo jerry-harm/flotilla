@@ -41,7 +41,7 @@
     if (error) {
       pushToast({theme: "error", message: error})
     } else {
-      pushToast({message: "Content has successfully been deleted!"})
+      pushToast({message: "Report has successfully been dismissed!"})
       $app.repository.removeEvent(event.id)
       onResolved?.()
     }

@@ -10,7 +10,7 @@
   import type {Maybe} from "@welshman/lib"
   import type {TrustedEvent, EventContent} from "@welshman/util"
   import {makeEvent, MESSAGE, RELAY_ADD_MEMBER, ROOM_ADD_MEMBER} from "@welshman/util"
-  import {MembershipStatus, publish} from "@welshman/app"
+  import {MembershipStatus} from "@welshman/app"
   import AltArrowDown from "@assets/icons/alt-arrow-down.svg?dataurl"
   import ClockCircle from "@assets/icons/clock-circle.svg?dataurl"
   import Login2 from "@assets/icons/login-3.svg?dataurl"
@@ -31,7 +31,7 @@
   import VideoCallContent from "@app/components/VideoCallContent.svelte"
   import CallControlBar from "@app/components/CallControlBar.svelte"
   import {deletes, relays, rooms, thunks, user} from "@app/core"
-  import {publishRoomJoinRequest} from "@app/access"
+  import {joinRoom, leaveRoom} from "@app/access"
   import {CallState, callTargetRoom, callState, VideoCallLayout, videoCallLayout} from "@app/call"
   import {
     PROTECTED,
@@ -130,18 +130,14 @@
       joining = true
 
       try {
-        const thunk = await (inviteCode
-          ? publishRoomJoinRequest(url, h, inviteCode)
-          : $rooms.joinRoom(url, {h}).then(publish))
+        const message = await joinRoom(url, h, inviteCode)
 
-        const message = await thunk.waitForError()
-
-        if (message && !message.startsWith("duplicate:")) {
-          return pushToast({theme: "error", message})
+        if (message) {
+          pushToast({theme: "error", message})
+        } else {
+          // Restart the feed now that we're a member
+          start()
         }
-
-        // Restart the feed now that we're a member
-        start()
       } finally {
         joining = false
       }
@@ -151,12 +147,14 @@
   const leave = async () => {
     if (h) {
       leaving = true
-      try {
-        const thunk = await $rooms.leaveRoom(url, {h}).then(publish)
-        const message = await thunk.waitForError()
 
-        if (message && !message.startsWith("duplicate:")) {
+      try {
+        const message = await leaveRoom(url, h)
+
+        if (message) {
           pushToast({theme: "error", message})
+        } else {
+          pushToast({message: "You have left the room."})
         }
       } finally {
         leaving = false

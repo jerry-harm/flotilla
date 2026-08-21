@@ -46,10 +46,11 @@
       </button>
     {/each}
   </div>
-  <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
-  <ThunkStatusOrDeleted {event} />
-  {#if showActivity}
-    <EventActivity {url} {path} {event} />
-  {/if}
-  <EventActions {url} {event} noun="Article" />
+  <ThunkStatusOrDeleted {event}>
+    <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
+    {#if showActivity}
+      <EventActivity {url} {path} {event} />
+    {/if}
+    <EventActions {url} {event} noun="Article" />
+  </ThunkStatusOrDeleted>
 </div>

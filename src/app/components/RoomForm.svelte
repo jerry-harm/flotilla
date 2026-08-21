@@ -12,6 +12,7 @@
   import Modal from "@lib/components/Modal.svelte"
   import ModalBody from "@lib/components/ModalBody.svelte"
   import {rooms} from "@app/core"
+  import {joinRoom} from "@app/access"
   import {pushToast} from "@app/toast"
   import {compressFileForUpload, uploadFileOrFallback} from "@app/uploads"
   import {deriveHasLivekit} from "@app/relays"
@@ -67,10 +68,9 @@
       return pushToast({theme: "error", message: editMessage})
     }
 
-    const joinCommand = await $rooms.joinRoom(url, room)
-    const joinMessage = await joinCommand.publish().waitForError()
+    const joinMessage = await joinRoom(url, room.h)
 
-    if (joinMessage && !joinMessage.includes("already")) {
+    if (joinMessage) {
       return pushToast({theme: "error", message: joinMessage})
     }
 

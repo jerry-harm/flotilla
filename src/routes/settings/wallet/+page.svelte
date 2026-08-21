@@ -283,7 +283,6 @@
             <input
               type="number"
               class="grow"
-              min="1"
               data-index={index}
               value={amount}
               oninput={onZapAmountInput} />

@@ -122,17 +122,30 @@ const trustPolicy = (socket: Socket) => {
 
 const mostlyRestrictedPolicy = (socket: Socket) => {
   let total = 0
-  let restricted = 0
+  let refused = 0
 
   const pending = new Set<string>()
 
   const updateStatus = (error?: string) => {
-    if (total > 5 && restricted > total / 2) {
+    if (total > 5 && refused > total / 2) {
       if (error) {
         return relaysMostlyRestricted.update(assoc(socket.url, error))
       }
     } else {
       relaysMostlyRestricted.update(dissoc(socket.url))
+    }
+  }
+
+  // NIP-01 reserves "blocked: " for a ban and "restricted: " for lacking permission.
+  const countDetails = (details: string) => {
+    if (details.startsWith("auth-required: ")) {
+      total--
+      updateStatus()
+    }
+
+    if (details.startsWith("restricted: ") || details.startsWith("blocked: ")) {
+      refused++
+      updateStatus(details)
     }
   }
 
@@ -145,15 +158,7 @@ const mostlyRestrictedPolicy = (socket: Socket) => {
           pending.delete(id)
 
           if (!ok) {
-            if (details.startsWith("auth-required: ")) {
-              total--
-              updateStatus()
-            }
-
-            if (details.startsWith("restricted: ")) {
-              restricted++
-              updateStatus(details)
-            }
+            countDetails(details)
           }
         }
       }
@@ -163,16 +168,7 @@ const mostlyRestrictedPolicy = (socket: Socket) => {
 
         if (pending.has(id)) {
           pending.delete(id)
-
-          if (details.startsWith("auth-required: ")) {
-            total--
-            updateStatus()
-          }
-
-          if (details.startsWith("restricted: ")) {
-            restricted++
-            updateStatus(details)
-          }
+          countDetails(details)
         }
       }
     }),

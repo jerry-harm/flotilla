@@ -33,10 +33,11 @@
       Posted in #<RoomName {h} {url} />
     </Link>
   {/if}
-  <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
-  <ThunkStatusOrDeleted {event} />
-  {#if showActivity}
-    <EventActivity {url} {path} {event} />
-  {/if}
-  <EventActions {url} {event} noun="Poll" />
+  <ThunkStatusOrDeleted {event}>
+    <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
+    {#if showActivity}
+      <EventActivity {url} {path} {event} />
+    {/if}
+    <EventActions {url} {event} noun="Poll" />
+  </ThunkStatusOrDeleted>
 </div>

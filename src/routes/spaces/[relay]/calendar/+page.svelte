@@ -49,7 +49,7 @@
       .map<Item>(event => {
         const newDateDisplay = formatTimestampAsDate(getStart(event))
         const dateDisplay = prevDateDisplay === newDateDisplay ? undefined : newDateDisplay
-        const isFuture = todayDateDisplay === newDateDisplay || event.created_at > now()
+        const isFuture = todayDateDisplay === newDateDisplay || getStart(event) > now()
         const isFirstFutureEvent = !haveISeenTheFuture && isFuture
 
         prevDateDisplay = newDateDisplay

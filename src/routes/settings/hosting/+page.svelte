@@ -2,7 +2,7 @@
   import {onMount} from "svelte"
   import {App} from "@capacitor/app"
   import type {Maybe} from "@welshman/lib"
-  import {indexBy, spec} from "@welshman/lib"
+  import {indexBy, sortBy, spec} from "@welshman/lib"
   import Add from "@assets/icons/add.svg?dataurl"
   import Server from "@assets/icons/server.svg?dataurl"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
@@ -107,7 +107,7 @@
     const [t, inv, rel, draft] = results
 
     if (t.status === "fulfilled") tenant = t.value
-    if (inv.status === "fulfilled") invoices = inv.value
+    if (inv.status === "fulfilled") invoices = sortBy(invoice => -invoice.created_at, inv.value)
     if (rel.status === "fulfilled") relays = rel.value
     if (draft.status === "fulfilled") draftInvoice = draft.value
 

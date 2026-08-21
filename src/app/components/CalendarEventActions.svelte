@@ -41,21 +41,22 @@
       Posted in #<RoomName {h} {url} />
     </Link>
   {/if}
-  <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip tip-left" />
-  <ThunkStatusOrDeleted {event} />
-  {#if showActivity}
-    <EventActivity {url} {path} {event} />
-  {/if}
-  <EventActions {url} {event} noun="Event">
-    {#snippet customActions()}
-      {#if event.pubkey === $user.pubkey}
-        <li>
-          <Button onclick={editEvent}>
-            <Icon size={4} icon={Pen2} />
-            Edit Event
-          </Button>
-        </li>
-      {/if}
-    {/snippet}
-  </EventActions>
+  <ThunkStatusOrDeleted {event}>
+    <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip tip-left" />
+    {#if showActivity}
+      <EventActivity {url} {path} {event} />
+    {/if}
+    <EventActions {url} {event} noun="Event">
+      {#snippet customActions()}
+        {#if event.pubkey === $user.pubkey}
+          <li>
+            <Button onclick={editEvent}>
+              <Icon size={4} icon={Pen2} />
+              Edit Event
+            </Button>
+          </li>
+        {/if}
+      {/snippet}
+    </EventActions>
+  </ThunkStatusOrDeleted>
 </div>

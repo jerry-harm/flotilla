@@ -28,7 +28,7 @@
 
   const {url, initialValues = {}}: Props = $props()
 
-  const values = $state(initialValues)
+  const values = $state({...initialValues})
 
   const back = () => history.back()
 

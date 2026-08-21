@@ -4,6 +4,7 @@
   import {tagSpec, tagValue, toNostrURI} from "@welshman/util"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
   import GalleryWide from "@assets/icons/gallery-wide.svg?dataurl"
+  import ShareCircle from "@assets/icons/share-circle.svg?dataurl"
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
   import Danger from "@assets/icons/danger.svg?dataurl"
   import Pin from "@assets/icons/pin.svg?dataurl"
@@ -19,6 +20,7 @@
   import {app, relayManagement, roomPinLists, user} from "@app/core"
   import {deriveUserIsSpaceAdmin} from "@app/management"
   import {ROOM, deriveUserIsRoomAdmin} from "@app/rooms"
+  import {shareEvent} from "@app/share"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
 
@@ -35,6 +37,11 @@
   const userIsAdmin = deriveUserIsSpaceAdmin(url)
   const userIsRoomAdmin = deriveUserIsRoomAdmin(url, h)
   const isPinned = $derived($pinIds.includes(event.id))
+
+  const share = () => {
+    onClick()
+    shareEvent(url, "Message", event)
+  }
 
   const addToLibrary = () => {
     onClick()
@@ -104,6 +111,12 @@
     <Button onclick={showInfo}>
       <Icon size={4} icon={Code2} />
       Message Details
+    </Button>
+  </li>
+  <li>
+    <Button onclick={share}>
+      <Icon size={4} icon={ShareCircle} />
+      Share
     </Button>
   </li>
   <li>

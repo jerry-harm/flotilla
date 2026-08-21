@@ -5,6 +5,7 @@
   import {getIdOrAddress, tagSpec, tagValue, toNostrURI} from "@welshman/util"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
+  import ShareCircle from "@assets/icons/share-circle.svg?dataurl"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
   import SmileCircle from "@assets/icons/smile-circle.svg?dataurl"
@@ -25,6 +26,7 @@
   import {ROOM, deriveUserIsRoomAdmin} from "@app/rooms"
   import {ENABLE_ZAPS} from "@app/env"
   import {makeContentPath} from "@app/routes"
+  import {shareEvent} from "@app/share"
   import {pushModal} from "@app/modal"
   import {pushToast} from "@app/toast"
 
@@ -65,6 +67,11 @@
     reply()
   }
 
+  const share = () => {
+    history.back()
+    shareEvent(url, "Message", event)
+  }
+
   const showInfo = () => pushModal(EventInfo, {url, event}, {replaceState: true})
 
   const showDelete = () => pushModal(EventDeleteConfirm, {url, event})
@@ -98,6 +105,10 @@
       <Button class="button button-neutral" onclick={showInfo}>
         <Icon size={4} icon={Code2} />
         Message Info
+      </Button>
+      <Button class="button button-neutral" onclick={share}>
+        <Icon size={4} icon={ShareCircle} />
+        Share
       </Button>
       {#if path}
         <Link class="button button-neutral" href={path}>

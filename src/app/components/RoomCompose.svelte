@@ -28,7 +28,8 @@
 
   const {url, h, initialValues, onEscape, onEditPrevious, onSubmit}: Props = $props()
 
-  const draftKey = url || h ? new DraftKey<Draft>(`room:${url ?? ""}:${h ?? ""}`) : undefined
+  const draftKey =
+    (url || h) && !initialValues ? new DraftKey<Draft>(`room:${url ?? ""}:${h ?? ""}`) : undefined
 
   const autofocus = !isMobile
 

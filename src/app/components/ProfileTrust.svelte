@@ -63,7 +63,8 @@
       <ProfileCircles pubkeys={$followers} limit={5} />
       <p class="text-sm opacity-75">
         {$followers.length}
-        {$followers.length === 1 ? "person" : "people"} you follow also follow
+        {$followers.length === 1 ? "person" : "people"} you follow also
+        {$followers.length === 1 ? "follows" : "follow"}
         {$profileDisplay}.
       </p>
     </div>

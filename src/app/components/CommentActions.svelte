@@ -28,11 +28,12 @@
 
 <div class="flex flex-wrap items-center justify-between gap-2">
   <div class="flex grow flex-wrap justify-end gap-2">
-    <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
-    <ThunkStatusOrDeleted {event} />
-    {#if showActivity && path}
-      <EventActivity {url} {path} {event} />
-    {/if}
-    <EventActions {url} {event} noun="Comment" />
+    <ThunkStatusOrDeleted {event}>
+      <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
+      {#if showActivity && path}
+        <EventActivity {url} {path} {event} />
+      {/if}
+      <EventActions {url} {event} noun="Comment" />
+    </ThunkStatusOrDeleted>
   </div>
 </div>

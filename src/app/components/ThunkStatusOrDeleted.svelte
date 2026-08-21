@@ -8,10 +8,11 @@
 
   type Props = {
     event: TrustedEvent
+    status?: Snippet
     children?: Snippet
   }
 
-  const {event, children}: Props = $props()
+  const {event, status, children}: Props = $props()
 
   const deleted = deriveIsDeleted(event)
   const history = $thunks.history
@@ -20,8 +21,11 @@
 
 {#if $deleted}
   <div class="button button-error button-xs rounded-full">Deleted</div>
-{:else if thunk.thunks.length > 0 && !thunk.hasStatus(PublishStatus.Success)}
-  <ThunkStatus {thunk} />
-{:else if children}
+{:else}
+  {#if thunk.thunks.length > 0 && !thunk.hasStatus(PublishStatus.Success)}
+    <ThunkStatus {thunk} />
+  {:else}
+    {@render status?.()}
+  {/if}
   {@render children?.()}
 {/if}

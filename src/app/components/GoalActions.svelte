@@ -36,10 +36,11 @@
       Posted in #<RoomName {h} {url} />
     </Link>
   {/if}
-  <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
-  <ThunkStatusOrDeleted {event} />
-  {#if showActivity}
-    <EventActivity {url} {path} {event} />
-  {/if}
-  <EventActions {url} {event} hideZap noun="Goal" />
+  <ThunkStatusOrDeleted {event}>
+    <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
+    {#if showActivity}
+      <EventActivity {url} {path} {event} />
+    {/if}
+    <EventActions {url} {event} hideZap noun="Goal" />
+  </ThunkStatusOrDeleted>
 </div>

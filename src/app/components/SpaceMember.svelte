@@ -18,6 +18,7 @@
 
   const {url, pubkey, roles = []}: Props = $props()
 
+  const profileDisplay = $profiles.display(pubkey).$
   const supportedMethods = deriveSpaceSupportedMethods(url)
   const canUnallow = $derived($supportedMethods.includes("unallowpubkey"))
   const canBan = $derived($supportedMethods.includes("banpubkey"))
@@ -31,7 +32,7 @@
   <button
     type="button"
     class="absolute inset-0 cursor-pointer rounded-2xl"
-    aria-label="View {$profiles.display(pubkey).get()}'s profile"
+    aria-label="View {$profileDisplay}'s profile"
     onclick={openProfile}>
   </button>
   <div class="pointer-events-none relative flex items-start justify-between gap-2">

@@ -26,12 +26,12 @@
   )
 
   const relayMessage = (status: PublishStatus | undefined, detail: string | undefined) => {
-    if (detail) {
-      return detail
-    }
-
     if (status === PublishStatus.Timeout) {
       return "request timed out"
+    }
+
+    if (detail) {
+      return detail
     }
 
     return "no details received"

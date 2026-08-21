@@ -55,23 +55,25 @@
       </button>
     {/each}
   </div>
-  <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
   <ThunkStatusOrDeleted {event}>
-    <ClassifiedStatus {event} />
-  </ThunkStatusOrDeleted>
-  {#if showActivity}
-    <EventActivity {url} {path} {event} />
-  {/if}
-  <EventActions {url} {event} noun="Listing">
-    {#snippet customActions()}
-      {#if event.pubkey === $user.pubkey}
-        <li>
-          <Button onclick={editClassified}>
-            <Icon size={4} icon={Pen2} />
-            Edit Listing
-          </Button>
-        </li>
-      {/if}
+    {#snippet status()}
+      <ClassifiedStatus {event} />
     {/snippet}
-  </EventActions>
+    <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
+    {#if showActivity}
+      <EventActivity {url} {path} {event} />
+    {/if}
+    <EventActions {url} {event} noun="Listing">
+      {#snippet customActions()}
+        {#if event.pubkey === $user.pubkey}
+          <li>
+            <Button onclick={editClassified}>
+              <Icon size={4} icon={Pen2} />
+              Edit Listing
+            </Button>
+          </li>
+        {/if}
+      {/snippet}
+    </EventActions>
+  </ThunkStatusOrDeleted>
 </div>

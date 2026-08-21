@@ -13,7 +13,7 @@ import {
   RELAYS,
   type ManagementResponse,
 } from "@welshman/util"
-import {RelayJoin, RelayLeave, RoomJoin} from "@welshman/domain"
+import {RelayJoin, RelayLeave, RoomJoin, RoomLeave} from "@welshman/domain"
 import {Sync, User, publish} from "@welshman/app"
 import {stripPrefix} from "@lib/util"
 import {app, command, relayManagement, roomLists, thunks, writer} from "@app/core"
@@ -100,20 +100,52 @@ export const deriveRelayAuthError = (url: string) =>
     }
   })
 
-export const publishJoinRequest = (url: string, claim = "") =>
-  command(writer(RelayJoin).forceRelays(url).setClaim(claim)).then(publish)
+export const publishJoinRequest = (url: string, claim?: string) => {
+  const eventWriter = writer(RelayJoin).forceRelays(url)
+
+  if (claim) {
+    eventWriter.setClaim(claim)
+  }
+
+  return command(eventWriter).then(publish)
+}
 
 export const publishLeaveRequest = (url: string) =>
   command(writer(RelayLeave).forceRelays(url)).then(publish)
 
-export const publishRoomJoinRequest = (url: string, h: string, code?: string) => {
+// A relay answers a re-sent request with "duplicate:" and a membership it already has with
+// "already a member" — both leave us where we wanted to be, so only anything else is a refusal.
+const isMembershipRefusal = (error: string) =>
+  Boolean(error) && !error.startsWith("duplicate:") && !error.includes("already")
+
+// Joining a room takes two publishes: a NIP-29 request the relay can refuse, and the user's
+// own room list, which is what puts the room in their sidebar. `code` is a room invite code.
+export const joinRoom = async (url: string, h: string, code?: string) => {
   const eventWriter = writer(RoomJoin).setRoom(url, h)
 
   if (code) {
     eventWriter.setClaim(code)
   }
 
-  return command(eventWriter).then(publish)
+  const thunk = await command(eventWriter).then(publish)
+  const error = await thunk.waitForError()
+
+  if (isMembershipRefusal(error)) {
+    return error
+  }
+
+  await roomLists.get().addRoom(h, url).then(publish)
+}
+
+export const leaveRoom = async (url: string, h: string) => {
+  const thunk = await command(writer(RoomLeave).setRoom(url, h)).then(publish)
+  const error = await thunk.waitForError()
+
+  if (isMembershipRefusal(error)) {
+    return error
+  }
+
+  await roomLists.get().removeRoom(h, url).then(publish)
 }
 
 export const publishRoomInvite = async (url: string, h: string) => {
@@ -198,12 +230,13 @@ export const attemptRelayAccess = async (url: string, claim = "") => {
 
   if (shouldIgnoreError(error)) return
 
-  if (claim) {
-    if (error.includes("invite code")) {
-      return "join request rejected"
-    }
-  } else if (error.includes("invite code")) {
-    return
+  if (error.includes("invite code")) {
+    return "join request rejected"
+  }
+
+  // A space that isn't open to the public refuses a join carrying no claim at all
+  if (error.includes("claim")) {
+    return "This space requires an invite code"
   }
 
   return stripPrefix(error)
@@ -316,17 +349,6 @@ export class Access {
     }
   }
 
-  async joinRoom(h: string, code?: string) {
-    if (!code) return
-
-    const thunk = await publishRoomJoinRequest(this.url, h, code)
-    const message = await thunk.waitForError()
-
-    if (message && !message.startsWith("duplicate:")) {
-      return message
-    }
-  }
-
   async acceptInvite(data: InviteData, notifications: boolean) {
     const spaceUrls = roomLists.get().urls(User.require(app.get()).pubkey).get()
     const error = await this.joinSpace({
@@ -340,7 +362,7 @@ export class Access {
     }
 
     if (data.h && data.code) {
-      return this.joinRoom(data.h, data.code)
+      return joinRoom(this.url, data.h, data.code)
     }
   }
 

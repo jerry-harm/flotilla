@@ -179,7 +179,7 @@
     eventToEdit = event
   }
 
-  const onEditPrevious = () => ifLet($chat?.messages.toReversed().find(canEditEvent), onEditEvent)
+  const onEditPrevious = () => ifLet($chat?.messages.find(canEditEvent), onEditEvent)
 
   let loading = $state(true)
   let compose: ChatCompose | undefined = $state()
@@ -300,7 +300,7 @@
             {#each missingRelayLists as pubkey (pubkey)}
               <ProfileLink {pubkey} />
             {/each}
-            to enable direct messaging by opening this conversation in their $app.
+            to enable direct messaging by opening this conversation in their client.
           </p>
         </div>
       </div>

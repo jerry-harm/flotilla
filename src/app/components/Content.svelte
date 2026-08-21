@@ -13,6 +13,7 @@
     isInvoice,
     isLink,
     isProfile,
+    isRoom,
     isEvent,
     isEllipsis,
     isAddress,
@@ -35,7 +36,9 @@
   import ContentQuote from "@app/components/ContentQuote.svelte"
   import ContentTopic from "@app/components/ContentTopic.svelte"
   import ContentMention from "@app/components/ContentMention.svelte"
+  import RoomName from "@app/components/RoomName.svelte"
   import {entityLink} from "@app/env"
+  import {makeRoomPath} from "@app/routes"
   import {userSettingsValues} from "@app/settings"
 
   type Props = {
@@ -182,6 +185,10 @@
           {/if}
         {:else if isProfile(parsed)}
           <ContentMention value={parsed.value} {url} />
+        {:else if isRoom(parsed)}
+          <Link href={makeRoomPath(parsed.value.url, parsed.value.room)} class="link-content">
+            #<RoomName url={parsed.value.url} h={parsed.value.room} />
+          </Link>
         {:else if isQuote(parsed)}
           {#if isBlock(i)}
             <ContentQuote {url} value={parsed.value} {event} />

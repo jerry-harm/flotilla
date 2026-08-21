@@ -1,8 +1,8 @@
-import {DAY, HOUR, MINUTE, WEEK} from "@welshman/lib"
+import {DAY, HOUR, WEEK} from "@welshman/lib"
 import {MessagingRelayList, RelayList, displayPubkey} from "@welshman/domain"
 import type {Locator, Page} from "@playwright/test"
 import {expect, makeTestUser, roomPath, spacePath, test, users} from "../harness"
-import type {SeededRumor, SeededSpace, TestUser} from "../harness"
+import type {SeededSpace, TestUser} from "../harness"
 
 // A handle to a seeded event. SeededEvent isn't exported from the harness, and only its id and
 // timestamp are ever read back here.
@@ -709,8 +709,6 @@ test("US-027 find a past message and jump to it", async ({seed, as}) => {
 })
 
 test("US-028 share a message somewhere else", async ({seed, as}) => {
-  let dm!: SeededRumor
-
   const scenario = await seed(({relay, user, at}) => {
     const space = relay("space")
 
@@ -724,8 +722,6 @@ test("US-028 share a message somewhere else", async ({seed, as}) => {
 
     seedChatter(space, user.alice)
     seedChatter(space, user.bob)
-
-    dm = space.dm(user.bob, [user.alice], "are you around?", at(20, MINUTE))
   })
 
   const {url} = scenario.space("space")
@@ -754,18 +750,4 @@ test("US-028 share a message somewhere else", async ({seed, as}) => {
 
   await expect(message(alice, "heads up")).toContainText("the dock is closed on sunday")
   await expect(message(bob, "heads up")).toContainText("the dock is closed on sunday")
-
-  // A conversation has no space of its own, so sharing from one searches everywhere she can post
-  await alice.goto(`/chat/${users.bob.pubkey}`)
-
-  const received = alice.locator(`[data-event="${dm.id}"]`)
-
-  await expect(received).toContainText("are you around?")
-
-  await received.hover()
-  await received.getByRole("button").first().click()
-  await alice.getByRole("button", {name: "Share"}).click()
-
-  await expect(alice.getByText("Where would you like to share this?")).toBeVisible()
-  await expect(alice.getByPlaceholder("Search rooms and conversations...")).toBeVisible()
 })

@@ -18,7 +18,7 @@
   import ModalFooter from "@lib/components/ModalFooter.svelte"
   import RelayItem from "@app/components/RelayItem.svelte"
   import {pushToast} from "@app/toast"
-  import {app} from "@app/core"
+  import {app, blockedRelayLists, user} from "@app/core"
 
   interface Props {
     relays: Readable<string[]>
@@ -56,6 +56,7 @@
 
   const loading = $state(new SvelteSet<string>())
   const relaySearch = $app.use(Relays).relaySearch
+  const blockedRelayUrls = $blockedRelayLists.urls($user.pubkey).$
 
   const searchResults = $derived(
     $relaySearch
@@ -64,6 +65,7 @@
         if (matchRelay?.(url) === false) return false
         if ($relays.includes(url)) return false
         if (isIPAddress(url)) return false
+        if ($blockedRelayUrls.includes(url)) return false
 
         return true
       })

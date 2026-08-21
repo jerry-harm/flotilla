@@ -406,14 +406,12 @@ Acceptance:
 
 ### US-028 — Share a message somewhere else
 
-As alice, I want to forward a message into another room or conversation, so that
-I can pass it along without retyping it.
+As alice, I want to forward a message into another room in the same space, so
+that I can pass it along without retyping it.
 
 Acceptance:
 
-- "Share" on a message inside a space opens a picker of that space's rooms; from
-  a context with no fixed space, it offers a search across all her rooms and
-  conversations.
+- "Share" on a message inside a space opens a picker of that space's rooms.
 - Choosing a destination navigates there with the composer pre-filled with a
   quote of the shared message.
 - Sending posts the quoted message in the destination, visible to bob there.

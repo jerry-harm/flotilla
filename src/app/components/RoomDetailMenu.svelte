@@ -1,7 +1,7 @@
 <script lang="ts">
   import {onMount} from "svelte"
   import {goto} from "$app/navigation"
-  import type {Command} from "@welshman/app"
+  import type {Maybe} from "@welshman/lib"
   import {MembershipStatus, publish} from "@welshman/app"
   import Pen from "@assets/icons/pen.svg?dataurl"
   import TrashBin2 from "@assets/icons/trash-bin-2.svg?dataurl"
@@ -13,6 +13,7 @@
   import Confirm from "@lib/components/Confirm.svelte"
   import RoomEdit from "@app/components/RoomEdit.svelte"
   import {app, roomLists, rooms} from "@app/core"
+  import {joinRoom, leaveRoom} from "@app/access"
   import {deriveUserIsRoomAdmin, deriveUserRoomMembershipStatus} from "@app/rooms"
   import {makeSpacePath} from "@app/routes"
   import {pushModal} from "@app/modal"
@@ -31,24 +32,21 @@
 
   const startEdit = () => pushModal(RoomEdit, {url, h})
 
-  const handleLoading = async (buildCommand: () => Promise<Command>) => {
+  const handleLoading = async (action: () => Promise<Maybe<string>>, successMessage: string) => {
     loading = true
 
     try {
-      const command = await buildCommand()
-      const message = await command.publish().waitForError()
+      const message = await action()
 
-      if (message && !message.startsWith("duplicate:")) {
-        pushToast({theme: "error", message})
-      }
+      pushToast(message ? {theme: "error", message} : {message: successMessage})
     } finally {
       loading = false
     }
   }
 
-  const join = () => handleLoading(() => $rooms.joinRoom(url, {h}))
+  const join = () => handleLoading(() => joinRoom(url, h), "You have joined the room.")
 
-  const leave = () => handleLoading(() => $rooms.leaveRoom(url, {h}))
+  const leave = () => handleLoading(() => leaveRoom(url, h), "You have left the room.")
 
   const startDelete = () =>
     pushModal(Confirm, {

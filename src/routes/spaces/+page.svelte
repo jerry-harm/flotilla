@@ -300,7 +300,7 @@
                 <p class="py-12 text-center">You haven't joined any spaces yet.</p>
               {/if}
               {#if otherSpaces.length > 0}
-                <Divider>{filteredUserUrls.length > 0 ? "More Spaces" : "Browse Spaces"}</Divider>
+                <Divider>Browse Spaces</Divider>
               {/if}
               {#each otherSpaces.slice(0, limit) as relay (relay.url)}
                 <Button class="card card-interactive" onclick={() => openSpace(relay.url)}>
