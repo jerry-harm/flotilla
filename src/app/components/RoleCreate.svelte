@@ -26,7 +26,7 @@
     try {
       const {error} = await $relayManagement
         .forUrl(url)
-        .createRole(randomId(), label, description, String(color), 1)
+        .createRole(randomId(), label, description, color, 1)
 
       if (error) {
         pushToast({theme: "error", message: error})

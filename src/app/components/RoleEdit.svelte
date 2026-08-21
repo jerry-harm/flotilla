@@ -34,7 +34,7 @@
     try {
       const {error} = await $relayManagement
         .forUrl(url)
-        .editRole(id, label, description, String(color), role.order())
+        .editRole(id, label, description, color, role.order())
 
       if (error) {
         pushToast({theme: "error", message: error})
