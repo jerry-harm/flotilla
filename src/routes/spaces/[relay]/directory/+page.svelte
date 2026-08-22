@@ -19,7 +19,8 @@
   import SpaceMembersBanned from "@app/components/SpaceMembersBanned.svelte"
   import {deriveUserIsSpaceAdmin} from "@app/management"
   import {deriveSpaceMemberRoles} from "@app/roles"
-  import {profiles, relayMemberLists, relayRoles} from "@app/core"
+  import {relayMemberLists, relayRoles} from "@app/core"
+  import {deriveDisplaysByPubkey} from "@app/social"
   import {decodeRelay} from "@app/relays"
   import {pushModal} from "@app/modal"
 
@@ -63,9 +64,17 @@
   // whose name matches the term even when their members don't.
   let term = $state("")
 
+  // Subscribed rather than read: a display is the member's npub until their profile loads, and a
+  // search that read it once would go on matching against npubs after the names arrived.
+  const displays = $derived(
+    deriveDisplaysByPubkey(
+      $memberList.map(m => m.pubkey),
+      url,
+    ),
+  )
+
   const matchesTerm = (pubkey: string, t: string) =>
-    $profiles.display(pubkey, [url]).get().toLowerCase().includes(t) ||
-    pubkey.toLowerCase().includes(t)
+    ($displays.get(pubkey) ?? "").toLowerCase().includes(t) || pubkey.toLowerCase().includes(t)
 
   // In-place search: match by member info or by the name of any role they hold.
   const visibleMembers = $derived.by(() => {

@@ -6,9 +6,8 @@
 
   const props: ComponentProps<typeof ContentMinimal> = $props()
 
-  const classified = reader(Classified)(props.event)
-
-  const title = classified.title()
+  const classified = $derived(reader(Classified)(props.event))
+  const title = $derived(classified.title())
 </script>
 
 {#if title}

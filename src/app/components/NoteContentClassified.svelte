@@ -8,11 +8,10 @@
 
   const props: ComponentProps<typeof Content> = $props()
 
-  const classified = reader(Classified)(props.event)
-
-  const title = classified.title()
-  const images = classified.images() ?? []
-  const price = classified.price()
+  const classified = $derived(reader(Classified)(props.event))
+  const title = $derived(classified.title())
+  const images = $derived(classified.images() ?? [])
+  const price = $derived(classified.price())
 </script>
 
 <div class="flex flex-col gap-2">

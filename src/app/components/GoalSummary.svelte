@@ -1,6 +1,6 @@
 <script lang="ts">
   import {derived} from "svelte/store"
-  import {now, DAY, uniq, sum} from "@welshman/lib"
+  import {now, DAY, removeUndefined, uniq, sum} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
   import {fromMsats, ZAP_RECEIPT} from "@welshman/util"
   import {ZapGoal} from "@welshman/domain"
@@ -24,7 +24,11 @@
 
   const zaps = derived<typeof receipts, Zap[]>(
     receipts,
-    ($receipts, set) => $app.use(Zappers).validZapReceipts($receipts, event).$.subscribe(set),
+    ($receipts, set) =>
+      $app
+        .use(Zappers)
+        .validZapReceipts($receipts, event, removeUndefined([url]))
+        .$.subscribe(set),
     [],
   )
 

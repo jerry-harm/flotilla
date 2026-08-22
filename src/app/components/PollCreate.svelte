@@ -90,9 +90,10 @@
     reorderOptions(targetId)
   }
 
-  const onDrop = (e: DragEvent, targetId: string) => {
+  // Dragover has already moved the option, so dropping only has to end the drag. Reordering again
+  // here would move it a second time, relative to the position it just took, undoing the move.
+  const onDrop = (e: DragEvent) => {
     e.preventDefault()
-    reorderOptions(targetId)
     draggedOptionId = undefined
   }
 
@@ -214,7 +215,7 @@
                 role="listitem"
                 ondragstart={e => onDragStart(e, option.id)}
                 ondragover={e => onDragOver(e, option.id)}
-                ondrop={e => onDrop(e, option.id)}
+                ondrop={onDrop}
                 ondragend={onDragEnd}>
                 <div class="cursor-move opacity-70" aria-label="Drag handle">
                   <Icon icon={HamburgerMenu} size={4} />

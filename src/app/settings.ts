@@ -1,5 +1,6 @@
+import type {Writable} from "svelte/store"
 import {derived, writable} from "svelte/store"
-import {append, remove, spec} from "@welshman/lib"
+import {append, equals, remove, spec} from "@welshman/lib"
 import {APP_DATA} from "@welshman/util"
 import {withGetter} from "@welshman/store"
 import {AppData} from "@welshman/domain"
@@ -69,6 +70,42 @@ export class Settings extends DerivedPlugin<AppDataReader> {
 export const settings = usePlugin(Settings)
 
 export const userSettingsValues = withGetter(fromApp($app => $app.use(Settings).values.$))
+
+// A settings form store that mirrors userSettingsValues until the user starts editing it. Settings
+// are read from an encrypted APP_DATA event, so a cold load of a settings page starts on defaults
+// and the real values only arrive once the event has been fetched and decrypted. The form adopts
+// them once they load — but only while it is still pristine, so edits already in progress aren't
+// stomped, and a save from a form that had reverted to defaults can't write those defaults back over
+// real settings. Bind to `$form.field` and reset with `form.set({...userSettingsValues.get()})`.
+export const createSettingsForm = (): Writable<SettingsValues> => {
+  let current = {...userSettingsValues.get()}
+  let baseline = userSettingsValues.get()
+
+  const store = writable(current, set =>
+    userSettingsValues.subscribe($settings => {
+      if ($settings !== baseline) {
+        if (equals(current, baseline)) {
+          current = {...$settings}
+          set(current)
+        }
+
+        baseline = $settings
+      }
+    }),
+  )
+
+  return {
+    subscribe: store.subscribe,
+    set(value) {
+      current = value
+      store.set(value)
+    },
+    update(fn) {
+      current = fn(current)
+      store.set(current)
+    },
+  }
+}
 
 export const zapAmounts = derived(userSettingsValues, $settings => $settings.zap_amounts)
 

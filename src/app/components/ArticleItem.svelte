@@ -17,11 +17,10 @@
 
   const {url, event}: Props = $props()
 
-  const article = reader(Article)(event)
-
-  const title = article.title()
-  const summary = article.summary()
-  const image = article.image()
+  const article = $derived(reader(Article)(event))
+  const title = $derived(article.title())
+  const summary = $derived(article.summary())
+  const image = $derived(article.image())
 </script>
 
 <div data-component="ArticleItem" class="cv relative w-full card card-interactive">

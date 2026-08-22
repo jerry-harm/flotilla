@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {removeUndefined} from "@welshman/lib"
   import {Zappers} from "@welshman/app"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
@@ -12,12 +13,13 @@
   import {app} from "@app/core"
 
   type Props = {
+    url?: string
     pubkey: string
   }
 
-  const {pubkey}: Props = $props()
+  const {url, pubkey}: Props = $props()
 
-  const zapper = $app.use(Zappers).forPubkey(pubkey).$
+  const zapper = $app.use(Zappers).forPubkey(pubkey, removeUndefined([url])).$
 
   const back = () => history.back()
 </script>

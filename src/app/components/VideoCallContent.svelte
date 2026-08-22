@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {spec} from "@welshman/lib"
+  import {removeUndefined, spec} from "@welshman/lib"
   import cx from "classnames"
   import {Track} from "livekit-client"
   import Pin from "@assets/icons/pin.svg?dataurl"
@@ -22,7 +22,7 @@
     computeAdaptiveGrid,
     type AdaptiveTileGrid,
   } from "@app/call"
-  import {profiles} from "@app/core"
+  import {deriveDisplaysByPubkey} from "@app/social"
 
   type Props = {
     layout: VideoCallLayout
@@ -169,16 +169,17 @@
     }
   })
 
-  $effect(() => {
-    for (const t of videoTiles) {
-      const pk = pubkeyFromLiveKitIdentity(t.liveKitIdentity)
-      if (pk) $profiles.load(pk, [url])
-    }
-  })
+  const displays = $derived(
+    deriveDisplaysByPubkey(
+      removeUndefined(videoTiles.map(t => pubkeyFromLiveKitIdentity(t.liveKitIdentity))),
+      url,
+    ),
+  )
 
   const labelFor = (liveKitIdentity: string, source: VideoTileData["source"]) => {
     const pk = pubkeyFromLiveKitIdentity(liveKitIdentity)
-    const name = pk ? $profiles.display(pk, [url]).get() : "Unknown"
+    const name = (pk && $displays.get(pk)) || "Unknown"
+
     return source === Track.Source.ScreenShare ? `${name} · screen` : name
   }
 

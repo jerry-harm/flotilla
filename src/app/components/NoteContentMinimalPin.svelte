@@ -6,7 +6,7 @@
 
   const props: ComponentProps<typeof ContentMinimal> = $props()
 
-  const loadPin = reader(Pin)(props.event)
+  const loadPin = $derived(reader(Pin)(props.event))
 </script>
 
 {#await loadPin then pin}

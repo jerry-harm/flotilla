@@ -6,10 +6,9 @@
 
   const props: ComponentProps<typeof Content> = $props()
 
-  const article = reader(Article)(props.event)
-
-  const title = article.title()
-  const image = article.image()
+  const article = $derived(reader(Article)(props.event))
+  const title = $derived(article.title())
+  const image = $derived(article.image())
 </script>
 
 <div class="flex flex-col gap-2">

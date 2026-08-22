@@ -11,10 +11,15 @@
   import {pushToast} from "@app/toast"
   import {PLATFORM_NAME} from "@app/env"
   import {sendLogs} from "@app/logger"
-  import {RelayAuthMode, userSettingsValues, publishSettings} from "@app/settings"
+  import {
+    RelayAuthMode,
+    userSettingsValues,
+    publishSettings,
+    createSettingsForm,
+  } from "@app/settings"
 
   const reset = () => {
-    settings = {...$userSettingsValues}
+    settings.set({...$userSettingsValues})
   }
 
   const send = async () => {
@@ -35,16 +40,16 @@
   }
 
   const onAuthModeChange = (checked: boolean) => {
-    settings.relay_auth = checked ? RelayAuthMode.Aggressive : RelayAuthMode.Conservative
+    $settings.relay_auth = checked ? RelayAuthMode.Aggressive : RelayAuthMode.Conservative
   }
 
   const onsubmit = preventDefault(async () => {
-    await publishSettings($state.snapshot(settings))
+    await publishSettings($settings)
 
     pushToast({message: "Your settings have been saved!"})
   })
 
-  let settings = $state({...$userSettingsValues})
+  const settings = createSettingsForm()
   let loading = $state(false)
 </script>
 
@@ -61,7 +66,7 @@
         {/snippet}
         {#snippet input()}
           <ToggleInput
-            checked={settings.relay_auth === RelayAuthMode.Aggressive}
+            checked={$settings.relay_auth === RelayAuthMode.Aggressive}
             onchange={onAuthModeChange} />
         {/snippet}
         {#snippet info()}
@@ -73,7 +78,7 @@
           <p>Report usage?</p>
         {/snippet}
         {#snippet input()}
-          <ToggleInput bind:checked={settings.report_usage} />
+          <ToggleInput bind:checked={$settings.report_usage} />
         {/snippet}
         {#snippet info()}
           <p>Allow {PLATFORM_NAME} to collect anonymous usage data.</p>

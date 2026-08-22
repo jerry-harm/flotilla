@@ -1,5 +1,5 @@
 import {derived} from "svelte/store"
-import {pushToMapKey, shuffle, sortBy, uniqBy} from "@welshman/lib"
+import {pushToMapKey, removeUndefined, shuffle, sortBy, uniqBy} from "@welshman/lib"
 import {
   COMMENT,
   addressTags,
@@ -16,6 +16,16 @@ import {getCommentTagValues, getReplyTagValues} from "@welshman/domain"
 import {FollowLists, MuteLists} from "@welshman/app"
 import {deriveUserItem, profiles, user} from "@app/core"
 import {DEFAULT_PUBKEYS} from "@app/env"
+
+// The display names for a group of people, as a store rather than a snapshot. A display starts
+// out as the author's npub and only becomes their name once the profile loads, so reading it once
+// leaves a name frozen as bech32 — and reading it that way never asks for the profile at all.
+export const deriveDisplaysByPubkey = (pubkeys: string[], url?: string) =>
+  derived(
+    pubkeys.map(pubkey => profiles.get().display(pubkey, removeUndefined([url])).$),
+    displays => new Map(pubkeys.map((pubkey, i) => [pubkey, displays[i]])),
+    new Map<string, string>(),
+  )
 
 export const bootstrapPubkeys = derived(deriveUserItem(FollowLists), $userFollowList => {
   const appPubkeys = DEFAULT_PUBKEYS.split(",")

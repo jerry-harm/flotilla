@@ -6,7 +6,7 @@
 
   const props: ComponentProps<typeof ContentMinimal> = $props()
 
-  const board = reader(Pinboard)(props.event)
+  const board = $derived(reader(Pinboard)(props.event))
 </script>
 
 <span class="text-sm">{board?.title() || "Untitled shelf"}</span>

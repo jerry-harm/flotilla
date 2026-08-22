@@ -23,7 +23,7 @@
   import WalletUpdateReceivingAddress from "@app/components/WalletUpdateReceivingAddress.svelte"
   import {pushModal} from "@app/modal"
   import {getNwcClient, getWebLn, wallet} from "@app/lightning"
-  import {userSettingsValues, publishSettings} from "@app/settings"
+  import {userSettingsValues, publishSettings, createSettingsForm} from "@app/settings"
   import {pushToast} from "@app/toast"
   import {profiles, user} from "@app/core"
 
@@ -85,16 +85,16 @@
   })
 
   const resetZapAmounts = () => {
-    zapAmountDraft = [...$userSettingsValues.zap_amounts]
+    $settings.zap_amounts = [...$userSettingsValues.zap_amounts]
   }
 
   const addZapAmount = () => {
-    zapAmountDraft = [...zapAmountDraft, zapAmountDraft.at(-1) || 21]
+    $settings.zap_amounts = [...$settings.zap_amounts, $settings.zap_amounts.at(-1) || 21]
   }
 
   const removeZapAmount = (index: number) => {
-    if (zapAmountDraft.length > 1) {
-      zapAmountDraft = removeAt(index, zapAmountDraft)
+    if ($settings.zap_amounts.length > 1) {
+      $settings.zap_amounts = removeAt(index, $settings.zap_amounts)
     }
   }
 
@@ -102,28 +102,28 @@
     const target = e.currentTarget as HTMLInputElement
     const index = Number(target.dataset.index)
 
-    zapAmountDraft = replaceAt(index, Number(target.value), zapAmountDraft)
+    $settings.zap_amounts = replaceAt(index, Number(target.value), $settings.zap_amounts)
   }
 
   const onZapAmountsSubmit = preventDefault(async () => {
     zapAmountsLoading = true
 
     try {
-      if (zapAmountDraft.length === 0) {
+      if ($settings.zap_amounts.length === 0) {
         return pushToast({
           theme: "error",
           message: "Add at least one zap amount.",
         })
       }
 
-      if (zapAmountDraft.some(amount => amount <= 0)) {
+      if ($settings.zap_amounts.some(amount => amount <= 0)) {
         return pushToast({
           theme: "error",
           message: "Zap amounts must be greater than zero.",
         })
       }
 
-      await publishSettings({zap_amounts: zapAmountDraft})
+      await publishSettings({zap_amounts: $settings.zap_amounts})
 
       pushToast({message: "Your zap amounts have been saved!"})
     } finally {
@@ -131,7 +131,7 @@
     }
   })
 
-  let zapAmountDraft = $state([...$userSettingsValues.zap_amounts])
+  const settings = createSettingsForm()
   let zapAmountsLoading = $state(false)
 </script>
 
@@ -270,13 +270,13 @@
     <p class="text-sm opacity-75">Preset amounts shown when sending a zap.</p>
     <div class="flex flex-col gap-2">
       <!-- eslint-disable-next-line svelte/require-each-key -->
-      {#each zapAmountDraft as amount, index}
+      {#each $settings.zap_amounts as amount, index}
         <div class="flex items-center gap-2">
           <Button
             class="button button-ghost button-sm"
             type="button"
             onclick={() => removeZapAmount(index)}
-            disabled={zapAmountDraft.length === 1}>
+            disabled={$settings.zap_amounts.length === 1}>
             <Icon icon={TrashBin2} />
           </Button>
           <label class="input flex grow items-center gap-2">

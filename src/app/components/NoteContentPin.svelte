@@ -9,7 +9,7 @@
 
   const props: ComponentProps<typeof Content> = $props()
 
-  const loadPin = reader(Pin)(props.event)
+  const loadPin = $derived(reader(Pin)(props.event))
 </script>
 
 {#await loadPin then pin}

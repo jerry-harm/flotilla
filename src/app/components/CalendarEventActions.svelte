@@ -25,8 +25,8 @@
 
   const {url, event, showRoom, showActivity}: Props = $props()
 
-  const h = tagValue(tagSpec("h"), event.tags)
-  const path = makeCalendarPath(url, getAddress(event))
+  const h = $derived(tagValue(tagSpec("h"), event.tags))
+  const path = $derived(makeCalendarPath(url, getAddress(event)))
 
   const editEvent = () => pushModal(CalendarEventEdit, {url, event})
 

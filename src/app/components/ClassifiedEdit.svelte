@@ -14,7 +14,7 @@
 
   const {url, event}: Props = $props()
 
-  const classified = reader(Classified)(event)
+  const classified = $derived(reader(Classified)(event))
 
   const initialValues = $derived(
     classified && {

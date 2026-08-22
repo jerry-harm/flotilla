@@ -14,7 +14,7 @@
 
   const {url, event}: Props = $props()
 
-  const timeEvent = reader(TimeEvent)(event)
+  const timeEvent = $derived(reader(TimeEvent)(event))
 
   const initialValues = $derived(
     timeEvent && {

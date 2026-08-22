@@ -119,6 +119,28 @@ export const makeEditor = async ({
                 uploading?.set(false)
               },
             },
+            extend: {
+              // The picker, a drop and a paste all reach the uploader through addFile, which
+              // refuses a type that isn't allowed above by returning false and saying nothing.
+              // Say it, or choosing the wrong file looks like the app simply ignored the click.
+              onCreate() {
+                const {uploader} = this.storage
+                const addFile = uploader.addFile.bind(uploader)
+
+                uploader.addFile = (file: File, pos: number) => {
+                  const added = addFile(file, pos)
+
+                  if (!added) {
+                    pushToast({
+                      theme: "error",
+                      message: `${file.name} is not a type you can attach.`,
+                    })
+                  }
+
+                  return added
+                }
+              },
+            },
           },
           nprofile: {
             extend: {

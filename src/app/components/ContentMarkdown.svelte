@@ -56,10 +56,10 @@
   import {marked} from "marked"
   import * as nip19 from "nostr-tools/nip19"
   import {goto} from "$app/navigation"
-  import {removeUndefined} from "@welshman/lib"
+  import {removeUndefined, tryCatch} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
   import {fromNostrURI} from "@welshman/util"
-  import {profiles} from "@app/core"
+  import {deriveDisplaysByPubkey} from "@app/social"
 
   type Props = {
     event: TrustedEvent
@@ -75,28 +75,35 @@
   // raw html. Escaping also means a name renders as written rather than as markdown.
   const escapeMarkdown = (text: string) => text.replace(/[\\[\]<`*_]/g, "\\$&")
 
+  const pubkeyFromEntity = (entity: string) => {
+    const {type, data} = nip19.decode(entity)
+
+    if (type === "npub") return data
+    if (type === "nprofile") return data.pubkey
+  }
+
+  // Everyone the content mentions, so their names are asked for and awaited rather than read
+  // once: a display is bech32 until the profile arrives, and nothing would parse it again.
+  const mentionedPubkeys = $derived(
+    removeUndefined(
+      Array.from(event.content.matchAll(entityPattern)).map(([match]) =>
+        tryCatch(() => pubkeyFromEntity(fromNostrURI(match))),
+      ),
+    ),
+  )
+
+  const displays = $derived(deriveDisplaysByPubkey(mentionedPubkeys, url))
+
   // Bech32 entities aren't markdown, so swap them for links before parsing. Profiles get their
   // display name, so an article reads as prose rather than a wall of bech32.
   const linkEntities = (markdown: string) =>
     markdown.replace(entityPattern, match => {
       const entity = fromNostrURI(match)
-      const hints = removeUndefined([url])
+      const pubkey = tryCatch(() => pubkeyFromEntity(entity))
+      const name = pubkey ? $displays.get(pubkey) : undefined
 
-      let display = entity.slice(0, 16) + "…"
-
-      try {
-        const {type, data} = nip19.decode(entity)
-
-        if (type === "npub") {
-          display = "@" + $profiles.display(data, hints).get()
-        }
-
-        if (type === "nprofile") {
-          display = "@" + $profiles.display(data.pubkey, hints).get()
-        }
-      } catch {
-        // An entity we can't decode still reads better truncated than as raw bech32
-      }
+      // An entity with no name to show still reads better truncated than as raw bech32
+      const display = name ? "@" + name : entity.slice(0, 16) + "…"
 
       return `[${escapeMarkdown(display)}](/${entity})`
     })

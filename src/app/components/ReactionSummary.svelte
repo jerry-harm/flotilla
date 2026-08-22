@@ -40,9 +40,10 @@
   import ProfileList from "@app/components/ProfileList.svelte"
   import ZapModal from "@app/components/Zap.svelte"
   import {REACTION_KINDS} from "@app/content"
-  import {app, network, profiles, router, user} from "@app/core"
+  import {app, network, router, user} from "@app/core"
   import {deriveUserIsSpaceAdmin} from "@app/management"
   import {pushModal} from "@app/modal"
+  import {deriveDisplaysByPubkey} from "@app/social"
 
   interface Props {
     event: TrustedEvent
@@ -80,12 +81,18 @@
     ($receipts, set) =>
       derived(
         removeUndefined([event, innerEvent]).map(
-          parent => $app.use(Zappers).validZapReceipts($receipts, parent).$,
+          parent => $app.use(Zappers).validZapReceipts($receipts, parent, removeUndefined([url])).$,
         ),
         (zapsByParent: Zap[][]) => uniqBy(zap => zap.response.id, zapsByParent.flat()),
       ).subscribe(set),
     [],
   )
+
+  const reactorPubkeys = $derived(
+    uniq([...$reactions.map(e => e.pubkey), ...$zaps.map(zap => zap.request.pubkey)]),
+  )
+
+  const displays = $derived(deriveDisplaysByPubkey(reactorPubkeys, url))
 
   const toggleReaction = (events: TrustedEvent[]) => {
     const reaction = events.find(spec({pubkey: $user.pubkey}))
@@ -196,9 +203,7 @@
       {@const amount = fromMsats(sum(zaps.map(zap => zap.invoiceAmount)))}
       {@const pubkeys = uniq(zaps.map(zap => zap.request.pubkey))}
       {@const isOwn = pubkeys.includes($user.pubkey)}
-      {@const info = displayList(
-        pubkeys.map(pubkey => $profiles.display(pubkey, removeUndefined([url])).get()),
-      )}
+      {@const info = displayList(pubkeys.map(pubkey => $displays.get(pubkey) ?? ""))}
       {@const tooltip = `${info} zapped`}
       {@const onZapClickHandler = () => onZapClick(pubkeys, tooltip)}
       <Button
@@ -220,9 +225,7 @@
     {#each groupedReactions.entries() as [key, events] (key)}
       {@const pubkeys = events.map(e => e.pubkey)}
       {@const isOwn = pubkeys.includes($user.pubkey)}
-      {@const info = displayList(
-        pubkeys.map(pubkey => $profiles.display(pubkey, removeUndefined([url])).get()),
-      )}
+      {@const info = displayList(pubkeys.map(pubkey => $displays.get(pubkey) ?? ""))}
       {@const tooltip = `${info} reacted`}
       {@const onClick = () => onReactionClick(events, pubkeys, info)}
       <Button

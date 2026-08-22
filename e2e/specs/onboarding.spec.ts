@@ -25,6 +25,11 @@ const logInWithKey = async (page: Page, key: string) => {
 const openSettings = (page: Page) =>
   page.locator('.primary-nav a[href="/settings/profile"]').click()
 
+// The profile page's Public Key field. A nip01 login also renders a masked Private Key input right
+// below it, so `getByRole("textbox")` on this page is two elements — the npub is the readonly one
+// that isn't a password.
+const npubField = (page: Page) => page.locator('input[readonly]:not([type="password"])')
+
 test("US-001 sign-in gate for logged-out visitors", async ({seed, visit}) => {
   const scenario = await seed(({relay}) => {
     relay("space").room("general", {name: "General"})
@@ -151,14 +156,14 @@ test("US-003 log in with an existing private key", async ({seed, visit}) => {
   await logInWithKey(withNsec, nsecFor(users.alice))
   await expect(withNsec.locator(".primary-nav")).toBeVisible()
   await openSettings(withNsec)
-  await expect(withNsec.getByRole("textbox")).toHaveValue(aliceNpub)
+  await expect(npubField(withNsec)).toHaveValue(aliceNpub)
 
   const withHex = await visit()
 
   await logInWithKey(withHex, users.alice.secret)
   await expect(withHex.locator(".primary-nav")).toBeVisible()
   await openSettings(withHex)
-  await expect(withHex.getByRole("textbox")).toHaveValue(aliceNpub)
+  await expect(npubField(withHex)).toHaveValue(aliceNpub)
 
   const withNcryptsec = await visit()
 
@@ -186,7 +191,7 @@ test("US-003 log in with an existing private key", async ({seed, visit}) => {
 
   await expect(withNcryptsec.locator(".primary-nav")).toBeVisible()
   await openSettings(withNcryptsec)
-  await expect(withNcryptsec.getByRole("textbox")).toHaveValue(aliceNpub)
+  await expect(npubField(withNcryptsec)).toHaveValue(aliceNpub)
 
   // A second browser context with its own storage: bob's session is his own, not a second view
   // of alice's.
@@ -194,7 +199,7 @@ test("US-003 log in with an existing private key", async ({seed, visit}) => {
 
   await logInWithKey(asBob, nsecFor(users.bob))
   await openSettings(asBob)
-  await expect(asBob.getByRole("textbox")).toHaveValue(npubEncode(users.bob.pubkey))
+  await expect(npubField(asBob)).toHaveValue(npubEncode(users.bob.pubkey))
 })
 
 test("US-004 log in with a browser extension", async ({seed, visit}) => {
@@ -279,13 +284,13 @@ test("US-006 stay logged in, and log out deliberately", async ({seed, visit}) =>
 
   await openSettings(page)
 
-  await expect(page.getByRole("textbox")).toHaveValue(npub)
+  await expect(npubField(page)).toHaveValue(npub)
 
   await page.reload()
 
   await expect(page.locator(".primary-nav")).toBeVisible()
   await expect(gate(page)).toHaveCount(0)
-  await expect(page.getByRole("textbox")).toHaveValue(npub)
+  await expect(npubField(page)).toHaveValue(npub)
 
   await page.locator(".secondary-nav").getByRole("button", {name: "Log Out"}).click()
 
@@ -295,7 +300,7 @@ test("US-006 stay logged in, and log out deliberately", async ({seed, visit}) =>
   await page.getByRole("button", {name: "Go back"}).click()
 
   await expect(page.locator(".primary-nav")).toBeVisible()
-  await expect(page.getByRole("textbox")).toHaveValue(npub)
+  await expect(npubField(page)).toHaveValue(npub)
 
   await page.locator(".secondary-nav").getByRole("button", {name: "Log Out"}).click()
   await page.locator("form").getByRole("button", {name: "Log Out"}).click()
@@ -318,7 +323,7 @@ test("US-007 inspect your keys and signer status", async ({seed, as, visit}) => 
 
   const readClipboard = () => page.evaluate(() => navigator.clipboard.readText())
 
-  const npubInput = page.getByRole("textbox")
+  const npubInput = npubField(page)
 
   await expect(npubInput).toHaveValue(npub)
   await expect(npubInput).toHaveJSProperty("readOnly", true)
@@ -409,5 +414,12 @@ test("US-008 delete your nostr account", async ({seed, as, visit}) => {
 
   const bob = await as(users.bob, `/people/${npubEncode(users.alice.pubkey)}`)
 
-  await expect(bob.getByRole("heading", {name: "[deleted]"})).toBeVisible()
+  // zooid honours the kind-62 right-to-vanish, so alice's profile — including the "[deleted]" name
+  // the app blanks it to first — is gone rather than renamed. Bob sees the npub fallback the app
+  // shows for anyone with no profile: displayPubkey, which is npub.slice(0,8)+"…"+npub.slice(-5).
+  const aliceNpub = npubEncode(users.alice.pubkey)
+  const fallback = aliceNpub.slice(0, 8) + "…" + aliceNpub.slice(-5)
+
+  await expect(bob.getByRole("heading", {name: fallback})).toBeVisible()
+  await expect(bob.getByText("No notes found for this profile.")).toBeVisible()
 })

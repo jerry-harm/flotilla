@@ -1,7 +1,7 @@
 <script lang="ts">
   import type {ComponentProps} from "svelte"
   import {derived} from "svelte/store"
-  import {sum} from "@welshman/lib"
+  import {removeUndefined, sum} from "@welshman/lib"
   import {ZAP_RECEIPT, fromMsats} from "@welshman/util"
   import {ZapGoal} from "@welshman/domain"
   import type {Zap} from "@welshman/domain"
@@ -23,7 +23,11 @@
 
   const zaps = derived<typeof receipts, Zap[]>(
     receipts,
-    ($receipts, set) => $app.use(Zappers).validZapReceipts($receipts, props.event).$.subscribe(set),
+    ($receipts, set) =>
+      $app
+        .use(Zappers)
+        .validZapReceipts($receipts, props.event, removeUndefined([props.url]))
+        .$.subscribe(set),
     [],
   )
 

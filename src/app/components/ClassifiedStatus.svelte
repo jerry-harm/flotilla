@@ -11,9 +11,7 @@
 
   const {event}: Props = $props()
 
-  const classified = reader(Classified)(event)
-
-  const status = classified.status()
+  const status = $derived(reader(Classified)(event).status())
 </script>
 
 {#if status}

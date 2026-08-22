@@ -6,13 +6,14 @@ import {Zooid, describeDockerProblem} from "./zooid/relay"
 import {
   installHttpRoutes,
   mockAnalytics,
+  mockBlossom,
   mockDufflepud,
   mockHosting,
   mockImages,
   mockPushServer,
   mockRelayInfo,
 } from "./net/http"
-import type {HostingFixtures, RelayInfoOverrides} from "./net/http"
+import type {BlossomOptions, HostingFixtures, RelayInfoOverrides} from "./net/http"
 import {assertNoLeaks, installWebSocketRoutes} from "./net/websocket"
 import {boot} from "./app/boot"
 import {injectNip07} from "./app/nip07"
@@ -61,6 +62,11 @@ export type PageOptions = {
   env?: Record<string, string>
   // A NIP-07 provider signing as this user, for a login that goes through an extension.
   nip07?: TestUser
+  // A blossom server, installed before the page boots. A spec whose server is one the app probes
+  // on load — a space's own url, which src/app/sync.ts asks about as soon as its page opens —
+  // has to name it here: mockBlossom called on the page `as()` returns arrives after that probe
+  // has already been answered and cached, and uploads go to the default server instead.
+  blossom?: BlossomOptions
   // Fields merged over a relay's own nip-11 document, keyed by relay url.
   relayInfo?: RelayInfoOverrides
   // What the hosting backend already knows about this user. Read `getHosting(page.context())` for
@@ -172,6 +178,10 @@ export const test = base.extend<HarnessFixtures, HarnessWorkerFixtures>({
       await mockHosting(context, options.hosting)
       await mockPushServer(context)
       await mockImages(context)
+
+      if (options.blossom) {
+        await mockBlossom(context, options.blossom)
+      }
 
       if (options.nip07) {
         await injectNip07(context, options.nip07)

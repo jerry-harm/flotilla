@@ -22,11 +22,10 @@
 
   const {url, event, showRoom, showActivity}: Props = $props()
 
-  const article = reader(Article)(event)
-
-  const h = article.room()
-  const topics = article.topics()
-  const path = makeArticlePath(url, getAddress(event))
+  const article = $derived(reader(Article)(event))
+  const h = $derived(article.room())
+  const topics = $derived(article.topics())
+  const path = $derived(makeArticlePath(url, getAddress(event)))
 
   const deleteReaction = (reaction: TrustedEvent) => retractReaction(reaction, {url, h})
 

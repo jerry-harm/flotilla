@@ -5,6 +5,7 @@
     hash,
     gte,
     now,
+    uniq,
     displayList,
     formatTimestampAsTime,
     formatTimestampAsDate,
@@ -28,6 +29,7 @@
   import Button from "@lib/components/Button.svelte"
   import ThunkFailure from "@app/components/ThunkFailure.svelte"
   import {publishReaction, retractReaction} from "@app/reactions"
+  import {deriveDisplaysByPubkey} from "@app/social"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
@@ -71,6 +73,10 @@
 
   const path = $derived(
     $innerEvent && makeContentPath(url, $innerEvent.kind, getIdOrAddress($innerEvent)),
+  )
+
+  const commenterDisplays = $derived(
+    deriveDisplaysByPubkey(uniq($innerComments.map(e => e.pubkey)), url),
   )
 
   const reply = () => replyTo!(event)
@@ -140,7 +146,7 @@
     {#if path && $innerComments.length > 0}
       {@const pubkeys = $innerComments.map(e => e.pubkey)}
       {@const isOwn = pubkeys.includes($user.pubkey)}
-      {@const info = displayList(pubkeys.map(pk => $profiles.display(pk, [url]).get()))}
+      {@const info = displayList(pubkeys.map(pubkey => $commenterDisplays.get(pubkey) ?? ""))}
       {@const tooltip = `${info} commented`}
       <div data-tip={tooltip} class="tip tip-right flex">
         <Link

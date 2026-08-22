@@ -15,13 +15,13 @@
   import {blossomServerLists, deriveUserItem, muteLists} from "@app/core"
   import {pushToast} from "@app/toast"
   import {PLATFORM_NAME} from "@app/env"
-  import {userSettingsValues, publishSettings} from "@app/settings"
+  import {userSettingsValues, publishSettings, createSettingsForm} from "@app/settings"
 
   const userMuteList = deriveUserItem(MuteLists)
   const userBlossomServerList = deriveUserItem(BlossomServerLists)
 
   const reset = () => {
-    settings = {...$userSettingsValues}
+    settings.set({...$userSettingsValues})
     mutedPubkeys = $userMuteList?.pubkeys() ?? []
     blossomServers = $userBlossomServerList?.urls() ?? []
   }
@@ -31,7 +31,7 @@
   }
 
   const onsubmit = preventDefault(async () => {
-    await publishSettings($state.snapshot(settings))
+    await publishSettings($settings)
 
     await $muteLists.setMutes({publicTags: mutedPubkeys.map(pubkey => ["p", pubkey])}).then(publish)
 
@@ -40,7 +40,7 @@
     pushToast({message: "Your settings have been saved!"})
   })
 
-  let settings = $state({...$userSettingsValues})
+  const settings = createSettingsForm()
   let mutedPubkeys = $state($userMuteList?.pubkeys() ?? [])
   let blossomServers = $state($userBlossomServerList?.urls() ?? [])
 </script>
@@ -57,7 +57,7 @@
           <p>Hide sensitive content?</p>
         {/snippet}
         {#snippet input()}
-          <ToggleInput bind:checked={settings.hide_sensitive} />
+          <ToggleInput bind:checked={$settings.hide_sensitive} />
         {/snippet}
         {#snippet info()}
           <p>
@@ -70,7 +70,7 @@
           <p>Show media?</p>
         {/snippet}
         {#snippet input()}
-          <ToggleInput bind:checked={settings.show_media} />
+          <ToggleInput bind:checked={$settings.show_media} />
         {/snippet}
         {#snippet info()}
           <p>Use this to disable link previews and image rendering.</p>
@@ -100,12 +100,12 @@
             min="0"
             max="10000"
             step="1000"
-            bind:value={settings.send_delay} />
+            bind:value={$settings.send_delay} />
         {/snippet}
         {#snippet info()}
           <p>
-            Delay sending chat messages for {settings.send_delay / 1000}
-            {settings.send_delay === 1000 ? "second" : "seconds"}.
+            Delay sending chat messages for {$settings.send_delay / 1000}
+            {$settings.send_delay === 1000 ? "second" : "seconds"}.
           </p>
         {/snippet}
       </Field>

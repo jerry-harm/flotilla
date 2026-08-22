@@ -29,11 +29,12 @@
 
   const {url, event, showRoom, showActivity}: Props = $props()
 
-  const classified = reader(Classified)(event)
-
-  const h = classified.room()
-  const topics = classified.topics() ?? []
-  const path = makeClassifiedPath(url, getAddress(event))
+  // Editing a listing hands this a new version of the event, so every value read off it has to be
+  // recomputed rather than captured when the component was created.
+  const classified = $derived(reader(Classified)(event))
+  const h = $derived(classified.room())
+  const topics = $derived(classified.topics() ?? [])
+  const path = $derived(makeClassifiedPath(url, getAddress(event)))
 
   const editClassified = () => pushModal(ClassifiedEdit, {url, event})
 

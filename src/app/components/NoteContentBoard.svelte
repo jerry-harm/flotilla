@@ -6,7 +6,7 @@
 
   const props: ComponentProps<typeof Content> = $props()
 
-  const board = reader(Pinboard)(props.event)
+  const board = $derived(reader(Pinboard)(props.event))
 </script>
 
 <div class="flex flex-col">

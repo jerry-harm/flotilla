@@ -78,16 +78,16 @@
     "@types/throttle-debounce": "^5.0.2",
     "@vite-pwa/assets-generator": "^1.0.2",
     "@vite-pwa/sveltekit": "^1.1.0",
-    "@welshman/app": "^0.9.4",
-    "@welshman/content": "^0.9.4",
-    "@welshman/domain": "^0.9.4",
-    "@welshman/editor": "^0.9.4",
-    "@welshman/feeds": "^0.9.4",
-    "@welshman/lib": "^0.9.4",
-    "@welshman/net": "^0.9.4",
-    "@welshman/signer": "^0.9.4",
-    "@welshman/store": "^0.9.4",
-    "@welshman/util": "^0.9.4",
+    "@welshman/app": "^0.9.5",
+    "@welshman/content": "^0.9.5",
+    "@welshman/domain": "^0.9.5",
+    "@welshman/editor": "^0.9.5",
+    "@welshman/feeds": "^0.9.5",
+    "@welshman/lib": "^0.9.5",
+    "@welshman/net": "^0.9.5",
+    "@welshman/signer": "^0.9.5",
+    "@welshman/store": "^0.9.5",
+    "@welshman/util": "^0.9.5",
     "cheerio": "^1.2.0",
     "compressorjs-next": "^1.1.2",
     "dompurify": "^3.4.13",
@@ -112,5 +112,5 @@
     "throttle-debounce": "^5.0.2",
     "tippy.js": "^6.3.7"
   },
-  "packageManager": "pnpm@11.20.0"
+  "packageManager": "pnpm@11.22.0"
 }

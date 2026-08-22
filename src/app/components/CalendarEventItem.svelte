@@ -15,7 +15,7 @@
 
   const {url, event}: Props = $props()
 
-  const h = tagValue(tagSpec("h"), event.tags)
+  const h = $derived(tagValue(tagSpec("h"), event.tags))
 </script>
 
 <Link

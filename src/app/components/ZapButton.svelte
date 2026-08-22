@@ -1,5 +1,6 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
+  import {removeUndefined} from "@welshman/lib"
   import {ZAP_GOAL} from "@welshman/util"
   import type {TrustedEvent} from "@welshman/util"
   import {ZapGoal} from "@welshman/domain"
@@ -24,7 +25,7 @@
 
   const goal = event.kind === ZAP_GOAL ? reader(ZapGoal)(event) : undefined
 
-  const zapperPromise = $app.use(Zappers).loadForPubkey(event.pubkey)
+  const zapperPromise = $app.use(Zappers).loadForPubkey(event.pubkey, removeUndefined([url]))
 
   const goalRelays = goal?.urls() ?? []
 

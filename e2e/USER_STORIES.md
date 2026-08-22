@@ -792,8 +792,8 @@ Acceptance:
 
 - Typing "@" plus a few letters opens a dropdown of matching profiles, ranking
   room and space members first, and narrowing as she types.
-- Selecting bob inserts a mention that renders his name and avatar in the
-  composer and in the sent message.
+- Selecting bob inserts a mention that renders his name in the composer and in
+  the sent message.
 - Typing "~" opens a list of rooms; selecting one inserts a reference that
   renders as a clickable link once sent.
 

@@ -17,7 +17,6 @@ import {
   expect,
   getTranscript,
   makeTestUser,
-  mockBlossom,
   mockDufflepud,
   roomPath,
   spacePath,
@@ -274,11 +273,15 @@ test("US-047 manage your own calendar event", async ({seed, as}) => {
 
   await menuOf(eventCard).click()
   await page.getByRole("button", {name: "Delete Event"}).click()
-  await page.getByRole("button", {name: "Confirm"}).click()
 
-  // The detail page keeps a deleted event on screen and marks it, so this is what says the
-  // retraction landed before the calendar is asked for the list again.
+  const confirmDelete = page.getByRole("button", {name: "Confirm"})
+
+  await confirmDelete.click()
+
+  // The badge is an optimistic local write, so it says nothing about the relay. The confirmation
+  // stays up until the retraction has been published, which is what makes it safe to reload.
   await expect(eventCard.getByText("Deleted", {exact: true})).toBeVisible()
+  await expect(confirmDelete).toHaveCount(0)
 
   await page.goto(calendarPath)
 
@@ -673,9 +676,9 @@ test("US-051 post, edit, and close out a classified listing", async ({seed, as})
 
   const {url} = scenario.space("space")
   const classifiedsPath = `${spacePath(url)}/classifieds`
-  const page = await as(users.alice, classifiedsPath)
-
-  await mockBlossom(page.context(), {server: url.replace(/^wss:/, "https:")})
+  const page = await as(users.alice, classifiedsPath, {
+    blossom: {server: url.replace(/^wss:/, "https:")},
+  })
 
   await page.getByRole("button", {name: "Create", exact: true}).click()
 
@@ -701,7 +704,7 @@ test("US-051 post, edit, and close out a classified listing", async ({seed, as})
 
   await currency.click()
   await currency.locator("input").fill("USD")
-  await page.getByRole("button", {name: "USD", exact: true}).click()
+  await page.locator('.tiptap-suggestions__item[aria-label="USD"]').click()
   await expect(currency).toHaveText("USD (United States Dollar)")
 
   await price.fill("1200")
@@ -751,6 +754,7 @@ test("US-051 post, edit, and close out a classified listing", async ({seed, as})
   await editor.getByRole("button", {name: "Save Listing"}).click()
 
   await expect(page.getByRole("heading", {name: "Edit this Listing"})).toHaveCount(0)
+
   await expect(detail.getByText("Sold", {exact: true})).toBeVisible()
 
   await page.goto(classifiedsPath)

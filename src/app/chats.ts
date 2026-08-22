@@ -6,6 +6,7 @@ import type {TrustedEvent} from "@welshman/util"
 import type {RepositoryUpdate} from "@welshman/net"
 import {makeDeriveItem, throttled} from "@welshman/store"
 import {createSearch} from "@welshman/app"
+import type {App} from "@welshman/app"
 import {app, profiles, user} from "@app/core"
 import {DM_KINDS} from "@app/content"
 
@@ -114,19 +115,35 @@ export const chatsById = call(() => {
       }
     }
 
-    addEvents(app.get().repository.query([{kinds: [...DM_KINDS, DELETE, PROFILE]}]))
+    // Login swaps the whole app — a new identity gets a new repository — so a listener bound to
+    // `app.get().repository` once at start would keep reading the discarded one after login (see the
+    // note on `fromApp` in core.ts). Re-bind through the `app` store instead: on each app, rebuild
+    // the list from that repository and listen to it, tearing down the previous binding first.
+    let repoUnsubscribe: (() => void) | undefined
 
-    const unsubscribers = [
-      on(app.get().repository, "update", ({added, removed}: RepositoryUpdate) => {
+    const bindRepository = ($app: App) => {
+      repoUnsubscribe?.()
+
+      chatsById.clear()
+      chatsByPubkey.clear()
+      addEvents($app.repository.query([{kinds: [...DM_KINDS, DELETE, PROFILE]}]))
+      set(chatsById)
+
+      repoUnsubscribe = on($app.repository, "update", ({added, removed}: RepositoryUpdate) => {
         // Do this async so that profiles are populated
         setTimeout(() => {
           addEvents(added)
           removeEvents(removed)
         }, 200)
-      }),
-    ]
+      })
+    }
 
-    return () => unsubscribers.forEach(call)
+    const unsubscribeApp = app.subscribe(bindRepository)
+
+    return () => {
+      repoUnsubscribe?.()
+      unsubscribeApp()
+    }
   })
 })
 

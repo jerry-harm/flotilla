@@ -61,32 +61,29 @@
 
   let previousScrollHeight = 0
   let prevFirstEventId = ""
-  let initialScrollDone = false
+  let centeredEventId = ""
 
   $effect(() => {
     if (items.length === 0) {
       return
     }
 
-    if (initialScrollDone) {
-      // If new events are prepended, adjust the scroll position so that the viewport content remains anchored
-      if (prevFirstEventId && items[0].event.id !== prevFirstEventId) {
-        const newScrollHeight = element!.scrollHeight
-        const delta = newScrollHeight - previousScrollHeight
+    const {event} = items.find(({event}) => getStart(event) >= now()) || last(items)
+    const card = document.querySelector(".calendar-event-" + event.id)
 
-        if (delta > 0) {
-          element!.scrollTop += delta
-        }
+    // The feed arrives in batches, so the first one may hold nothing that hasn't happened yet.
+    // Centering again each time a nearer event turns up settles on the right one — and it stops
+    // once they have all arrived, because loading further out never changes which is next.
+    if (event.id !== centeredEventId && card instanceof HTMLElement) {
+      element!.scrollTop = card.offsetTop - element!.clientHeight / 2 + card.clientHeight / 2
+      centeredEventId = event.id
+    } else if (prevFirstEventId && items[0].event.id !== prevFirstEventId) {
+      // Older events prepended above the viewport would otherwise carry its contents down with them
+      const delta = element!.scrollHeight - previousScrollHeight
+
+      if (delta > 0) {
+        element!.scrollTop += delta
       }
-    } else {
-      const {event} = items.find(({event}) => getStart(event) >= now()) || last(items)
-      const {offsetTop, clientHeight} = document.querySelector(
-        ".calendar-event-" + event.id,
-      ) as HTMLElement
-
-      // On initial load, center the scroll container on today's date (or the next available event)
-      element!.scrollTop = offsetTop - element!.clientHeight / 2 + clientHeight / 2
-      initialScrollDone = true
     }
 
     previousScrollHeight = element!.scrollHeight

@@ -20,12 +20,11 @@
 
   const {url, event}: Props = $props()
 
-  const classified = reader(Classified)(event)
-
-  const title = classified.title()
-  const h = classified.room()
-  const images = new Set(classified.images())
-  const price = classified.price()
+  const classified = $derived(reader(Classified)(event))
+  const title = $derived(classified.title())
+  const h = $derived(classified.room())
+  const images = $derived(new Set(classified.images()))
+  const price = $derived(classified.price())
 </script>
 
 <Link

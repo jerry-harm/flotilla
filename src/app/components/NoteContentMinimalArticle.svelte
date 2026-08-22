@@ -6,7 +6,7 @@
 
   const props: ComponentProps<typeof ContentMinimal> = $props()
 
-  const title = reader(Article)(props.event).title()
+  const title = $derived(reader(Article)(props.event).title())
 </script>
 
 {#if title}

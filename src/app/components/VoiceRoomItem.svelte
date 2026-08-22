@@ -5,6 +5,7 @@
   import SecondaryNavItem from "@lib/components/SecondaryNavItem.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
+  import ProfileName from "@app/components/ProfileName.svelte"
   import ProfileCircles from "@app/components/ProfileCircles.svelte"
   import RoomImage from "@app/components/RoomImage.svelte"
   import RoomName from "@app/components/RoomName.svelte"
@@ -102,7 +103,11 @@
               <ProfileCircle pubkey={p.pubkey} size={5} class="h-5 w-5" />
             </div>
             <span class="truncate min-w-0 flex-1 text-xs opacity-70">
-              {p.pubkey ? $profiles.display(p.pubkey, [url]).get() : "Unknown"}
+              {#if p.pubkey}
+                <ProfileName pubkey={p.pubkey} {url} />
+              {:else}
+                Unknown
+              {/if}
             </span>
             <VoiceParticipantMediaBadges
               muted={media.muted}

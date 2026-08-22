@@ -1,6 +1,6 @@
 <script lang="ts">
   import {onDestroy} from "svelte"
-  import {first, uniq} from "@welshman/lib"
+  import {first, removeUndefined, uniq} from "@welshman/lib"
   import {inbox} from "@welshman/util"
   import {ZapRequest} from "@welshman/domain"
   import {Zappers} from "@welshman/app"
@@ -36,7 +36,7 @@
 
   const {url, pubkey, eventId, goalRelays = []}: Props = $props()
 
-  const zapper = $app.use(Zappers).forPubkey(pubkey)
+  const zapper = $app.use(Zappers).forPubkey(pubkey, removeUndefined([url]))
 
   const back = () => history.back()
 
