@@ -14,7 +14,8 @@
 
   const {event, status, children}: Props = $props()
 
-  const deleted = deriveIsDeleted(event)
+  // Editing a replaceable event hands this a different event
+  const deleted = $derived(deriveIsDeleted(event))
   const history = $thunks.history
   const thunk = $derived($thunks.merge($history.filter(t => t.event.id === event.id)))
 </script>
