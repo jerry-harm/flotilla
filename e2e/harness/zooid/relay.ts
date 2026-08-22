@@ -4,7 +4,7 @@ import {tmpdir} from "node:os"
 import {join} from "node:path"
 import {fileURLToPath} from "node:url"
 import {promisify} from "node:util"
-import {ms, sleep} from "@welshman/lib"
+import {MINUTE, int, ms, sleep} from "@welshman/lib"
 import type {Maybe} from "@welshman/lib"
 import {makeRelayAuth} from "@welshman/util"
 import type {SignedEvent} from "@welshman/util"
@@ -72,6 +72,38 @@ const probeDocker = async () => {
       (stderr?.trim() || String(error))
     )
   }
+}
+
+// How far the container's clock is from this host's, in seconds, read off the Date header of the
+// relay's own http answer. Positive means the container is behind, which is what makes an event the
+// harness has just signed look like it comes from the future.
+const getClockDrift = async (host: string) => {
+  const {headers} = await requestZooid(host, "GET", "/", {accept: "application/nostr+json"})
+
+  if (headers.date) {
+    return Math.round((Date.now() - new Date(headers.date).getTime()) / 1000)
+  }
+}
+
+// nip-42 accepts an auth event within ten minutes of the relay's own clock (nip42.go), and the two
+// clocks here belong to different machines: the harness signs with this host's, the container
+// validates with the vm's. A vm whose clock stopped while the machine slept is the usual reason
+// they diverge, and the relay's own one-line detail says nothing about how to fix it.
+const describeClockDrift = (drift: number) => {
+  const [minutes, direction] =
+    drift > 0 ? [drift / 60, "behind"] : [Math.abs(drift) / 60, "ahead of"]
+
+  return (
+    `The zooid container's clock is ${Math.round(minutes)} minutes ${direction} this host. ` +
+    "nip-42 allows ten either way, so the relay refuses every event the harness signs, and " +
+    "will go on refusing them until the two agree. A container runtime's vm loses time while " +
+    "the machine is asleep; restarting it resyncs the clock:\n\n" +
+    "  podman: podman machine stop && podman machine start\n" +
+    "  docker: restart Docker Desktop, or " +
+    "`docker run --rm --privileged alpine hwclock -s`\n\n" +
+    "Then confirm they agree — `podman machine ssh date -u`, or " +
+    "`docker info --format '{{.SystemTime}}'`, against `date -u`."
+  )
 }
 
 const getTestUser = (pubkey: string) => {
@@ -239,6 +271,12 @@ export class Zooid {
       ).then(results => results.every(Boolean))
 
       if (isUp) {
+        const drift = await getClockDrift(tenants[tenantNames[0]])
+
+        if (drift !== undefined && Math.abs(drift) > int(10, MINUTE)) {
+          throw new Error(describeClockDrift(drift))
+        }
+
         return
       }
 
@@ -272,7 +310,16 @@ export class Zooid {
       return connection
     }
 
-    throw new Error(`Failed to authenticate as ${user.name} on ${host}: ${detail}`)
+    const summary = `Failed to authenticate as ${user.name} on ${host}: ${detail}`
+    const drift = await getClockDrift(host).catch(() => undefined)
+
+    // Nearly always the clock rather than the key: every identity here is one zooid's toml names,
+    // and the signature is checked last, after the timestamp the relay compares against its own.
+    if (drift !== undefined && Math.abs(drift) > int(10, MINUTE)) {
+      throw new Error(`${summary}\n\n${describeClockDrift(drift)}`)
+    }
+
+    throw new Error(summary)
   }
 
   // Both halves of seeding — the auth that opens a connection and every event written over it —
