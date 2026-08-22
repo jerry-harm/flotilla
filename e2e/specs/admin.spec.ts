@@ -654,6 +654,9 @@ test("US-097 work through the action-items queue", async ({seed, as}) => {
 
   await openSpaceMenu(admin)
 
+  await expect(queueButton).toHaveText("Action Items (4)")
+  await expect(queueButton.locator(".bg-primary")).toHaveCount(1)
+
   await queueButton.click()
 
   const queue = dialog(admin, "Action Items")
@@ -677,10 +680,6 @@ test("US-097 work through the action-items queue", async ({seed, as}) => {
 
   await expect(carolsRequest).toContainText("requested membership in #Vault")
   await expect(bobsRequest).toContainText("requested membership in #Vault")
-
-  // The button summarizes what the queue holds, so it is checked against a known queue
-  await expect(queueButton).toHaveText("Action Items (4)")
-  await expect(queueButton.locator(".bg-primary")).toHaveCount(1)
 
   await carolsRequest.getByRole("button", {name: "Accept"}).click()
 
