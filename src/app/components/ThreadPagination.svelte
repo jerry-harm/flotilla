@@ -37,7 +37,8 @@
   })
 </script>
 
-<div class="flex flex-col items-center gap-3 divider py-4">
+<div class="divider"></div>
+<div class="flex flex-col items-center gap-3 py-4">
   <p class="text-sm opacity-75">Page {page} of {pageCount}</p>
   <div class="join">
     <Button class="button-sm" disabled={page <= 1} onclick={goFirst}>
