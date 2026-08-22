@@ -11,7 +11,7 @@
     replaceState = false,
     ...restProps
   }: {
-    children: Snippet
+    children?: Snippet
     href: string
     external?: boolean
     replaceState?: boolean
@@ -19,6 +19,7 @@
     class?: string
     style?: string
     "data-tip"?: string
+    "aria-label"?: string
   } = $props()
 
   const go = (e: Event) => {

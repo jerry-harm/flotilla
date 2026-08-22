@@ -387,7 +387,7 @@ test("US-071 content posts show delivery status in place", async ({seed, as}) =>
 
   await writeArticle(alice, "Signals in the Noise", "Everything worth hearing is quiet.")
 
-  const article = alice.getByRole("link", {name: /Written by/}).filter({hasText: "Signals"})
+  const article = alice.locator('[data-component="ArticleItem"]').filter({hasText: "Signals"})
 
   await expect(alice.getByRole("heading", {name: "Write an Article"})).toHaveCount(0)
 
@@ -412,7 +412,7 @@ test("US-071 content posts show delivery status in place", async ({seed, as}) =>
   await alice.goto(`${spacePath(quiet)}/articles`)
   await writeArticle(alice, "Into the Void", "Nobody is listening.")
 
-  const stuck = alice.getByRole("link", {name: /Written by/}).filter({hasText: "Into the Void"})
+  const stuck = alice.locator('[data-component="ArticleItem"]').filter({hasText: "Into the Void"})
 
   await expect(stuck.getByText("Sending...")).toBeVisible()
   await expect(stuck.getByRole("button", {name: "Cancel"})).toBeVisible()
@@ -497,7 +497,7 @@ test("US-072 a deleted post is marked deleted", async ({seed, as}) => {
   // A post whose relay never answered, deleted while it is still marked failed.
   await writeArticle(alice, "Into the Void", "Nobody is listening.")
 
-  const stuck = alice.getByRole("link", {name: /Written by/}).filter({hasText: "Into the Void"})
+  const stuck = alice.locator('[data-component="ArticleItem"]').filter({hasText: "Into the Void"})
 
   await expect(stuck.getByText("Failed to send!")).toBeVisible()
 

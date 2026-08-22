@@ -254,7 +254,7 @@ test("US-056 autocomplete a mention or a room reference", async ({seed, as}) => 
 
   await editor.press("Enter")
 
-  await expect(timeline(page).getByRole("link", {name: "#General"})).toHaveAttribute(
+  await expect(timeline(page).getByRole("link", {name: /#\s*General/})).toHaveAttribute(
     "href",
     roomPath(space.url, "general"),
   )

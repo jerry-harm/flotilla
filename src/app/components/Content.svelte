@@ -204,7 +204,7 @@
           {@html renderAsHtml(parsed)}
           <button
             type="button"
-            class="text-sm underline"
+            class="pointer-events-auto text-sm underline"
             onclick={stopPropagation(preventDefault(expand))}>
             Read more
           </button>

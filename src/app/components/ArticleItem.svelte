@@ -24,29 +24,36 @@
   const image = article.image()
 </script>
 
-<Link
-  class="cv flex flex-col gap-2 card card-interactive w-full"
-  href={makeArticlePath(url, getAddress(event))}>
-  {#if image}
-    <img src={image} alt="" class="h-40 w-full rounded-2xl object-cover" />
-  {/if}
-  <div class="flex w-full items-center justify-between gap-2">
-    <p class="text-xl">{title || "Untitled"}</p>
-    <p class="whitespace-nowrap text-sm opacity-75">
-      {formatTimestamp(article.publishedAt())}
-    </p>
+<div data-component="ArticleItem" class="cv relative w-full card card-interactive">
+  <!-- An overlay rather than a wrapper: the card carries a profile button and the room and action
+       links, and none of those may sit inside an anchor. -->
+  <Link
+    class="absolute inset-0 rounded-2xl"
+    href={makeArticlePath(url, getAddress(event))}
+    aria-label={title || "Untitled"} />
+  <div class="pointer-events-none relative flex flex-col gap-2">
+    {#if image}
+      <img src={image} alt="" class="h-40 w-full rounded-2xl object-cover" />
+    {/if}
+    <div class="flex w-full items-center justify-between gap-2">
+      <p class="text-xl">{title || "Untitled"}</p>
+      <p class="whitespace-nowrap text-sm opacity-75">
+        {formatTimestamp(article.publishedAt())}
+      </p>
+    </div>
+    <Content
+      event={{content: summary || event.content, tags: event.tags}}
+      {url}
+      expandMode="inline"
+      minLength={100}
+      maxLength={300} />
+    <div
+      class="pointer-events-auto flex w-full flex-col items-end justify-between gap-2 sm:flex-row">
+      <span class="whitespace-nowrap py-1 text-sm opacity-75">
+        Written by
+        <ProfileLink pubkey={event.pubkey} {url} />
+      </span>
+      <ArticleActions showRoom showActivity {url} {event} />
+    </div>
   </div>
-  <Content
-    event={{content: summary || event.content, tags: event.tags}}
-    {url}
-    expandMode="inline"
-    minLength={100}
-    maxLength={300} />
-  <div class="flex w-full flex-col items-end justify-between gap-2 sm:flex-row">
-    <span class="whitespace-nowrap py-1 text-sm opacity-75">
-      Written by
-      <ProfileLink pubkey={event.pubkey} {url} />
-    </span>
-    <ArticleActions showRoom showActivity {url} {event} />
-  </div>
-</Link>
+</div>

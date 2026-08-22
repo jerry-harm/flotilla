@@ -101,10 +101,12 @@ const expectReactionRoundTrip = async (page: Page, scope: Locator, opener: Locat
 const shortDate = (seconds: number) =>
   new Intl.DateTimeFormat(undefined, {dateStyle: "short"}).format(new Date(seconds * 1000))
 
-const articleCards = (page: Page) => page.getByRole("link", {name: /Written by/})
+// The card is a div carrying an overlay link, so it is found by its component rather than by a
+// role — its own contents include a profile button and the room and action links.
+const articleCards = (page: Page) => page.locator('[data-component="ArticleItem"]')
 
 const openArticle = (page: Page, title: string) =>
-  articleCards(page).filter({hasText: title}).getByText(title, {exact: true}).click()
+  articleCards(page).filter({hasText: title}).getByRole("link", {name: title, exact: true}).click()
 
 test("US-037 write and publish an article", async ({seed, as}) => {
   const scenario = await seed(({relay, user, at}) => {
@@ -570,11 +572,11 @@ test("US-041 publish an article from a room", async ({seed, as}) => {
   const card = articleCards(page).filter({hasText: "Repotting in Winter"})
 
   await expect(card).toBeVisible()
-  await expect(card.getByRole("link", {name: "#Lounge"})).toBeVisible()
+  await expect(card.getByRole("link", {name: /#\s*Lounge/})).toBeVisible()
 
   await openArticle(page, "Repotting in Winter")
 
-  const badge = page.getByRole("link", {name: "Posted in #Lounge"})
+  const badge = page.getByRole("link", {name: /Posted in #\s*Lounge/})
 
   await expect(badge).toBeVisible()
 

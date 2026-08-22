@@ -111,7 +111,7 @@ const openMessageMenu = (page: Page, text: string) =>
 const openEventMenu = (card: Locator) => card.locator(".join").getByRole("button").last().click()
 
 const articleCard = (page: Page, title: string) =>
-  page.getByRole("link", {name: /Written by/}).filter({hasText: title})
+  page.locator('[data-component="ArticleItem"]').filter({hasText: title})
 
 // A FieldInline puts its control in the div immediately after its label, which is how one row of
 // the hosting card is told apart from the others in the same grid.
