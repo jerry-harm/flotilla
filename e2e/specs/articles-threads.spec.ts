@@ -354,7 +354,11 @@ test("US-039 comment on an article", async ({seed, as}) => {
   await editorOf(composerForm(bob)).pressSequentially("The soil chapter is the good one.")
   await composerForm(bob).getByRole("button", {name: "Comment"}).click()
 
-  await expect(bob.getByText("The soil chapter is the good one.")).toBeVisible()
+  // The comment renders from the optimistic write, but the composer holds what was typed until the
+  // relay confirms it, so for a moment the page carries this text twice. Match the rendered card.
+  await expect(
+    bob.locator(".card.z-feature").filter({hasText: "The soil chapter is the good one."}),
+  ).toBeVisible()
 
   const carol = await as(users.carol, articlesPath)
 
@@ -372,7 +376,11 @@ test("US-039 comment on an article", async ({seed, as}) => {
   )
   await composerForm(carol).getByRole("button", {name: "Reply", exact: true}).click()
 
-  await expect(carol.getByText("Only because you skipped the water chapter.")).toBeVisible()
+  await expect(
+    carol
+      .locator(".card.z-feature")
+      .filter({hasText: "Only because you skipped the water chapter."}),
+  ).toBeVisible()
 
   const alice = await as(users.alice, articlesPath)
 
