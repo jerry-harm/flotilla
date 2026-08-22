@@ -3,6 +3,7 @@
   import Confirm from "@lib/components/Confirm.svelte"
   import {deletes, relays} from "@app/core"
   import {clearModals} from "@app/modal"
+  import {pushToast} from "@app/toast"
 
   type Props = {
     url: string
@@ -16,8 +17,11 @@
   const confirm = async () => {
     const protect = await shouldProtect
     const command = await $deletes.deleteEvent(event, writer => writer.setProtected(protect))
+    const error = await command.publishToRelays([url]).waitForError()
 
-    command.publishToRelays([url])
+    if (error) {
+      return pushToast({theme: "error", message: error})
+    }
 
     clearModals()
   }
