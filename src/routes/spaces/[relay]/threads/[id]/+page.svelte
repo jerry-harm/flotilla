@@ -2,7 +2,7 @@
   import * as nip19 from "nostr-tools/nip19"
   import {page} from "$app/stores"
   import {goto} from "$app/navigation"
-  import {sleep, spec} from "@welshman/lib"
+  import {call, sleep, spec, tryCatch} from "@welshman/lib"
   import type {MakeNonOptional} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
   import {deriveEventsAsc} from "@welshman/store"
@@ -98,32 +98,38 @@
 
   let showReply = $state(false)
   let replyTo: TrustedEvent | undefined = $state()
-  let hashHandled = $state(false)
+
+  // A permalink's target, read once because setPage drops the hash. Replies stream in newest
+  // first, so the post a permalink names is usually here long before the ones above it — its
+  // index, and the page it lands on, are only right once the thread has finished arriving. So
+  // this is kept and re-evaluated rather than acted on the first time the post shows up.
+  let target: string | undefined = $state(
+    call(() => {
+      const hash = window.location.hash.replace(/^#/, "")
+
+      if (hash.startsWith("nevent1")) {
+        const decoded = tryCatch(() => nip19.decode(hash))
+
+        if (decoded?.type === "nevent") {
+          return decoded.data.id
+        }
+      }
+    }),
+  )
+
+  // Paginating by hand hands control back to the reader.
+  const goToPage = (nextPage: number) => {
+    target = undefined
+
+    setPage(nextPage)
+  }
 
   $effect(() => {
-    if (hashHandled || posts.length === 0) return
+    if (!target) return
 
-    const hash = window.location.hash.replace(/^#/, "")
-
-    if (!hash.startsWith("nevent1")) return
-
-    let eventId: string
-
-    try {
-      const decoded = nip19.decode(hash)
-
-      if (decoded.type !== "nevent") return
-
-      eventId = decoded.data.id
-    } catch {
-      return
-    }
-
-    const index = posts.findIndex(spec({id: eventId}))
+    const index = posts.findIndex(spec({id: target}))
 
     if (index < 0) return
-
-    hashHandled = true
 
     const targetPage = Math.ceil((index + 1) / POSTS_PER_PAGE)
 
@@ -131,7 +137,7 @@
       setPage(targetPage)
     }
 
-    setTimeout(() => scrollToEvent(posts[index]!.id), 100)
+    setTimeout(() => scrollToEvent(target!), 100)
   })
 
   $effect(() => {
@@ -170,7 +176,7 @@
       {/each}
     </div>
     {#if pageCount > 1}
-      <ThreadPagination page={currentPage} {pageCount} onPage={setPage} />
+      <ThreadPagination page={currentPage} {pageCount} onPage={goToPage} />
     {/if}
     {#if showReply && replyTo && $event}
       <EventReply
