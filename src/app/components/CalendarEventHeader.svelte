@@ -13,12 +13,12 @@
 
   const {event}: Props = $props()
 
-  const timeEvent = reader(TimeEvent)(event)
+  const timeEvent = $derived(reader(TimeEvent)(event))
 
   // NIP-52 settled on `title`, but events from before that still carry `name`.
   const title = $derived(timeEvent.title() ?? tagValue(tagSpec("name"), event.tags))
-  const start = timeEvent.start()
-  const end = timeEvent.end()
+  const start = $derived(timeEvent.start())
+  const end = $derived(timeEvent.end())
 </script>
 
 <div class="flex flex-col justify-between gap-1">

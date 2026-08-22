@@ -14,9 +14,9 @@
 
   const {event, url}: Props = $props()
 
-  const timeEvent = reader(TimeEvent)(event)
+  const timeEvent = $derived(reader(TimeEvent)(event))
 
-  const location = timeEvent.location()
+  const location = $derived(timeEvent.location())
 </script>
 
 <div class="flex min-w-0 flex-col gap-1 text-sm opacity-75">

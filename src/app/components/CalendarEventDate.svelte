@@ -10,9 +10,9 @@
 
   const {event}: Props = $props()
 
-  const timeEvent = reader(TimeEvent)(event)
+  const timeEvent = $derived(reader(TimeEvent)(event))
 
-  const start = timeEvent.start()
+  const start = $derived(timeEvent.start())
 </script>
 
 {#if start}
