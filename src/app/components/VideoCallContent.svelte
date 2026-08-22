@@ -275,7 +275,7 @@
         class="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
         {#if tileGrid}
           <div class="flex flex-col items-center gap-2">
-            {#each tileGrid.rows as row, rowIndex}
+            {#each tileGrid.rows as row, rowIndex (rowIndex)}
               {@const offset = tileGrid.rows
                 .slice(0, rowIndex)
                 .reduce((sum, r) => sum + r.columnCount, 0)}

@@ -55,6 +55,7 @@
 </script>
 
 <div class="flex flex-col gap-2" role="list">
+  <!-- eslint-disable-next-line svelte/require-each-key -->
   {#each value as item, index}
     <div
       class="flex items-center gap-2"

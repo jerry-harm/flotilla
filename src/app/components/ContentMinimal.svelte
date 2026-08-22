@@ -114,9 +114,10 @@
         "overflow-hidden text-ellipsis",
         singleLine ? "whitespace-nowrap" : "wrap-break-word",
       )}>
-      {#each shortContent as parsed, i}
+      {#each shortContent as parsed, i (i)}
         {#if isNewline(parsed)}
           {#if singleLine}
+            <!-- eslint-disable-next-line svelte/no-useless-mustaches -->
             {" "}
           {:else}
             <ContentNewline value={parsed.value} />

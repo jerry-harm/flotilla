@@ -14,6 +14,9 @@
   onMount(() => {
     editor.then(ed => {
       if (ed.options.element) {
+        // Tiptap builds and owns its editor element, so mounting it here is the point of this
+        // component rather than something svelte could be left to render.
+        // eslint-disable-next-line svelte/no-dom-manipulating
         element?.append(ed.options.element)
       }
 

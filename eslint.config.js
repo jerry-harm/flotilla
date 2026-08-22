@@ -29,6 +29,9 @@ export default [
     rules: {
       // eslint doesn't see type parameters declared by <script generics="...">
       "no-undef": "off",
+      // A `$bindable()` prop with no fallback reads as an assignment nothing consumes, since the
+      // parent is what consumes it.
+      "no-useless-assignment": "off",
     },
   },
   {
@@ -55,6 +58,8 @@ export default [
       ],
       "svelte/valid-compile": "off",
       "svelte/no-at-html-tags": "off",
+      "svelte/no-navigation-without-resolve": "off",
+      "svelte/prefer-svelte-reactivity": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-extra-semi": "off",
       "@typescript-eslint/ban-ts-comment": "off",

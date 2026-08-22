@@ -76,14 +76,10 @@
   const canAddMembers = $derived($supportedMethods.includes("allowpubkey"))
 
   let canShare = $state(false)
-  let invite = $state("")
+  let invite = $derived(makeInviteLink({url, claim: $claim}))
 
   let adding = $state(false)
   let pubkeys: string[] = $state([])
-
-  $effect(() => {
-    invite = makeInviteLink({url, claim: $claim})
-  })
 
   onMount(async () => {
     try {

@@ -50,12 +50,10 @@
       component={ThunkStatusDetail}
       props={{thunk, retry}}
       params={{interactive: true, maxWidth: "none"}}>
-      {#snippet children()}
-        <span class="flex cursor-pointer items-center gap-1 opacity-75">
-          <Icon icon={Danger} class="text-error" size={3} />
-          <span>Failed to send!</span>
-        </span>
-      {/snippet}
+      <span class="flex cursor-pointer items-center gap-1 opacity-75">
+        <Icon icon={Danger} class="text-error" size={3} />
+        <span>Failed to send!</span>
+      </span>
     </Tippy>
   </button>
 {/if}

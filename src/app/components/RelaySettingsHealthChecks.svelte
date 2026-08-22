@@ -33,7 +33,7 @@
     {PLATFORM_NAME} actively checks your connection to the network in the background to discover relays
     that are offline, that you don't have access to, or are otherwise causing trouble.
   </p>
-  {#each $pending as healthCheck}
+  {#each $pending as healthCheck (healthCheck.title)}
     <RelaySettingsHealthCheck {healthCheck} />
   {/each}
   {#if $pending.length > 0}

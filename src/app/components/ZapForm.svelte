@@ -50,7 +50,7 @@
     {/snippet}
   </Field>
   <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-    {#each $zapAmounts as preset}
+    {#each $zapAmounts as preset, i (i)}
       <Button
         class={cx("button button-sm", {
           "button-primary": preset === amount,

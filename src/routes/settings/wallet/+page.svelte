@@ -269,6 +269,7 @@
     </strong>
     <p class="text-sm opacity-75">Preset amounts shown when sending a zap.</p>
     <div class="flex flex-col gap-2">
+      <!-- eslint-disable-next-line svelte/require-each-key -->
       {#each zapAmountDraft as amount, index}
         <div class="flex items-center gap-2">
           <Button

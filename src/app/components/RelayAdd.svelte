@@ -54,7 +54,7 @@
   let limit = $state(20)
   let element: Element | undefined = $state()
 
-  const loading = $state(new SvelteSet<string>())
+  const loading = new SvelteSet<string>()
   const relaySearch = $app.use(Relays).relaySearch
   const blockedRelayUrls = $blockedRelayLists.urls($user.pubkey).$
 

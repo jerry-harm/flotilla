@@ -46,11 +46,7 @@
   }
 
   let canShare = $state(false)
-  let invite = $state("")
-
-  $effect(() => {
-    invite = makeInviteLink({url, claim: $claim, h, code: $roomCode})
-  })
+  let invite = $derived(makeInviteLink({url, claim: $claim, h, code: $roomCode}))
 
   onMount(async () => {
     try {

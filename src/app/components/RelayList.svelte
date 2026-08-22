@@ -51,7 +51,7 @@
     }
   }
 
-  const loading = $state(new SvelteSet<string>())
+  const loading = new SvelteSet<string>()
 </script>
 
 <Modal>

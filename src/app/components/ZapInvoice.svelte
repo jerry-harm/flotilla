@@ -146,16 +146,14 @@
       </div>
     {:else}
       <ZapForm bind:amount bind:content>
-        {#snippet children()}
-          <div class="card card-sm card-flat flex flex-col items-center gap-3 p-4 text-center">
-            <p class="text-content-muted text-sm">
-              Connect a wallet to pay instantly without scanning a QR code.
-            </p>
-            <Button class="button button-neutral" onclick={connectWallet}>
-              Connect a lightning wallet
-            </Button>
-          </div>
-        {/snippet}
+        <div class="card card-sm card-flat flex flex-col items-center gap-3 p-4 text-center">
+          <p class="text-content-muted text-sm">
+            Connect a wallet to pay instantly without scanning a QR code.
+          </p>
+          <Button class="button button-neutral" onclick={connectWallet}>
+            Connect a lightning wallet
+          </Button>
+        </div>
       </ZapForm>
     {/if}
   </ModalBody>

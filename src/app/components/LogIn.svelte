@@ -114,7 +114,7 @@
         Log in with Extension
       </Button>
     {/if}
-    {#each signers as signerApp}
+    {#each signers as signerApp (signerApp.name)}
       <Button {disabled} class="button button-primary" onclick={() => loginWithNip55(signerApp)}>
         {#if loading === "nip55"}
           <Spinner size="sm" class="mr-3" />

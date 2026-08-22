@@ -1,5 +1,4 @@
 <script lang="ts">
-  import {derived} from "svelte/store"
   import cx from "classnames"
   import {remove} from "@welshman/lib"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"

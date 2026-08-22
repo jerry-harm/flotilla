@@ -3,7 +3,7 @@
 </script>
 
 <div class="flex w-full">
-  {#each Array(total) as _, i}
+  {#each Array(total) as _, i (i)}
     <div
       class="h-1 flex-1 transition-colors {i < current
         ? 'bg-primary text-primary-content'
