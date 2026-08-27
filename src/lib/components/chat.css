@@ -1,7 +1,28 @@
 @layer components {
+  /* z-popover (not z-feature) so it stacks above the overlay chat pane (also
+     z-popover) instead of landing behind it — same tier + later-in-DOM trick
+     RoomChat's "New Messages" chip already relies on. */
   .chat__scroll-down {
-    @apply z-feature fixed right-4 bottom-28 md:bottom-16;
+    @apply z-popover fixed right-4 bottom-28 md:bottom-16;
     padding-bottom: var(--saib);
+  }
+
+  /* .chat__scroll-down is `fixed` (viewport-relative), so it ignores CallBanner's real
+     in-flow layout space entirely even though CallBanner shrinks the chat area above
+     it. Nudge the button up by CallBanner's own approximate rendered height (~3.5rem:
+     border-top + py-2 padding + its tallest child, the button-sm leave/mute controls)
+     so it clears the banner instead of landing behind it. */
+  .chat__scroll-down--banner {
+    @apply bottom-[calc(7rem+3.5rem)] md:bottom-[calc(4rem+3.5rem)];
+  }
+
+  /* On desktop, isOverlayChat (Split layout) floats the chat pane at md:bottom-24
+     in this same corner — .chat__scroll-down's default md:bottom-16 puts the
+     button's top edge past that pane's bottom edge, clipping into its rounded
+     corner. Drop below it instead. Mobile is untouched: there the pane fills
+     nearly the whole screen, so the button is meant to float over it. */
+  .chat__scroll-down--overlay-chat {
+    @apply md:bottom-10;
   }
 
   .chat-bubble {

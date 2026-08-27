@@ -190,14 +190,22 @@
   }
 
   const panelChrome = $derived(
-    cx(
-      mobile &&
-        "flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden bg-surface px-2 pt-4 md:hidden pb-[calc(3.5rem+var(--saib))]",
-      !mobile &&
-        "flex min-h-0 w-full min-w-0 flex-1 flex-col gap-2 overflow-hidden bg-surface px-2 pb-2 pt-4",
-      className,
-    ),
+    mobile
+      ? cx(
+          "flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden bg-surface px-2 pt-4 md:hidden pb-[calc(3.5rem+var(--saib))]",
+          className,
+        )
+      : "flex min-h-0 w-full min-w-0 flex-1 flex-col gap-2 overflow-hidden bg-surface px-2 pb-2 pt-4",
   )
+
+  // Desktop: `className` (the instance's own visibility/sizing, e.g. "hidden ...
+  // md:flex") lives on this wrapper rather than on panelChrome, so the floating
+  // control bar below shares its box — a `relative` box that's already sized to
+  // the real (chat-sidebar-aware) video pane width, since RoomChat now lays the
+  // chat sidebar out as a flex sibling instead of an absolute overlay. Centering
+  // the controls against this box (instead of the viewport) is what keeps them
+  // centered in the actual remaining space as that width animates open/closed.
+  const desktopWrapperClass = $derived(cx("relative flex min-h-0 flex-1 flex-col", className))
 </script>
 
 {#snippet videoTile(tile: VideoTileData, layout: TileLayoutVariant)}
@@ -305,25 +313,35 @@
 {/snippet}
 
 {#if showVideoContent}
-  <div class={panelChrome}>
-    {@render videoPanelBody()}
-  </div>
-  <!-- fixed (viewport-relative), not absolute within panelChrome — panelChrome's
-       flex-computed height isn't guaranteed to reach the real viewport bottom, so
-       an absolute child positioned against its box can end up overlapping the
-       fixed bottom nav bar. Matches the same bottom-nav-clearing offset the old
-       chat FAB used.
+  {#if mobile}
+    <div class={panelChrome}>
+      {@render videoPanelBody()}
+    </div>
+    <!-- fixed (viewport-relative), not absolute within panelChrome — panelChrome's
+         flex-computed height isn't guaranteed to reach the real viewport bottom, so
+         an absolute child positioned against its box can end up overlapping the
+         fixed bottom nav bar. Matches the same bottom-nav-clearing offset the old
+         chat FAB used.
 
-       RoomChat mounts both a desktop and a mobile VideoCallContent instance at
-       once while connected (each gated by its own `class` prop, e.g. "md:hidden"
-       vs "hidden ... md:flex"), so this fixed bar needs the same mobile/desktop
-       split — otherwise both instances render their own copy at the identical
-       screen position simultaneously. -->
-  <div
-    class={cx(
-      "left-content pointer-events-none fixed right-sai z-popover justify-center bottom-[calc(4.5rem+var(--saib))] md:bottom-4",
-      mobile ? "flex md:hidden" : "hidden md:flex",
-    )}>
-    <CallControlBar {url} {h} />
-  </div>
+         RoomChat mounts both a desktop and a mobile VideoCallContent instance at
+         once while connected, each gated by its own `class` prop — this instance
+         is the mobile one, so it's the only copy visible below md. -->
+    <div
+      class="left-content pointer-events-none fixed right-sai z-popover flex justify-center bottom-[calc(4.5rem+var(--saib))] md:hidden">
+      <CallControlBar {url} {h} />
+    </div>
+  {:else}
+    <!-- desktopWrapperClass carries this instance's own visibility ("hidden ...
+         md:flex") and is `relative`, so the control bar below is `absolute` against
+         the real (chat-sidebar-aware) video pane box rather than the viewport —
+         it re-centers automatically as that box's width animates. -->
+    <div class={desktopWrapperClass}>
+      <div class={panelChrome}>
+        {@render videoPanelBody()}
+      </div>
+      <div class="pointer-events-none absolute inset-x-0 bottom-4 z-popover flex justify-center">
+        <CallControlBar {url} {h} />
+      </div>
+    </div>
+  {/if}
 {/if}

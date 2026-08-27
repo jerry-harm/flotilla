@@ -32,7 +32,14 @@
   import CallControlBar from "@app/components/CallControlBar.svelte"
   import {deletes, relays, rooms, thunks, user} from "@app/core"
   import {joinRoom, leaveRoom} from "@app/access"
-  import {CallState, callTargetRoom, callState, VideoCallLayout, videoCallLayout} from "@app/call"
+  import {
+    CallState,
+    callTargetRoom,
+    callState,
+    VideoCallLayout,
+    videoCallLayout,
+    deriveIsCallActiveElsewhere,
+  } from "@app/call"
   import {
     PROTECTED,
     RoomType,
@@ -63,6 +70,9 @@
   const voiceConnectedHere = $derived(
     isVoiceRoom && $callState === CallState.Connected && isCallTargetingThisRoom,
   )
+
+  const isCallActiveElsewhere = $derived(deriveIsCallActiveElsewhere(url, h))
+  const callBannerVisible = $derived($isCallActiveElsewhere)
 
   // Reuses voiceConnectedHere (rather than re-deriving isVoiceRoom/callState) so it
   // can't diverge and stay true for a different voice room the call isn't targeting
@@ -487,16 +497,22 @@
   })
 </script>
 
-<div class={cx("flex min-h-0 flex-1 flex-col", isOverlayChat && "relative")}>
+<div
+  class={cx(
+    "flex min-h-0 flex-1 flex-col",
+    isOverlayChat && "max-md:relative",
+    // Desktop: chat is a real flex sibling beside the video pane rather than an
+    // absolute overlay on top of it, so opening/closing it actually resizes the
+    // video pane instead of just floating a card over it — see the sidebar's
+    // width transition below for why this fixes controls jumping on toggle.
+    voiceConnectedHere && "md:flex-row",
+  )}>
   {#if h && voiceConnectedHere}
     <VideoCallContent
       layout={$videoCallLayout}
       {url}
       {h}
-      class={cx(
-        "hidden min-h-0 w-full min-w-0 flex-1 flex-col md:flex",
-        isOverlayChat && "md:absolute md:inset-0",
-      )} />
+      class="hidden min-h-0 w-full min-w-0 flex-1 flex-col md:flex" />
   {/if}
 
   {#if h && voiceConnectedHere}
@@ -512,8 +528,21 @@
     class={cx(
       "room flex min-h-0 min-w-0 flex-1 flex-col",
       videoCallChatHidden && "hidden",
+      // Desktop: a real sidebar column (fixed width, animated) instead of an absolute
+      // overlay card — its width transition is what makes the video pane (and the
+      // controls centered inside it, see VideoCallContent) resize and re-center in
+      // step with the chat opening/closing, instead of jumping.
+      voiceConnectedHere &&
+        "md:flex md:min-w-0 md:flex-none md:border-0 md:border-l md:border-line md:bg-surface md:shadow-lg md:transition-all md:duration-300 md:ease-in-out",
+      voiceConnectedHere &&
+        (isOverlayChat
+          ? "md:w-72 md:opacity-100"
+          : "md:w-0 md:border-l-0 md:opacity-0 md:shadow-none md:pointer-events-none"),
       isOverlayChat &&
-        "absolute inset-x-2 top-4 bottom-[calc(3.5rem+var(--saib))] z-popover overflow-hidden rounded-2xl border border-line bg-surface/95 shadow-lg md:left-auto md:right-4 md:bottom-4 md:w-96 md:max-w-[26rem] md:bg-surface/90",
+        // Narrower width (w-72) plus generous insets keep the mobile card's edges from
+        // landing flush against a video tile's edge. No shadow on mobile — the card
+        // already reads as distinct from the video behind it via its own background.
+        "max-md:absolute max-md:inset-x-2 max-md:top-4 max-md:bottom-[calc(3.5rem+var(--saib))] max-md:z-popover max-md:overflow-hidden max-md:rounded-2xl max-md:border max-md:border-line max-md:bg-surface/95",
     )}>
     {#if isOverlayChat}
       <Button
@@ -524,153 +553,184 @@
       </Button>
     {/if}
 
-    {#if h}
-      <RoomPinnedMessages {url} {h} />
-    {/if}
-
+    <!-- Separate from the panel's own overflow: the panel itself can't clip its own
+         overflow (that would also clip its desktop shadow), so this inner wrapper is
+         what keeps content from spilling out while the panel's width is animating
+         toward 0 on close. -->
     <div
-      bind:this={element}
-      onscroll={onScroll}
       class={cx(
-        "room__content scroll-container",
-        showMobileVideoPanel ? "hidden md:flex md:flex-col-reverse" : "flex",
+        "flex min-h-0 min-w-0 flex-1 flex-col",
+        voiceConnectedHere && "md:overflow-hidden",
       )}>
-      {#if $room?.meta?.isPrivate() && $membershipStatus !== MembershipStatus.Granted}
-        <div class="py-20">
-          <div class="card flex flex-col gap-8 m-auto max-w-md items-center text-center">
-            <p class="opacity-75">You aren't currently a member of this room.</p>
-            {#if $membershipStatus === MembershipStatus.Pending}
-              <Button class="button button-neutral button-sm" disabled={leaving} onclick={leave}>
-                <Icon icon={ClockCircle} />
-                Access Pending
-              </Button>
-            {:else}
-              <Button class="button button-neutral button-sm" disabled={joining} onclick={join}>
-                {#if joining}
-                  <Spinner size="sm" />
-                {:else}
-                  <Icon icon={Login2} />
-                {/if}
-                Join Room
-              </Button>
-            {/if}
-          </div>
-        </div>
-      {:else}
-        {#if loadingForward && elements.length > 0}
-          <p class="py-20 flex justify-center">
-            <Spinner loading={loadingForward}>Looking for messages...</Spinner>
-          </p>
-        {/if}
-        {#each elements as { type, id, value, showPubkey } (id)}
-          {#if type === "new-messages"}
-            <div
-              {id}
-              class={cx("flex items-center py-2 text-xs transition-colors", {
-                "opacity-0": showFixedNewMessages,
-              })}>
-              <div class="h-px grow bg-primary text-primary-content"></div>
-              <p
-                class="rounded-full bg-primary text-primary-content px-2 py-1"
-                style="color: var(--primary-content)">
-                New Messages
-              </p>
-              <div class="h-px grow bg-primary text-primary-content"></div>
-            </div>
-          {:else if type === "date"}
-            <Divider>{value}</Divider>
-          {:else}
-            {@const event = value as TrustedEvent}
-            {#if event.kind === addMemberKind}
-              <RoomItemAddMember {url} {event} />
-            {:else}
-              <RoomItem
-                {url}
-                {event}
-                {replyTo}
-                {showPubkey}
-                canEdit={canEditEvent}
-                onEdit={onEditEvent} />
-            {/if}
-          {/if}
-        {/each}
-        <p class="flex h-10 items-center justify-center py-20">
-          {#if loadingBackward}
-            <Spinner loading={loadingBackward}>Looking for messages...</Spinner>
-          {:else}
-            <Spinner>End of message history</Spinner>
-          {/if}
-        </p>
+      {#if h}
+        <RoomPinnedMessages {url} {h} />
       {/if}
-      <div class="h-screen"></div>
-    </div>
 
-    <div
-      class={cx(
-        "room__compose flex flex-row items-center gap-1 px-2",
-        showMobileVideoPanel && "max-md:hidden",
-        // the connected bar (mic/camera/screenshare/settings/chat/leave) is too wide
-        // to sit beside the compose input on any screen size — give it its own row.
-        // gap-2 only applies here (the inline row stays flush with no gap).
-        voiceConnectedHere && "flex-col items-stretch gap-2",
-      )}>
-      <div class="room__compose-inner min-w-0 flex-1">
+      <div
+        bind:this={element}
+        onscroll={onScroll}
+        class={cx(
+          "room__content scroll-container",
+          showMobileVideoPanel ? "hidden md:flex md:flex-col-reverse" : "flex",
+        )}>
         {#if $room?.meta?.isPrivate() && $membershipStatus !== MembershipStatus.Granted}
-          <!-- pass -->
-        {:else if $room?.meta?.isRestricted() && $membershipStatus !== MembershipStatus.Granted}
-          <div class="card m-4 flex flex-row items-center justify-between px-4 py-3">
-            <p class="opacity-75">Only members are allowed to post to this room.</p>
-            {#if $membershipStatus === MembershipStatus.Pending}
-              <Button class="button button-neutral button-sm" disabled={leaving} onclick={leave}>
-                <Icon icon={ClockCircle} />
-                Access Pending
-              </Button>
-            {:else}
-              <Button class="button button-neutral button-sm" disabled={joining} onclick={join}>
-                {#if joining}
-                  <Spinner size="sm" />
-                {:else}
-                  <Icon icon={Login2} />
-                {/if}
-                Ask to Join
-              </Button>
-            {/if}
+          <div class="py-20">
+            <div class="card flex flex-col gap-8 m-auto max-w-md items-center text-center">
+              <p class="opacity-75">You aren't currently a member of this room.</p>
+              {#if $membershipStatus === MembershipStatus.Pending}
+                <Button class="button button-neutral button-sm" disabled={leaving} onclick={leave}>
+                  <Icon icon={ClockCircle} />
+                  Access Pending
+                </Button>
+              {:else}
+                <Button class="button button-neutral button-sm" disabled={joining} onclick={join}>
+                  {#if joining}
+                    <Spinner size="sm" />
+                  {:else}
+                    <Icon icon={Login2} />
+                  {/if}
+                  Join Room
+                </Button>
+              {/if}
+            </div>
           </div>
         {:else}
-          <div>
-            {#if parent}
-              <RoomComposeParent {url} event={parent} clear={clearParent} verb="Replying to" />
+          {#if loadingForward && elements.length > 0}
+            <p class="py-20 flex justify-center">
+              <Spinner loading={loadingForward}>Looking for messages...</Spinner>
+            </p>
+          {/if}
+          {#each elements as { type, id, value, showPubkey } (id)}
+            {#if type === "new-messages"}
+              <div
+                {id}
+                class={cx("flex items-center py-2 text-xs transition-colors", {
+                  "opacity-0": showFixedNewMessages,
+                })}>
+                <div class="h-px grow bg-primary text-primary-content"></div>
+                <p
+                  class="rounded-full bg-primary text-primary-content px-2 py-1"
+                  style="color: var(--primary-content)">
+                  New Messages
+                </p>
+                <div class="h-px grow bg-primary text-primary-content"></div>
+              </div>
+            {:else if type === "date"}
+              <Divider>{value}</Divider>
+            {:else}
+              {@const event = value as TrustedEvent}
+              {#if event.kind === addMemberKind}
+                <RoomItemAddMember {url} {event} />
+              {:else}
+                <RoomItem
+                  {url}
+                  {event}
+                  {replyTo}
+                  {showPubkey}
+                  canEdit={canEditEvent}
+                  onEdit={onEditEvent} />
+              {/if}
             {/if}
-            {#if sharedEvent}
-              <RoomComposeParent {url} event={sharedEvent} clear={clearShare} verb="Sharing" />
+          {/each}
+          <p class="flex h-10 items-center justify-center py-20">
+            {#if loadingBackward}
+              <Spinner loading={loadingBackward}>Looking for messages...</Spinner>
+            {:else}
+              <Spinner>End of message history</Spinner>
             {/if}
-            {#if eventToEdit}
-              <RoomComposeEdit clear={clearEventToEdit} />
-            {/if}
+          </p>
+        {/if}
+        <div class="h-screen"></div>
+      </div>
+
+      <div
+        class={cx(
+          // no explicit flex-row: it's flex's default direction, and Tailwind emits
+          // .flex-col before .flex-row in the compiled sheet, so having both classes
+          // present at once (base flex-row + conditional flex-col below) let flex-row
+          // always win — the compose row and call controls never actually stacked.
+          "room__compose flex items-center gap-1 px-2",
+          showMobileVideoPanel && "max-md:hidden",
+          // the connected bar (mic/camera/screenshare/settings/chat/leave) is too wide
+          // to sit beside the compose input on any screen size — give it its own row.
+          // gap-2 only applies here (the inline row stays flush with no gap).
+          voiceConnectedHere && "flex-col items-stretch gap-2",
+        )}>
+        <div class="room__compose-inner min-w-0 flex-1">
+          {#if $room?.meta?.isPrivate() && $membershipStatus !== MembershipStatus.Granted}
+            <!-- pass -->
+          {:else if $room?.meta?.isRestricted() && $membershipStatus !== MembershipStatus.Granted}
+            <div class="card m-4 flex flex-row items-center justify-between px-4 py-3">
+              <p class="opacity-75">Only members are allowed to post to this room.</p>
+              {#if $membershipStatus === MembershipStatus.Pending}
+                <Button class="button button-neutral button-sm" disabled={leaving} onclick={leave}>
+                  <Icon icon={ClockCircle} />
+                  Access Pending
+                </Button>
+              {:else}
+                <Button class="button button-neutral button-sm" disabled={joining} onclick={join}>
+                  {#if joining}
+                    <Spinner size="sm" />
+                  {:else}
+                    <Icon icon={Login2} />
+                  {/if}
+                  Ask to Join
+                </Button>
+              {/if}
+            </div>
+          {:else}
+            <div>
+              {#if parent}
+                <RoomComposeParent {url} event={parent} clear={clearParent} verb="Replying to" />
+              {/if}
+              {#if sharedEvent}
+                <RoomComposeParent {url} event={sharedEvent} clear={clearShare} verb="Sharing" />
+              {/if}
+              {#if eventToEdit}
+                <RoomComposeEdit clear={clearEventToEdit} />
+              {/if}
+            </div>
+            {#key initialValues}
+              <RoomCompose
+                {url}
+                {h}
+                {onSubmit}
+                {onEscape}
+                {onEditPrevious}
+                {initialValues}
+                bind:this={compose} />
+            {/key}
+          {/if}
+        </div>
+        {#if h}
+          <div
+            class={cx(
+              "hide-on-keyboard flex flex-shrink-0 items-center justify-center py-2",
+              // CallControlBar's connected pill is itself md:hidden here (a wider copy
+              // floats over the video instead — see VideoCallContent.svelte), so once
+              // this row actually stacks (flex-col, above) this wrapper has nothing to
+              // show on desktop and was otherwise left as an empty padded bar under
+              // the compose box. voiceConnectedHere is exactly the state where the
+              // pill is connected, so hiding it here is safe for the join/joining
+              // states, which don't hit this flex-col branch at all.
+              voiceConnectedHere && "md:hidden",
+            )}>
+            <CallControlBar {url} {h} hideConnectedOnDesktop />
           </div>
-          {#key initialValues}
-            <RoomCompose
-              {url}
-              {h}
-              {onSubmit}
-              {onEscape}
-              {onEditPrevious}
-              {initialValues}
-              bind:this={compose} />
-          {/key}
         {/if}
       </div>
-      {#if h}
-        <div class="hide-on-keyboard flex flex-shrink-0 items-center justify-center py-2">
-          <CallControlBar {url} {h} hideConnectedOnDesktop />
-        </div>
-      {/if}
     </div>
   </div>
 </div>
 
 {#if showScrollButton}
-  <div in:fade class="chat__scroll-down">
+  <div
+    in:fade
+    class={cx(
+      "chat__scroll-down",
+      callBannerVisible && "chat__scroll-down--banner",
+      isOverlayChat && "chat__scroll-down--overlay-chat",
+    )}>
     <Button class="button button-neutral button-circle" onclick={scrollToBottom}>
       <Icon icon={AltArrowDown} />
     </Button>

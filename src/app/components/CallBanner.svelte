@@ -18,6 +18,7 @@
     callTargetRoom,
     callMicMuted,
     cancelJoinVoiceRoom,
+    deriveIsCallActiveElsewhere,
     leaveVoiceRoom,
     toggleMute,
   } from "@app/call"
@@ -27,19 +28,10 @@
 
   // The call's own room page already shows full controls (CallControlBar), so
   // the banner would just be redundant clutter there.
-  const isViewingCurrentVoiceRoom = $derived(
-    $callTargetRoom !== undefined &&
-      routeUrl !== undefined &&
-      typeof h === "string" &&
-      $callTargetRoom.url === routeUrl &&
-      $callTargetRoom.h === h,
+  const isCallActiveElsewhere = $derived(
+    deriveIsCallActiveElsewhere(routeUrl, typeof h === "string" ? h : undefined),
   )
-
-  const visible = $derived(
-    ($callState === CallState.Joining || $callState === CallState.Connected) &&
-      $callTargetRoom !== undefined &&
-      !isViewingCurrentVoiceRoom,
-  )
+  const visible = $derived($isCallActiveElsewhere)
 
   const roomName = $derived(
     $callTargetRoom ? displayRoom($callTargetRoom.url, $callTargetRoom.h) : "",

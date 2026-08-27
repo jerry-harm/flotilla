@@ -286,6 +286,15 @@ export const callState = writable<CallState>(CallState.Disconnected)
 
 export const callTargetRoom = writable<Room | undefined>(undefined)
 
+export const deriveIsCallActiveElsewhere = (url: string | undefined, h: string | undefined) =>
+  derived(
+    [callState, callTargetRoom],
+    ([$state, $targetRoom]) =>
+      ($state === CallState.Joining || $state === CallState.Connected) &&
+      $targetRoom !== undefined &&
+      !($targetRoom.url === url && $targetRoom.h === h),
+  )
+
 export const speakingParticipants = writable<CallParticipant[]>([])
 
 export const participantMediaState = writable(new Map<string, ParticipantMediaState>())

@@ -67,6 +67,16 @@
   const chatUnread = $derived($notifications.has(roomPath))
   const isChatPanelActive = $derived($videoCallLayout === VideoCallLayout.Split)
 
+  // With chat open, the floating bar shares the video pane with the sidebar rather
+  // than spanning the full width — a smaller bar reads as sized for that narrower
+  // space instead of just looking unchanged. Sized below mobile's max-md:h-9 (36px)
+  // since desktop is mouse-driven, not a touch target. max-md sizing itself is
+  // unaffected: mobile chat is a full-screen overlay, not a space-sharing sidebar.
+  const compactButtonClass = $derived(
+    cx("max-md:h-9 max-md:w-9", isChatPanelActive && "md:h-8 md:w-8"),
+  )
+  const iconSize = $derived(isChatPanelActive ? 3.5 : 4.5)
+
   const onChatToggle = () => {
     videoCallLayout.update(p =>
       p === VideoCallLayout.Split ? VideoCallLayout.Video : VideoCallLayout.Split,
@@ -93,9 +103,9 @@
         <Button
           data-tip="Cancel"
           aria-label="Cancel joining voice room"
-          class="button button-circle button-xs button-neutral"
+          class="button button-circle button-sm button-neutral"
           onclick={cancelJoinVoiceRoom}>
-          <Icon icon={CloseCircle} size={3} />
+          <Icon icon={CloseCircle} size={4} />
         </Button>
       </div>
     {/if}
@@ -105,6 +115,7 @@
         out:fade={{duration: 120}}
         class={cx(
           "pointer-events-auto col-start-1 row-start-1 flex items-center gap-1.5 rounded-full border border-line bg-surface/95 p-1.5 shadow-xl backdrop-blur-md md:gap-2 md:p-2",
+          isChatPanelActive && "md:gap-1 md:p-1",
           hideConnectedOnDesktop && "md:hidden",
         )}>
         <Button
@@ -112,11 +123,12 @@
           aria-label={$callMicMuted ? "Unmute microphone" : "Mute microphone"}
           aria-pressed={!$callMicMuted}
           class={cx(
-            "button button-circle max-md:h-9 max-md:w-9",
+            "button button-circle",
+            compactButtonClass,
             $callMicMuted ? "button-neutral" : "button-primary",
           )}
           onclick={toggleMute}>
-          <Icon icon={$callMicMuted ? MicrophoneOff : Microphone} size={4.5} />
+          <Icon icon={$callMicMuted ? MicrophoneOff : Microphone} size={iconSize} />
         </Button>
         {#if $currentCallSession}
           <Button
@@ -124,13 +136,14 @@
             aria-label={$currentCallSession.cameraOn ? "Turn off camera" : "Turn on camera"}
             aria-pressed={$currentCallSession.cameraOn}
             class={cx(
-              "button button-circle max-md:h-9 max-md:w-9",
+              "button button-circle",
+              compactButtonClass,
               $currentCallSession.cameraOn ? "button-primary" : "button-neutral",
             )}
             onclick={toggleCamera}>
             <Icon
               icon={$currentCallSession.cameraOn ? VideocameraRecord : VideocameraOff}
-              size={4.5} />
+              size={iconSize} />
           </Button>
           {#if !Capacitor.isNativePlatform()}
             <Button
@@ -140,31 +153,33 @@
                 : "Share screen"}
               aria-pressed={$currentCallSession.screenShareOn}
               class={cx(
-                "button button-circle max-md:h-9 max-md:w-9",
+                "button button-circle",
+                compactButtonClass,
                 $currentCallSession.screenShareOn ? "button-primary" : "button-neutral",
               )}
               onclick={toggleScreenShare}>
-              <Icon icon={Monitor} size={4.5} />
+              <Icon icon={Monitor} size={iconSize} />
             </Button>
           {/if}
         {/if}
         <Button
           data-tip="Call settings"
           aria-label="Call settings"
-          class="button button-circle button-neutral max-md:h-9 max-md:w-9"
+          class={cx("button button-circle button-neutral", compactButtonClass)}
           onclick={openCallSettings}>
-          <Icon icon={Settings} size={4.5} />
+          <Icon icon={Settings} size={iconSize} />
         </Button>
         <Button
           data-tip="Toggle chat"
           aria-label="Toggle chat panel"
           aria-pressed={isChatPanelActive}
           class={cx(
-            "button button-circle relative max-md:h-9 max-md:w-9",
+            "button button-circle relative",
+            compactButtonClass,
             isChatPanelActive ? "button-primary" : "button-neutral",
           )}
           onclick={onChatToggle}>
-          <Icon icon={ChatRound} size={4.5} />
+          <Icon icon={ChatRound} size={iconSize} />
           {#if chatUnread}
             <span
               class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-surface"
@@ -175,9 +190,9 @@
         <Button
           data-tip="Leave call"
           aria-label="Leave voice room"
-          class="button button-circle button-error max-md:h-9 max-md:w-9"
+          class={cx("button button-circle button-error", compactButtonClass)}
           onclick={leaveVoiceRoom}>
-          <Icon icon={EndCall} size={5} />
+          <Icon icon={EndCall} size={isChatPanelActive ? 4 : 5} />
         </Button>
       </div>
     {/if}
