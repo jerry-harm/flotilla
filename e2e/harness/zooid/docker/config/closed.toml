@@ -16,11 +16,12 @@ secret = "c105ed0000000000000000000000000000000000000000000000000000000006"
 
 [info]
 # Served to the client as nip-11. `name` is what a spec sees as the space's name, so it matches the
-# name scenarios pass to `relay()`. `pubkey` is the owner, and here it is the relay's own key (the
-# pubkey for `secret`) so that [roles.admin] below is the only thing granting a test identity
-# can_manage.
+# name scenarios pass to `relay()`. `pubkey` is the owner, and on current zooid ownership is the
+# grant that lets an identity manage the relay (IsOwner → CanManage), so it is admin's key — the
+# identity seeding signs its room fixtures as. zooid's master build dropped the [roles] config that
+# used to grant this, leaving ownership as the config's only lever.
 name = "closed"
-pubkey = "9b78ed2f0054d1f6ce8307c81e7c4f5aefc78f2396416da05299caac2fb8662e"
+pubkey = "6ada7b6eabb3a8349f88667d278a275c704b553a7c57f9d8156555986884a08e"
 description = "Throwaway relay for Flotilla's end-to-end suite."
 
 [policy]
@@ -42,7 +43,3 @@ enabled = false
 
 [push]
 enabled = false
-
-[roles.admin]
-pubkeys = ["6ada7b6eabb3a8349f88667d278a275c704b553a7c57f9d8156555986884a08e"]
-can_manage = true
