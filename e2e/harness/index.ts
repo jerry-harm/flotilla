@@ -187,6 +187,20 @@ export const test = base.extend<HarnessFixtures, HarnessWorkerFixtures>({
         await injectNip07(context, options.nip07)
       }
 
+      // Playwright grants the "notifications" permission at the browser level, but headless Chromium
+      // still reports `Notification.permission` as "denied", so a spec that opted into notifications
+      // would watch the app's push-enable refuse a permission it was given. Reflect the grant into
+      // the Notification API the app actually reads.
+      if (options.context?.permissions?.includes("notifications")) {
+        await context.addInitScript(() => {
+          Object.defineProperty(Notification, "permission", {
+            configurable: true,
+            get: () => "granted",
+          })
+          Notification.requestPermission = () => Promise.resolve("granted")
+        })
+      }
+
       return boot(context, {
         user,
         path,
