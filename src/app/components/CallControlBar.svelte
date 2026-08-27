@@ -39,12 +39,9 @@
   type Props = {
     url: string
     h: string
-    // suppress the full in-call control row on desktop — used where a wider,
-    // unobstructed copy of it already floats over the video panel
-    hideConnectedOnDesktop?: boolean
   }
 
-  const {url, h, hideConnectedOnDesktop = false}: Props = $props()
+  const {url, h}: Props = $props()
 
   const roomStore = $derived($rooms.forRoom(url, h))
   const room = $derived($roomStore)
@@ -67,15 +64,7 @@
   const chatUnread = $derived($notifications.has(roomPath))
   const isChatPanelActive = $derived($videoCallLayout === VideoCallLayout.Split)
 
-  // With chat open, the floating bar shares the video pane with the sidebar rather
-  // than spanning the full width — a smaller bar reads as sized for that narrower
-  // space instead of just looking unchanged. Sized below mobile's max-md:h-9 (36px)
-  // since desktop is mouse-driven, not a touch target. max-md sizing itself is
-  // unaffected: mobile chat is a full-screen overlay, not a space-sharing sidebar.
-  const compactButtonClass = $derived(
-    cx("max-md:h-9 max-md:w-9", isChatPanelActive && "md:h-8 md:w-8"),
-  )
-  const iconSize = $derived(isChatPanelActive ? 3.5 : 4.5)
+  const buttonClass = "button button-circle max-md:h-9 max-md:w-9"
 
   const onChatToggle = () => {
     videoCallLayout.update(p =>
@@ -86,15 +75,13 @@
 
 {#if joiningHere || connectedHere || showJoin}
   <!-- every state shares this grid cell so switching between them cross-fades in
-       place instead of pushing/jumping past each other as flex siblings, and the
-       grid auto-sizes to whichever state is actually present (nothing reserves
-       layout space when e.g. the connected bar is display:none on desktop). -->
+       place instead of pushing/jumping past each other as flex siblings. -->
   <div class="grid items-center justify-center">
     {#if joiningHere}
       <div
         in:fade={{duration: 160}}
         out:fade={{duration: 120}}
-        class="pointer-events-auto col-start-1 row-start-1 flex h-10 items-center gap-1.5 rounded-full border border-line bg-surface/95 px-1.5 shadow-xl backdrop-blur-md">
+        class="col-start-1 row-start-1 flex h-10 items-center gap-1.5 rounded-full border border-line bg-surface/95 px-1.5 shadow-xl backdrop-blur-md">
         <span
           data-tip="Joining call…"
           role="status"
@@ -113,22 +100,14 @@
       <div
         in:fade={{duration: 160}}
         out:fade={{duration: 120}}
-        class={cx(
-          "pointer-events-auto col-start-1 row-start-1 flex items-center gap-1.5 rounded-full border border-line bg-surface/95 p-1.5 shadow-xl backdrop-blur-md md:gap-2 md:p-2",
-          isChatPanelActive && "md:gap-1 md:p-1",
-          hideConnectedOnDesktop && "md:hidden",
-        )}>
+        class="col-start-1 row-start-1 flex items-center gap-1.5 rounded-full border border-line bg-surface/95 p-1.5 shadow-xl backdrop-blur-md md:gap-2 md:p-2">
         <Button
           data-tip={$callMicMuted ? "Unmute" : "Mute"}
           aria-label={$callMicMuted ? "Unmute microphone" : "Mute microphone"}
           aria-pressed={!$callMicMuted}
-          class={cx(
-            "button button-circle",
-            compactButtonClass,
-            $callMicMuted ? "button-neutral" : "button-primary",
-          )}
+          class={cx(buttonClass, $callMicMuted ? "button-neutral" : "button-primary")}
           onclick={toggleMute}>
-          <Icon icon={$callMicMuted ? MicrophoneOff : Microphone} size={iconSize} />
+          <Icon icon={$callMicMuted ? MicrophoneOff : Microphone} size={4.5} />
         </Button>
         {#if $currentCallSession}
           <Button
@@ -136,14 +115,13 @@
             aria-label={$currentCallSession.cameraOn ? "Turn off camera" : "Turn on camera"}
             aria-pressed={$currentCallSession.cameraOn}
             class={cx(
-              "button button-circle",
-              compactButtonClass,
+              buttonClass,
               $currentCallSession.cameraOn ? "button-primary" : "button-neutral",
             )}
             onclick={toggleCamera}>
             <Icon
               icon={$currentCallSession.cameraOn ? VideocameraRecord : VideocameraOff}
-              size={iconSize} />
+              size={4.5} />
           </Button>
           {#if !Capacitor.isNativePlatform()}
             <Button
@@ -153,33 +131,32 @@
                 : "Share screen"}
               aria-pressed={$currentCallSession.screenShareOn}
               class={cx(
-                "button button-circle",
-                compactButtonClass,
+                buttonClass,
                 $currentCallSession.screenShareOn ? "button-primary" : "button-neutral",
               )}
               onclick={toggleScreenShare}>
-              <Icon icon={Monitor} size={iconSize} />
+              <Icon icon={Monitor} size={4.5} />
             </Button>
           {/if}
         {/if}
         <Button
           data-tip="Call settings"
           aria-label="Call settings"
-          class={cx("button button-circle button-neutral", compactButtonClass)}
+          class={cx(buttonClass, "button-neutral")}
           onclick={openCallSettings}>
-          <Icon icon={Settings} size={iconSize} />
+          <Icon icon={Settings} size={4.5} />
         </Button>
         <Button
           data-tip="Toggle chat"
           aria-label="Toggle chat panel"
           aria-pressed={isChatPanelActive}
           class={cx(
-            "button button-circle relative",
-            compactButtonClass,
+            buttonClass,
+            "relative",
             isChatPanelActive ? "button-primary" : "button-neutral",
           )}
           onclick={onChatToggle}>
-          <Icon icon={ChatRound} size={iconSize} />
+          <Icon icon={ChatRound} size={4.5} />
           {#if chatUnread}
             <span
               class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-surface"
@@ -190,17 +167,14 @@
         <Button
           data-tip="Leave call"
           aria-label="Leave voice room"
-          class={cx("button button-circle button-error", compactButtonClass)}
+          class={cx(buttonClass, "button-error")}
           onclick={leaveVoiceRoom}>
-          <Icon icon={EndCall} size={isChatPanelActive ? 4 : 5} />
+          <Icon icon={EndCall} size={5} />
         </Button>
       </div>
     {/if}
     {#if showJoin}
-      <div
-        in:fade={{duration: 160}}
-        out:fade={{duration: 120}}
-        class="pointer-events-auto col-start-1 row-start-1">
+      <div in:fade={{duration: 160}} out:fade={{duration: 120}} class="col-start-1 row-start-1">
         <Button
           data-tip="Join call"
           aria-label="Join voice room"

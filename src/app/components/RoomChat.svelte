@@ -32,14 +32,7 @@
   import CallControlBar from "@app/components/CallControlBar.svelte"
   import {deletes, relays, rooms, thunks, user} from "@app/core"
   import {joinRoom, leaveRoom} from "@app/access"
-  import {
-    CallState,
-    callTargetRoom,
-    callState,
-    VideoCallLayout,
-    videoCallLayout,
-    deriveIsCallActiveElsewhere,
-  } from "@app/call"
+  import {CallState, callTargetRoom, callState, VideoCallLayout, videoCallLayout} from "@app/call"
   import {
     PROTECTED,
     RoomType,
@@ -71,39 +64,21 @@
     isVoiceRoom && $callState === CallState.Connected && isCallTargetingThisRoom,
   )
 
-  const isCallActiveElsewhere = $derived(deriveIsCallActiveElsewhere(url, h))
-  const callBannerVisible = $derived($isCallActiveElsewhere)
-
-  // Reuses voiceConnectedHere (rather than re-deriving isVoiceRoom/callState) so it
-  // can't diverge and stay true for a different voice room the call isn't targeting
-  // — that previously hid this room's messages/compose row while connected elsewhere.
-  const showMobileVideoPanel = $derived(
-    voiceConnectedHere && $videoCallLayout === VideoCallLayout.Video,
-  )
-
-  // Basic pass at issue #121's "chat overlaid on video" idea: float the chat panel over
-  // the full-bleed video instead of splitting the screen into fixed columns, so the call
-  // stays the visual focus. The panel opens from — and collapses back to — a chat FAB.
-  const isOverlayChat = $derived(voiceConnectedHere && $videoCallLayout === VideoCallLayout.Split)
-
-  const videoCallChatHidden = $derived(
-    voiceConnectedHere && $videoCallLayout === VideoCallLayout.Video,
-  )
+  // During a call the chat is toggled from the call controls — it takes over the pane,
+  // or sits beside the video once there's room for both. Reuses voiceConnectedHere
+  // rather than re-deriving isVoiceRoom/callState so it can't stay true for a voice
+  // room the call isn't targeting, which would hide that room's messages.
+  const callChatOpen = $derived(voiceConnectedHere && $videoCallLayout === VideoCallLayout.Split)
+  const callChatHidden = $derived(voiceConnectedHere && !callChatOpen)
 
   const roomPath = h ? makeRoomPath(url, h) : undefined
 
   const closeChat = () => videoCallLayout.set(VideoCallLayout.Video)
 
   $effect(() => {
-    deferredRoomPath.set(videoCallChatHidden ? roomPath : undefined)
-    if (roomPath && voiceConnectedHere && !videoCallChatHidden) {
+    deferredRoomPath.set(callChatHidden ? roomPath : undefined)
+    if (roomPath && callChatOpen) {
       setChecked(roomPath)
-    }
-    // The messages pane (and its scroll position) is offscreen while the call view is
-    // showing — don't leave its floating "scroll down"/"new messages" chips stranded.
-    if (videoCallChatHidden) {
-      showScrollButton = false
-      showFixedNewMessages = false
     }
   })
 
@@ -120,8 +95,8 @@
       return
     }
 
-    // Land on the call view (chat as a FAB) as soon as the call starts here, whether
-    // or not anyone's camera is on — chat is one tap away via the FAB.
+    // Land on the call view as soon as the call starts here, whether or not anyone's
+    // camera is on — chat is one tap away via the control bar's chat toggle.
     if (!wasConnectedHere) {
       videoCallLayout.set(VideoCallLayout.Video)
       wasConnectedHere = true
@@ -499,52 +474,39 @@
 
 <div
   class={cx(
-    "flex min-h-0 flex-1 flex-col",
-    isOverlayChat && "max-md:relative",
-    // Desktop: chat is a real flex sibling beside the video pane rather than an
-    // absolute overlay on top of it, so opening/closing it actually resizes the
-    // video pane instead of just floating a card over it — see the sidebar's
-    // width transition below for why this fixes controls jumping on toggle.
-    voiceConnectedHere && "md:flex-row",
+    "room flex min-h-0 min-w-0 flex-1 flex-col",
+    voiceConnectedHere && "bg-surface xl:flex-row xl:overflow-hidden",
   )}>
   {#if h && voiceConnectedHere}
-    <VideoCallContent
-      layout={$videoCallLayout}
-      {url}
-      {h}
-      class="hidden min-h-0 w-full min-w-0 flex-1 flex-col md:flex" />
+    <!-- The controls belong to the video, so they share its column and the chat panel
+         runs the full height beside it. Below xl the open chat takes the pane over
+         instead of sharing it, leaving this column to shrink to just the controls. -->
+    <div
+      class={cx(
+        "flex min-h-0 min-w-0 flex-col max-xl:order-last",
+        callChatOpen ? "xl:flex-1" : "flex-1",
+      )}>
+      <VideoCallContent {url} {h} class={cx(callChatOpen && "max-xl:hidden")} />
+      <div class="hide-on-keyboard flex shrink-0 items-center justify-center pb-2">
+        <CallControlBar {url} {h} />
+      </div>
+    </div>
   {/if}
 
-  {#if h && voiceConnectedHere}
-    <VideoCallContent
-      layout={$videoCallLayout}
-      mobile
-      {url}
-      {h}
-      class={cx("md:hidden", isOverlayChat && "absolute inset-0")} />
-  {/if}
-
+  <!-- Closed at xl, the negative margin takes the panel out of the flex line without
+       changing its width, parking it past the room's clipped right edge — so the
+       transition slides it in at full size rather than squeezing its contents. It
+       only drops out of the layout below xl, where it has nothing to share the pane
+       with. inert (not just pointer-events) so a parked panel leaves the tab order. -->
   <div
+    inert={callChatHidden}
     class={cx(
-      "room flex min-h-0 min-w-0 flex-1 flex-col",
-      videoCallChatHidden && "hidden",
-      // Desktop: a real sidebar column (fixed width, animated) instead of an absolute
-      // overlay card — its width transition is what makes the video pane (and the
-      // controls centered inside it, see VideoCallContent) resize and re-center in
-      // step with the chat opening/closing, instead of jumping.
+      "relative flex min-h-0 min-w-0 flex-1 flex-col",
       voiceConnectedHere &&
-        "md:flex md:min-w-0 md:flex-none md:border-0 md:border-l md:border-line md:bg-surface md:shadow-lg md:transition-all md:duration-300 md:ease-in-out",
-      voiceConnectedHere &&
-        (isOverlayChat
-          ? "md:w-72 md:opacity-100"
-          : "md:w-0 md:border-l-0 md:opacity-0 md:shadow-none md:pointer-events-none"),
-      isOverlayChat &&
-        // Narrower width (w-72) plus generous insets keep the mobile card's edges from
-        // landing flush against a video tile's edge. No shadow on mobile — the card
-        // already reads as distinct from the video behind it via its own background.
-        "max-md:absolute max-md:inset-x-2 max-md:top-4 max-md:bottom-[calc(3.5rem+var(--saib))] max-md:z-popover max-md:overflow-hidden max-md:rounded-2xl max-md:border max-md:border-line max-md:bg-surface/95",
+        "xl:w-96 xl:flex-none xl:border-l xl:border-line xl:transition-[margin-right] xl:duration-200",
+      callChatHidden && "max-xl:hidden xl:-mr-96",
     )}>
-    {#if isOverlayChat}
+    {#if callChatOpen}
       <Button
         aria-label="Close room chat"
         class="button button-neutral button-xs button-circle absolute right-2 top-2 z-popover"
@@ -553,26 +515,12 @@
       </Button>
     {/if}
 
-    <!-- Separate from the panel's own overflow: the panel itself can't clip its own
-         overflow (that would also clip its desktop shadow), so this inner wrapper is
-         what keeps content from spilling out while the panel's width is animating
-         toward 0 on close. -->
-    <div
-      class={cx(
-        "flex min-h-0 min-w-0 flex-1 flex-col",
-        voiceConnectedHere && "md:overflow-hidden",
-      )}>
-      {#if h}
-        <RoomPinnedMessages {url} {h} />
-      {/if}
+    {#if h}
+      <RoomPinnedMessages {url} {h} />
+    {/if}
 
-      <div
-        bind:this={element}
-        onscroll={onScroll}
-        class={cx(
-          "room__content scroll-container",
-          showMobileVideoPanel ? "hidden md:flex md:flex-col-reverse" : "flex",
-        )}>
+    <div class="relative flex min-h-0 flex-1 flex-col">
+      <div bind:this={element} onscroll={onScroll} class="room__content scroll-container">
         {#if $room?.meta?.isPrivate() && $membershipStatus !== MembershipStatus.Granted}
           <div class="py-20">
             <div class="card flex flex-col gap-8 m-auto max-w-md items-center text-center">
@@ -643,106 +591,77 @@
         <div class="h-screen"></div>
       </div>
 
-      <div
-        class={cx(
-          // no explicit flex-row: it's flex's default direction, and Tailwind emits
-          // .flex-col before .flex-row in the compiled sheet, so having both classes
-          // present at once (base flex-row + conditional flex-col below) let flex-row
-          // always win — the compose row and call controls never actually stacked.
-          "room__compose flex items-center gap-1 px-2",
-          showMobileVideoPanel && "max-md:hidden",
-          // the connected bar (mic/camera/screenshare/settings/chat/leave) is too wide
-          // to sit beside the compose input on any screen size — give it its own row.
-          // gap-2 only applies here (the inline row stays flush with no gap).
-          voiceConnectedHere && "flex-col items-stretch gap-2",
-        )}>
-        <div class="room__compose-inner min-w-0 flex-1">
-          {#if $room?.meta?.isPrivate() && $membershipStatus !== MembershipStatus.Granted}
-            <!-- pass -->
-          {:else if $room?.meta?.isRestricted() && $membershipStatus !== MembershipStatus.Granted}
-            <div class="card m-4 flex flex-row items-center justify-between px-4 py-3">
-              <p class="opacity-75">Only members are allowed to post to this room.</p>
-              {#if $membershipStatus === MembershipStatus.Pending}
-                <Button class="button button-neutral button-sm" disabled={leaving} onclick={leave}>
-                  <Icon icon={ClockCircle} />
-                  Access Pending
-                </Button>
-              {:else}
-                <Button class="button button-neutral button-sm" disabled={joining} onclick={join}>
-                  {#if joining}
-                    <Spinner size="sm" />
-                  {:else}
-                    <Icon icon={Login2} />
-                  {/if}
-                  Ask to Join
-                </Button>
-              {/if}
-            </div>
-          {:else}
-            <div>
-              {#if parent}
-                <RoomComposeParent {url} event={parent} clear={clearParent} verb="Replying to" />
-              {/if}
-              {#if sharedEvent}
-                <RoomComposeParent {url} event={sharedEvent} clear={clearShare} verb="Sharing" />
-              {/if}
-              {#if eventToEdit}
-                <RoomComposeEdit clear={clearEventToEdit} />
-              {/if}
-            </div>
-            {#key initialValues}
-              <RoomCompose
-                {url}
-                {h}
-                {onSubmit}
-                {onEscape}
-                {onEditPrevious}
-                {initialValues}
-                bind:this={compose} />
-            {/key}
-          {/if}
+      {#if showScrollButton}
+        <div in:fade class="absolute bottom-2 right-4 z-popover">
+          <Button class="button button-neutral button-circle" onclick={scrollToBottom}>
+            <Icon icon={AltArrowDown} />
+          </Button>
         </div>
-        {#if h}
-          <div
-            class={cx(
-              "hide-on-keyboard flex flex-shrink-0 items-center justify-center py-2",
-              // CallControlBar's connected pill is itself md:hidden here (a wider copy
-              // floats over the video instead — see VideoCallContent.svelte), so once
-              // this row actually stacks (flex-col, above) this wrapper has nothing to
-              // show on desktop and was otherwise left as an empty padded bar under
-              // the compose box. voiceConnectedHere is exactly the state where the
-              // pill is connected, so hiding it here is safe for the join/joining
-              // states, which don't hit this flex-col branch at all.
-              voiceConnectedHere && "md:hidden",
-            )}>
-            <CallControlBar {url} {h} hideConnectedOnDesktop />
+      {/if}
+
+      {#if showFixedNewMessages}
+        <div
+          transition:fly={{duration: 200}}
+          class="absolute inset-x-0 top-2 z-popover flex justify-center">
+          <Button class="button button-primary button-xs button-pill" onclick={scrollToNewMessages}>
+            New Messages
+          </Button>
+        </div>
+      {/if}
+    </div>
+
+    <div class="room__compose flex items-center gap-1 px-2">
+      <div class="room__compose-inner min-w-0 flex-1">
+        {#if $room?.meta?.isPrivate() && $membershipStatus !== MembershipStatus.Granted}
+          <!-- pass -->
+        {:else if $room?.meta?.isRestricted() && $membershipStatus !== MembershipStatus.Granted}
+          <div class="card m-4 flex flex-row items-center justify-between px-4 py-3">
+            <p class="opacity-75">Only members are allowed to post to this room.</p>
+            {#if $membershipStatus === MembershipStatus.Pending}
+              <Button class="button button-neutral button-sm" disabled={leaving} onclick={leave}>
+                <Icon icon={ClockCircle} />
+                Access Pending
+              </Button>
+            {:else}
+              <Button class="button button-neutral button-sm" disabled={joining} onclick={join}>
+                {#if joining}
+                  <Spinner size="sm" />
+                {:else}
+                  <Icon icon={Login2} />
+                {/if}
+                Ask to Join
+              </Button>
+            {/if}
           </div>
+        {:else}
+          <div>
+            {#if parent}
+              <RoomComposeParent {url} event={parent} clear={clearParent} verb="Replying to" />
+            {/if}
+            {#if sharedEvent}
+              <RoomComposeParent {url} event={sharedEvent} clear={clearShare} verb="Sharing" />
+            {/if}
+            {#if eventToEdit}
+              <RoomComposeEdit clear={clearEventToEdit} />
+            {/if}
+          </div>
+          {#key initialValues}
+            <RoomCompose
+              {url}
+              {h}
+              {onSubmit}
+              {onEscape}
+              {onEditPrevious}
+              {initialValues}
+              bind:this={compose} />
+          {/key}
         {/if}
       </div>
+      {#if h && isVoiceRoom && !voiceConnectedHere}
+        <div class="hide-on-keyboard flex shrink-0 items-center justify-center py-2">
+          <CallControlBar {url} {h} />
+        </div>
+      {/if}
     </div>
   </div>
 </div>
-
-{#if showScrollButton}
-  <div
-    in:fade
-    class={cx(
-      "chat__scroll-down",
-      callBannerVisible && "chat__scroll-down--banner",
-      isOverlayChat && "chat__scroll-down--overlay-chat",
-    )}>
-    <Button class="button button-neutral button-circle" onclick={scrollToBottom}>
-      <Icon icon={AltArrowDown} />
-    </Button>
-  </div>
-{/if}
-
-{#if showFixedNewMessages}
-  <div class="relative z-popover flex justify-center">
-    <div transition:fly={{duration: 200}} class="fixed top-12 pt-sai">
-      <Button class="button button-primary button-xs button-pill" onclick={scrollToNewMessages}>
-        New Messages
-      </Button>
-    </div>
-  </div>
-{/if}

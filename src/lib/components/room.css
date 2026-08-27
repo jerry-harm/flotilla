@@ -1,6 +1,9 @@
 @layer components {
   .room {
-    @apply relative;
+    /* The mobile nav is fixed on top of the page, so the room view reserves its
+       height here rather than in each of its children — otherwise an overlaid or
+       floating child ends up stacking a second copy of the offset. */
+    @apply relative mb-14 md:mb-0;
 
     .room__content {
       @apply z-feature flex max-h-screen min-h-0 w-full min-w-0 flex-col flex-col-reverse gap-2 overflow-x-hidden overflow-y-auto;
@@ -19,7 +22,7 @@
     }
 
     .room__compose {
-      @apply z-compose relative mb-14 shrink-0 md:mb-0;
+      @apply z-compose relative shrink-0;
     }
 
     .room__compose .room__compose-inner {

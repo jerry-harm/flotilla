@@ -170,7 +170,7 @@ body.keyboard-open {
 body.keyboard-open .hide-on-keyboard {
   @apply hidden;
 }
-body.keyboard-open .room__compose {
+body.keyboard-open .room {
   @apply mb-0;
 }
 

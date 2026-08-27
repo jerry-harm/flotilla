@@ -7,10 +7,8 @@
   import Icon from "@lib/components/Icon.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import VideoCallTile from "@app/components/VideoCallTile.svelte"
-  import CallControlBar from "@app/components/CallControlBar.svelte"
   import VoiceParticipantMediaBadges from "@app/components/VoiceParticipantMediaBadges.svelte"
   import {
-    VideoCallLayout,
     toggleVideoPrimaryTile,
     videoPrimaryTileKey,
     currentCallSession,
@@ -25,8 +23,6 @@
   import {deriveDisplaysByPubkey} from "@app/social"
 
   type Props = {
-    layout: VideoCallLayout
-    mobile?: boolean
     url: string
     h: string
     class?: string
@@ -42,16 +38,7 @@
 
   type TileLayoutVariant = "spotlight" | "default" | "strip"
 
-  const {layout, mobile = false, url, h, class: className = ""}: Props = $props()
-
-  const isViewingCurrentCallRoom = $derived(
-    $callTargetRoom?.url === url && $callTargetRoom?.h === h,
-  )
-
-  const showVideoContent = $derived(
-    isViewingCurrentCallRoom &&
-      (layout === VideoCallLayout.Split || layout === VideoCallLayout.Video),
-  )
+  const {url, h, class: className}: Props = $props()
 
   const videoTiles = $derived.by(() => {
     const session = $currentCallSession
@@ -188,24 +175,6 @@
   const spotlightHandlerFor = (key: string) => () => {
     toggleVideoPrimaryTile(key)
   }
-
-  const panelChrome = $derived(
-    mobile
-      ? cx(
-          "flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden bg-surface px-2 pt-4 md:hidden pb-[calc(3.5rem+var(--saib))]",
-          className,
-        )
-      : "flex min-h-0 w-full min-w-0 flex-1 flex-col gap-2 overflow-hidden bg-surface px-2 pb-2 pt-4",
-  )
-
-  // Desktop: `className` (the instance's own visibility/sizing, e.g. "hidden ...
-  // md:flex") lives on this wrapper rather than on panelChrome, so the floating
-  // control bar below shares its box — a `relative` box that's already sized to
-  // the real (chat-sidebar-aware) video pane width, since RoomChat now lays the
-  // chat sidebar out as a flex sibling instead of an absolute overlay. Centering
-  // the controls against this box (instead of the viewport) is what keeps them
-  // centered in the actual remaining space as that width animates open/closed.
-  const desktopWrapperClass = $derived(cx("relative flex min-h-0 flex-1 flex-col", className))
 </script>
 
 {#snippet videoTile(tile: VideoTileData, layout: TileLayoutVariant)}
@@ -281,7 +250,7 @@
       <div
         bind:clientWidth={gridWidth}
         bind:clientHeight={gridHeight}
-        class="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
+        class="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable_both-edges]">
         {#if tileGrid}
           <div class="flex flex-col items-center gap-2">
             {#each tileGrid.rows as row, rowIndex (rowIndex)}
@@ -312,36 +281,6 @@
   {/if}
 {/snippet}
 
-{#if showVideoContent}
-  {#if mobile}
-    <div class={panelChrome}>
-      {@render videoPanelBody()}
-    </div>
-    <!-- fixed (viewport-relative), not absolute within panelChrome — panelChrome's
-         flex-computed height isn't guaranteed to reach the real viewport bottom, so
-         an absolute child positioned against its box can end up overlapping the
-         fixed bottom nav bar. Matches the same bottom-nav-clearing offset the old
-         chat FAB used.
-
-         RoomChat mounts both a desktop and a mobile VideoCallContent instance at
-         once while connected, each gated by its own `class` prop — this instance
-         is the mobile one, so it's the only copy visible below md. -->
-    <div
-      class="left-content pointer-events-none fixed right-sai z-popover flex justify-center bottom-[calc(4.5rem+var(--saib))] md:hidden">
-      <CallControlBar {url} {h} />
-    </div>
-  {:else}
-    <!-- desktopWrapperClass carries this instance's own visibility ("hidden ...
-         md:flex") and is `relative`, so the control bar below is `absolute` against
-         the real (chat-sidebar-aware) video pane box rather than the viewport —
-         it re-centers automatically as that box's width animates. -->
-    <div class={desktopWrapperClass}>
-      <div class={panelChrome}>
-        {@render videoPanelBody()}
-      </div>
-      <div class="pointer-events-none absolute inset-x-0 bottom-4 z-popover flex justify-center">
-        <CallControlBar {url} {h} />
-      </div>
-    </div>
-  {/if}
-{/if}
+<div class={cx("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-2", className)}>
+  {@render videoPanelBody()}
+</div>
