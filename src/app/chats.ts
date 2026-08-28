@@ -103,8 +103,16 @@ export const chatsById = call(() => {
             const chat = chatsById.get(chatId)
 
             if (chat) {
-              chat.messages = reject(spec({id: event.id}), chat.messages)
-              dirty = true
+              const messages = reject(spec({id: event.id}), chat.messages)
+
+              // Replace the chat with a fresh object rather than mutating its messages in place:
+              // deriveChat is deduplicated by reference (see makeDeriveItem/deriveDeduplicated), so a
+              // chat whose identity is unchanged never reaches the ui and the deleted message lingers
+              // on screen until some unrelated addEvents happens to rebuild it.
+              if (messages.length !== chat.messages.length) {
+                chatsById.set(chatId, {...chat, messages})
+                dirty = true
+              }
             }
           }
         }
