@@ -2,7 +2,6 @@ import type {Component} from "svelte"
 import {get, writable} from "svelte/store"
 import {randomId, always, assoc, Emitter} from "@welshman/lib"
 import {deriveDeduplicated} from "@welshman/store"
-import {goto} from "$app/navigation"
 import {page} from "$app/stores"
 import type {DialogSize} from "@lib/components/Dialog.svelte"
 
@@ -29,14 +28,39 @@ export const modals = writable<Record<string, Modal>>({})
 
 const getIdsFromHash = (hash: string) => hash.slice(1).split(",").filter(Boolean)
 
-export const modalStack = deriveDeduplicated([page, modals], ([$page, $modals]) => {
-  return getIdsFromHash($page.url.hash)
+// The modal stack lives in the url hash, but it is written with the History API directly rather
+// than SvelteKit's `goto`. A programmatic hash `goto` runs a full navigation, which re-renders the
+// whole layout tree and (in dev) leaves a second, orphaned app shell mounted; a History update does
+// not navigate. `history.state` is carried through untouched, so SvelteKit's own popstate handler
+// treats a back as a same-entry hash change and does nothing, while this store drives the open
+// modals.
+const modalHash = writable(typeof location === "undefined" ? "" : location.hash)
+
+if (typeof window !== "undefined") {
+  window.addEventListener("popstate", () => modalHash.set(location.hash))
+}
+
+const setModalHash = (hash: string, replace: boolean) => {
+  const {pathname, search} = get(page).url
+  const url = pathname + search + hash
+
+  if (replace) {
+    history.replaceState(history.state, "", url)
+  } else {
+    history.pushState(history.state, "", url)
+  }
+
+  modalHash.set(hash)
+}
+
+export const modalStack = deriveDeduplicated([modalHash, modals], ([$hash, $modals]) => {
+  return getIdsFromHash($hash)
     .map(id => $modals[id])
     .filter(Boolean)
 })
 
-export const modal = deriveDeduplicated([page, modals], ([$page, $modals]) => {
-  const ids = getIdsFromHash($page.url.hash)
+export const modal = deriveDeduplicated([modalHash, modals], ([$hash, $modals]) => {
+  const ids = getIdsFromHash($hash)
 
   return $modals[ids.at(-1) || ""]
 })
@@ -47,13 +71,12 @@ export const pushModal = (
   options: ModalOptions = {},
 ) => {
   const id = randomId()
-  const path = options.path || ""
-  const existingIds = getIdsFromHash(get(page).url.hash)
+  const existingIds = getIdsFromHash(get(modalHash))
   const ids = options.nested ? [...existingIds, id] : [id]
 
   modals.update(assoc(id, {id, component, props, options}))
 
-  goto(path + "#" + ids.join(","), {replaceState: options.replaceState})
+  setModalHash("#" + ids.join(","), Boolean(options.replaceState))
 
   return id
 }
@@ -65,23 +88,19 @@ export const pushDrawer = (
 ) => pushModal(component, props, {...options, drawer: true})
 
 export const popModal = () => {
-  const url = get(page).url
-  const ids = getIdsFromHash(url.hash)
+  const ids = getIdsFromHash(get(modalHash))
 
   if (ids.length === 0) {
     return
   }
 
   const next = ids.slice(0, -1).join(",")
-  const hash = next ? `#${next}` : ""
 
-  goto(url.pathname + url.search + hash, {replaceState: true})
+  setModalHash(next ? `#${next}` : "", true)
 }
 
 export const clearModals = () => {
-  const url = get(page).url
-
-  goto(url.pathname + url.search, {replaceState: true})
+  setModalHash("", true)
   modals.update(always({}))
   emitter.emit("close")
 }
