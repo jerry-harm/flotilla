@@ -1,7 +1,7 @@
 <script lang="ts">
   import cx from "classnames"
   import {LOCALE, always, call, removeAt, replaceAt, sleep} from "@welshman/lib"
-  import {WalletType, displayRelayUrl, isNWCWallet, fromMsats} from "@welshman/util"
+  import {WalletType, displayRelayUrl, getLnUrl, isNWCWallet, fromMsats} from "@welshman/util"
   import DownloadMinimalistic from "@assets/icons/download-minimalistic.svg?dataurl"
   import UploadMinimalistic from "@assets/icons/upload-minimalistic.svg?dataurl"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
@@ -22,7 +22,7 @@
   import WalletDisconnect from "@app/components/WalletDisconnect.svelte"
   import WalletUpdateReceivingAddress from "@app/components/WalletUpdateReceivingAddress.svelte"
   import {pushModal} from "@app/modal"
-  import {getNwcClient, getWebLn, wallet} from "@app/lightning"
+  import {displayLnurl, getNwcClient, getWebLn, wallet} from "@app/lightning"
   import {userSettingsValues, publishSettings, createSettingsForm} from "@app/settings"
   import {pushToast} from "@app/toast"
   import {profiles, user} from "@app/core"
@@ -34,8 +34,10 @@
   const updateReceivingAddress = () => pushModal(WalletUpdateReceivingAddress)
 
   const profile = $derived($profiles.get($user.pubkey))
-  const profileLightningAddress = $derived(profile?.lnurl())
+  const profileLnurl = $derived(profile?.lnurl())
+  const profileLightningAddress = $derived(profileLnurl && displayLnurl(profileLnurl))
   const walletLud16 = $derived($wallet && isNWCWallet($wallet) ? $wallet.info.lud16 : undefined)
+  const walletLnurl = $derived(walletLud16 && getLnUrl(walletLud16))
 
   const pay = () => pushModal(WalletPay)
 
@@ -249,13 +251,13 @@
   <div class="card flex flex-col gap-6">
     <strong>Lightning Address</strong>
     <div class="flex justify-between items-center gap-2">
-      <span class={profileLightningAddress ? "" : "text-warning"}>
-        {profileLightningAddress ? profileLightningAddress : "Not set"}
+      <span class={cx("min-w-0 truncate", !profileLightningAddress && "text-warning")}>
+        {profileLightningAddress || "Not set"}
       </span>
       <Button class="button button-neutral button-xs ml-3" onclick={updateReceivingAddress}
         >Update</Button>
     </div>
-    {#if profileLightningAddress && walletLud16 && profileLightningAddress !== walletLud16}
+    {#if profileLnurl && walletLnurl && profileLnurl !== walletLnurl}
       <div class="card flex items-center gap-2 text-xs">
         <Icon icon={InfoCircle} size={4} />
         Your profile has a different lightning address than your connected wallet.

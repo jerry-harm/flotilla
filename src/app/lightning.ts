@@ -1,9 +1,28 @@
 import {writable} from "svelte/store"
 import {nwc} from "@getalby/sdk"
+import {bech32ToHex, displayUrl, tryCatch} from "@welshman/lib"
 import type {Maybe} from "@welshman/lib"
 import {isNWCWallet, isWebLNWallet} from "@welshman/util"
 import type {Wallet} from "@welshman/util"
 import {withGetter} from "@welshman/store"
+
+/**
+ * A profile's lnurl is the bech32 form zapping needs — both lud06 and lud16 normalize
+ * into it — so decode it before showing it to anyone. The well-known endpoint a
+ * lightning address encodes to becomes the address again; anything else is a plain url.
+ */
+export const displayLnurl = (lnurl: string) => {
+  const url = tryCatch(() => bech32ToHex(lnurl))
+  const address = url?.match(/^https?:\/\/([^/]+)\/\.well-known\/lnurlp\/(.+)$/)
+
+  if (address) {
+    const [, domain, name] = address
+
+    return `${name}@${domain}`
+  }
+
+  return url ? displayUrl(url) : lnurl
+}
 
 export const wallet = withGetter(writable<Maybe<Wallet>>(undefined))
 
