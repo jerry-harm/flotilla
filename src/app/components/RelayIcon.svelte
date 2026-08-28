@@ -1,5 +1,5 @@
 <script lang="ts">
-  import RemoteControllerMinimalistic from "@assets/icons/remote-controller-minimalistic.svg?dataurl"
+  import Server from "@assets/icons/server.svg?dataurl"
   import ImageIcon from "@lib/components/ImageIcon.svelte"
   import {relays} from "@app/core"
 
@@ -15,7 +15,7 @@
 </script>
 
 {#if $relay?.icon}
-  <ImageIcon {size} alt="" src={$relay?.icon} class={props.class} />
+  <ImageIcon {size} alt="" src={$relay?.icon} class="rounded-full {props.class}" />
 {:else}
-  <ImageIcon size={size - 2} alt="" src={RemoteControllerMinimalistic} class={props.class} />
+  <ImageIcon size={size - 2} alt="" src={Server} class={props.class} />
 {/if}

@@ -24,5 +24,5 @@
   onclick={onClick}
   title={showTooltip ? $display : ""}
   notification={$notifications.has(path)}>
-  <RelayIcon {url} size={10} class="rounded-full" />
+  <RelayIcon {url} size={10} />
 </PrimaryNavItem>
