@@ -16,7 +16,11 @@ export default {
     },
     csp: {
       directives: {
-        "script-src": ["self", "wasm-unsafe-eval", "plausible.coracle.social", "sha256-NpqGpeZTuPniNAucgyfqzWy9iIHwOswFzPzpigwvp/c="],
+        "script-src": [
+          "self",
+          "wasm-unsafe-eval",
+          "sha256-NpqGpeZTuPniNAucgyfqzWy9iIHwOswFzPzpigwvp/c=",
+        ],
         "worker-src": ["self", "blob:"],
         "style-src": ["self", "unsafe-inline"],
         "frame-src": ["none"],
@@ -26,8 +30,8 @@ export default {
     },
   },
   compilerOptions: {
-    warningFilter: (warning) => {
-      return !['a11y_media_has_caption', 'state_referenced_locally'].includes(warning.code)
+    warningFilter: warning => {
+      return !["a11y_media_has_caption", "state_referenced_locally"].includes(warning.code)
     },
-  }
+  },
 }

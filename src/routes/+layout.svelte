@@ -22,7 +22,6 @@
   import ModalContainer from "@app/components/ModalContainer.svelte"
   import * as core from "@app/core"
   import {setupHistory} from "@app/routes"
-  import {setupAnalytics} from "@app/analytics"
   import {setupLogging} from "@app/logger"
   import "@app/policies"
   import {restoreSession} from "@app/session"
@@ -189,7 +188,7 @@
     unsubscribers.push(closeStorage)
 
     // History, navigation, application data
-    unsubscribers.push(setupHistory(), setupAnalytics(), syncApplicationData())
+    unsubscribers.push(setupHistory(), syncApplicationData())
 
     // Listen for links shared into the app from elsewhere on the device
     unsubscribers.push(setupShareIntents())

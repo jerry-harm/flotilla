@@ -75,17 +75,6 @@
       </FieldInline>
       <FieldInline>
         {#snippet label()}
-          <p>Report usage?</p>
-        {/snippet}
-        {#snippet input()}
-          <ToggleInput bind:checked={$settings.report_usage} />
-        {/snippet}
-        {#snippet info()}
-          <p>Allow {PLATFORM_NAME} to collect anonymous usage data.</p>
-        {/snippet}
-      </FieldInline>
-      <FieldInline>
-        {#snippet label()}
           <p>Something went wrong?</p>
         {/snippet}
         {#snippet input()}
