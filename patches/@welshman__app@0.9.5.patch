@@ -1,0 +1,15 @@
+diff --git a/dist/app/src/plugins/relays.js b/dist/app/src/plugins/relays.js
+index 6949fb56bdd45205ee7e5788f26a67fa4babf93b..ac571fc9a54f314c5d55fc20c17a8fd124bbc507 100644
+--- a/dist/app/src/plugins/relays.js
++++ b/dist/app/src/plugins/relays.js
+@@ -21,6 +21,10 @@ export class Relays extends LoadableMapPlugin {
+             const res = await globalThis.fetch(httpUrl, {
+                 headers: { Accept: "application/nostr+json" },
+                 redirect: "manual",
++                // A relay that accepts the connection but never answers (common over slow or
++                // firewalled networks) would otherwise hang every `hasNip`/`hasNegentropy`
++                // check, blocking publishes that await them. Fail the fetch instead.
++                signal: AbortSignal.timeout(5000),
+             });
+             if (res.status === 301 || res.status === 302) {
+                 const location = res.headers.get("location");
