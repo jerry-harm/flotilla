@@ -1,4 +1,5 @@
 import {execFile} from "node:child_process"
+import {createConnection} from "node:net"
 import {chmod, cp, readdir, rm} from "node:fs/promises"
 import {tmpdir} from "node:os"
 import {join} from "node:path"
@@ -38,6 +39,32 @@ const execFileAsync = promisify(execFile)
 // podman, colima, a wrapper in a shell rc file — is invisible to it however well it works when
 // typed. Name the executable to drive with E2E_DOCKER in that case.
 const dockerCommand = process.env.E2E_DOCKER ?? "docker"
+
+// The loopback port the container publishes and transport.ts dials. It is fixed rather than
+// configurable on purpose: the harness talks to whatever answers here, so a copy of the suite left
+// running by anyone else on the machine — under another user, even — would be seeded, queried and
+// reset out from under this run. Both places have to agree, so this must match the published port
+// in docker/compose.yaml and `port` in transport.ts.
+const relayHostPort = 3334
+
+// Whether something already answers on the relay's loopback port. Used as a pre-flight: the port is
+// the harness's alone for the length of a run, so anything holding it before this run brings its own
+// container up is a foreign occupant we must refuse rather than quietly share.
+const isRelayPortTaken = () =>
+  new Promise<boolean>(resolve => {
+    const socket = createConnection({port: relayHostPort, host: "127.0.0.1"})
+
+    socket.setTimeout(1000)
+    socket.once("connect", () => {
+      socket.destroy()
+      resolve(true)
+    })
+    socket.once("timeout", () => {
+      socket.destroy()
+      resolve(false)
+    })
+    socket.once("error", () => resolve(false))
+  })
 
 // Every invocation carries ZOOID_CONFIG, `down` included: the compose file names it without a
 // default, so a call that left it out would fail to interpolate rather than quietly mounting
@@ -174,6 +201,20 @@ export class Zooid {
         `The zooid image ${image} is not present locally. Fetch it with ` +
           `\`${dockerCommand} pull ${image}\`, or build it from a zooid checkout with ` +
           `\`${dockerCommand} build -t ${image} .\`.`,
+      )
+    }
+
+    // Nothing should answer on the relay port yet: this run has not brought its container up. If
+    // something does, it is a leftover container from an aborted run or another copy of the suite —
+    // and because the harness dials this fixed port, sharing it silently corrupts both runs. Refuse
+    // loudly instead. `compose down` clears a leftover of this project's own.
+    if (await isRelayPortTaken()) {
+      throw new Error(
+        `127.0.0.1:${relayHostPort} is already in use, but the zooid relay container publishes ` +
+          "exactly that port and the harness talks to whatever answers there. This is a leftover " +
+          "container from an interrupted run, or another copy of this suite running on the machine " +
+          `(under any user). Free it before running — \`${dockerCommand} compose -f ` +
+          "e2e/harness/zooid/docker/compose.yaml down\` clears one this project started.",
       )
     }
 

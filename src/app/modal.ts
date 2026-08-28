@@ -38,6 +38,9 @@ const modalHash = writable(typeof location === "undefined" ? "" : location.hash)
 
 if (typeof window !== "undefined") {
   window.addEventListener("popstate", () => modalHash.set(location.hash))
+
+  // Close modals on navigate
+  page.subscribe($page => modalHash.set($page.url?.hash ?? ""))
 }
 
 const setModalHash = (hash: string, replace: boolean) => {
