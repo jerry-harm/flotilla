@@ -77,7 +77,7 @@ export const HOSTING_BACKEND_URL = env("VITE_HOSTING_BACKEND_URL")
 
 export const HOSTING_RELAY_DOMAIN = env("VITE_HOSTING_RELAY_DOMAIN")
 
-export const DUFFLEPUD_URL = "https://dufflepud.coracle.social"
+export const DUFFLEPUD_URL = env("VITE_DUFFLEPUD_URL") || undefined
 
 export const THUMBNAIL_URL = env("VITE_THUMBNAIL_URL")
 

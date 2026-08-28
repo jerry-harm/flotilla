@@ -99,7 +99,7 @@ let nip98Auth: SignedEvent | undefined
 const nip98Header = async () => {
   const $signer = app.get().user?.signer
 
-  if (!$signer) {
+  if (!$signer || !DUFFLEPUD_URL) {
     return undefined
   }
 
@@ -111,6 +111,12 @@ const nip98Header = async () => {
 }
 
 const pullCheckedRemote = async () => {
+  // Cross-device read-state sync needs the dufflepud kv service; without it the local state
+  // still works, it just doesn't travel between devices.
+  if (!DUFFLEPUD_URL) {
+    return
+  }
+
   const authorization = await nip98Header()
 
   if (!authorization) {
@@ -141,6 +147,10 @@ const pullCheckedRemote = async () => {
 }
 
 const pushCheckedRemote = throttle(3000, async () => {
+  if (!DUFFLEPUD_URL) {
+    return
+  }
+
   const authorization = await nip98Header()
 
   if (!authorization) {
