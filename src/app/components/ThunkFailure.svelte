@@ -49,7 +49,7 @@
       class="flex items-center"
       component={ThunkStatusDetail}
       props={{thunk, retry}}
-      params={{interactive: true, maxWidth: "none"}}>
+      params={{interactive: true, maxWidth: "none", trigger: "click"}}>
       <span class="flex cursor-pointer items-center gap-1 opacity-75">
         <Icon icon={Danger} class="text-error" size={3} />
         <span>Failed to send!</span>
