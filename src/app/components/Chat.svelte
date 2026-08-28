@@ -41,7 +41,7 @@
   import ChatComposeEdit from "@app/components/ChatComposeEdit.svelte"
   import ChatComposeParent from "@app/components/ChatComposeParent.svelte"
   import ThunkToast from "@app/components/ThunkToast.svelte"
-  import {app, deletes, user, wraps} from "@app/core"
+  import {app, deletes, user, wraps, wrapPow} from "@app/core"
   import {userSettingsValues} from "@app/settings"
   import {deriveChat, makeChatId} from "@app/chats"
   import {pushModal} from "@app/modal"
@@ -101,7 +101,7 @@
 
         const command = await $deletes.deleteEvent(eventToEdit)
 
-        await $wraps.publish({event: command.event, recipients: pubkeys, pow: 16})
+        await $wraps.publish({event: command.event, recipients: pubkeys, pow: wrapPow})
       }
 
       const [imetaTags, tags] = partition(nthEq(0, "imeta"), params.tags)
@@ -146,7 +146,7 @@
             event,
             recipients: pubkeys,
             delay: $userSettingsValues.send_delay + ms(i),
-            pow: 16,
+            pow: wrapPow,
           }),
         ),
       )

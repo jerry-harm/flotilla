@@ -1,6 +1,6 @@
 import {Capacitor} from "@capacitor/core"
 import {PushNotifications} from "@capacitor/push-notifications"
-import {assoc, hash, maybe} from "@welshman/lib"
+import {assoc, hash, isDefined, maybe} from "@welshman/lib"
 import type {Filter} from "@welshman/util"
 import {Address, DELETE, makeEvent} from "@welshman/util"
 import {Relays, User} from "@welshman/app"
@@ -21,6 +21,12 @@ export class CapacitorNotifications implements IPushAdapter {
   _controller = maybe<AbortController>()
 
   async request() {
+    // Without a push server there's nothing to forward FCM/APNs tokens through, so treat the
+    // feature as unavailable rather than collecting a token that can never fire a notification.
+    if (!PUSH_SERVER) {
+      return "denied"
+    }
+
     const status = await requestPermissions()
 
     if (status !== "granted") {
@@ -35,6 +41,10 @@ export class CapacitorNotifications implements IPushAdapter {
   }
 
   async _syncServer(signal: AbortSignal) {
+    if (!PUSH_SERVER) {
+      return
+    }
+
     const {token, subscription} = pushState.get()
 
     if (!token) {
@@ -76,7 +86,7 @@ export class CapacitorNotifications implements IPushAdapter {
     String(hash(relay + key + device.get()))
 
   _getPushUrl = async (url: string) => {
-    for (const candidate of [url, PUSH_BRIDGE]) {
+    for (const candidate of [url, PUSH_BRIDGE].filter(isDefined)) {
       const relay = await app.get().use(Relays).load(candidate)
 
       if (relay?.hasNip("9a")) {
@@ -142,6 +152,10 @@ export class CapacitorNotifications implements IPushAdapter {
   }
 
   async enable() {
+    if (!PUSH_SERVER) {
+      return
+    }
+
     if (!this._controller) {
       this._controller = new AbortController()
 
@@ -173,7 +187,7 @@ export class CapacitorNotifications implements IPushAdapter {
 
     const {subscription} = pushState.get()
 
-    if (subscription) {
+    if (subscription && PUSH_SERVER) {
       const res = await fetch(buildUrl(PUSH_SERVER, "subscription", subscription.key), {
         method: "delete",
       })

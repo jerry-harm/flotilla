@@ -12,9 +12,13 @@ const fromCsv = (s: string) => (s || "").split(",").filter(identity)
 const env = (key: string): string =>
   (import.meta.env.DEV ? maybeGetTestEnv(key) : undefined) ?? import.meta.env[key]
 
-export const PUSH_SERVER = env("VITE_PUSH_SERVER")
+export const PUSH_SERVER = env("VITE_PUSH_SERVER") || undefined
 
-export const PUSH_BRIDGE = normalizeRelayUrl(env("VITE_PUSH_BRIDGE"))
+// normalizeRelayUrl throws on an empty string (normalizeUrl prepends "http:" then fails to
+// construct a URL), so skip it when the deployment doesn't configure a push bridge.
+export const PUSH_BRIDGE = env("VITE_PUSH_BRIDGE")
+  ? normalizeRelayUrl(env("VITE_PUSH_BRIDGE"))
+  : undefined
 
 export const ENABLE_ZAPS = Capacitor.getPlatform() != "ios"
 

@@ -4,7 +4,7 @@ import {tryCatch} from "@welshman/lib"
 import type {Maybe} from "@welshman/lib"
 import {DirectMessage} from "@welshman/domain"
 import type {Logger} from "@welshman/app"
-import {logger, wraps, writer} from "@app/core"
+import {logger, wraps, writer, wrapPow} from "@app/core"
 import {PLATFORM_LOGEE} from "@app/env"
 
 const formatValue = (value: unknown) => {
@@ -82,5 +82,5 @@ export const sendLogs = async () => {
     .addRecipient(PLATFORM_LOGEE)
     .renderTemplate()
 
-  return wraps.get().publish({event, recipients: [PLATFORM_LOGEE], pow: 16})
+  return wraps.get().publish({event, recipients: [PLATFORM_LOGEE], pow: wrapPow})
 }

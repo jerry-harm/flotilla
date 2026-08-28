@@ -94,6 +94,10 @@ export const app: ReadableWithGetter<App> = {
 
 export const session = withGetter(writable<Maybe<Session>>(undefined))
 
+// Wrapped publishes run proof of work in a worker that calls crypto.subtle, which plain http
+// deployments (e.g. over i2p) don't have, so skip the anti-spam work there.
+export const wrapPow = isSecureContext ? 16 : 0
+
 // The signed-in user, for the paths that require one — reading it while signed out throws, so
 // use `$app.user` where absence is a legitimate state.
 export const user = withGetter(derived(app, $app => User.require($app)))

@@ -108,14 +108,9 @@ const sha256K = new Uint32Array([
 
 const rotr = (x: number, n: number) => (x >>> n) | (x << (32 - n))
 
-// crypto.subtle is only exposed in secure contexts (https or localhost), so fall back to a
-// pure-JS implementation when the app is served over plain http.
-export const sha256 = async (data: ArrayBuffer) => {
-  if (crypto.subtle) {
-    return bytesToHex(new Uint8Array(await crypto.subtle.digest("SHA-256", data)))
-  }
-
-  const bytes = new Uint8Array(data)
+// Pure-JS SHA-256 over the raw bytes, returning the digest as bytes. Shared by `sha256` and the
+// crypto.subtle polyfill so both avoid WebCrypto, which is only exposed in secure contexts.
+export const sha256Bytes = (bytes: Uint8Array) => {
   const paddedLen = (((bytes.length + 8) >> 6) + 1) * 64
   const padded = new Uint8Array(paddedLen)
   padded.set(bytes)
@@ -181,7 +176,24 @@ export const sha256 = async (data: ArrayBuffer) => {
     h7 = (h7 + h) >>> 0
   }
 
-  return [h0, h1, h2, h3, h4, h5, h6, h7].map(n => n.toString(16).padStart(8, "0")).join("")
+  return new Uint8Array(
+    [h0, h1, h2, h3, h4, h5, h6, h7].flatMap(n => [
+      n >>> 24,
+      (n >>> 16) & 0xff,
+      (n >>> 8) & 0xff,
+      n & 0xff,
+    ]),
+  )
+}
+
+// crypto.subtle is only exposed in secure contexts (https or localhost), so fall back to a
+// pure-JS implementation when the app is served over plain http.
+export const sha256 = async (data: ArrayBuffer) => {
+  if (crypto.subtle) {
+    return bytesToHex(new Uint8Array(await crypto.subtle.digest("SHA-256", data)))
+  }
+
+  return bytesToHex(sha256Bytes(new Uint8Array(data)))
 }
 
 export type EncryptedFile = {

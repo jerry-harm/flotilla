@@ -22,3 +22,5 @@ minimumReleaseAgeExclude:
   - '@welshman/util'
 overrides:
   sharp: ^0.35.3
+patchedDependencies:
+  '@welshman/util@0.9.5': patches/@welshman__util@0.9.5.patch

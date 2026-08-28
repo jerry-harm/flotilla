@@ -121,6 +121,13 @@ export const uploadFile = async (file: File, options: UploadFileOptions = {}) =>
 
     const ext = "." + type.split("/")[1]
     const server = await getBlossomServer(options)
+
+    // No blossom server configured (and none from the user's profile): fail fast with a
+    // readable error instead of letting uploadBlob throw on an invalid URL.
+    if (!server) {
+      return {error: "No blossom server is configured for this deployment"}
+    }
+
     const hashes = [await sha256(await file.arrayBuffer())]
     const $signer = app.get().user?.signer || Nip01Signer.ephemeral()
     const authTemplate = makeBlossomAuthEvent({action: "upload", server, hashes})

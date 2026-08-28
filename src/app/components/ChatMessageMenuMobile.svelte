@@ -12,7 +12,7 @@
   import Button from "@lib/components/Button.svelte"
   import EmojiPicker from "@lib/components/EmojiPicker.svelte"
   import EventInfo from "@app/components/EventInfo.svelte"
-  import {reactions, wraps} from "@app/core"
+  import {reactions, wraps, wrapPow} from "@app/core"
   import {pushModal} from "@app/modal"
   import {clip} from "@app/toast"
 
@@ -30,7 +30,7 @@
 
     const reaction = await $reactions.react(event, emoji.unicode)
 
-    return $wraps.publish({event: reaction.event, recipients: pubkeys, pow: 16})
+    return $wraps.publish({event: reaction.event, recipients: pubkeys, pow: wrapPow})
   }
 
   const showEmojiPicker = () => pushModal(EmojiPicker, {onClick: onEmoji}, {replaceState: true})

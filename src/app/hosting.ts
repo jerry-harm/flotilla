@@ -8,8 +8,9 @@ import {user} from "@app/core"
 import {HOSTING_BACKEND_URL, PLATFORM_URL} from "@app/env"
 
 // Apple doesn't allow selling hosting outside their payment system, so on iOS we
-// point people at the platform's website instead.
-export const HOSTING_ENABLED = Capacitor.getPlatform() !== "ios"
+// point people at the platform's website instead. A deployment without a hosting
+// backend (HOSTING_BACKEND_URL unset) hides the feature entirely.
+export const HOSTING_ENABLED = Capacitor.getPlatform() !== "ios" && Boolean(HOSTING_BACKEND_URL)
 
 export type Plan = {
   id: string
