@@ -3,7 +3,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
 
-  const iconModules = import.meta.glob("@assets/icons/*.svg", {
+  const iconModules = import.meta.glob<{default: string}>("@assets/icons/*.svg", {
     query: "?dataurl",
     eager: true,
   })
@@ -13,7 +13,7 @@
       const name = path.split("/").pop()?.replace(".svg", "") || ""
       return {
         name,
-        url: (module as any).default,
+        url: module.default,
         searchText: name.replace(/[-_]/g, " ").toLowerCase(),
       }
     })
@@ -37,10 +37,6 @@
   let searchTerm = $state("")
 
   const filteredIcons = $derived(searchTerm ? iconSearch.searchOptions(searchTerm) : icons)
-
-  const handleSelect = (iconUrl: string) => {
-    onSelect(iconUrl)
-  }
 </script>
 
 <label class="input flex w-full items-center gap-2">
@@ -49,12 +45,12 @@
 </label>
 <div class="mt-2 max-h-80 overflow-y-auto">
   <div class="grid grid-cols-8 gap-2 p-2">
-    {#each filteredIcons as icon (icon.url)}
+    {#each filteredIcons as icon (icon.name)}
       <button
         type="button"
         title={icon.name}
         class="flex aspect-square items-center justify-center rounded-2xl transition-colors hover:bg-primary hover:text-primary-content"
-        onclick={() => handleSelect(icon.url)}>
+        onclick={() => onSelect(icon.url)}>
         <Icon icon={icon.url} class="h-6 w-6" />
       </button>
     {/each}
