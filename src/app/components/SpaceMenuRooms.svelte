@@ -45,32 +45,6 @@
   }
 
   let term = $state("")
-
-  // TEMPORARY DIAGNOSTIC
-  $effect(() => {
-    try {
-      console.log(
-        "DIAG rooms",
-        url,
-        "userRooms",
-        JSON.stringify($userRooms),
-        "otherRooms",
-        JSON.stringify($otherRooms),
-        "listRooms",
-        JSON.stringify($roomLists.roomsForUrl($user.pubkey, url).get()),
-        "spaceRooms",
-        JSON.stringify(
-          $rooms
-            .forUrl(url)
-            .get()
-            .map(room => room.h),
-        ),
-      )
-    } catch (error) {
-      console.log("DIAG rooms threw", String(error))
-    }
-  })
-  // END TEMPORARY DIAGNOSTIC
 </script>
 
 {#snippet content()}
