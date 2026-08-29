@@ -590,7 +590,7 @@
             {#if loadingBackward}
               <Spinner loading={loadingBackward}>Looking for messages...</Spinner>
             {:else}
-              <Spinner>End of message history</Spinner>
+              End of message history
             {/if}
           </p>
         {/if}
