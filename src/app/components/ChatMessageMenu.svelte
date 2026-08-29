@@ -8,13 +8,13 @@
   import Reply from "@assets/icons/reply-2.svg?dataurl"
   import Code2 from "@assets/icons/code-2.svg?dataurl"
 
-  const {event, pubkeys, popover, replyTo, edit} = $props()
+  const {event, pubkeys, tippy, replyTo, edit} = $props()
 
   const reply = () => replyTo(event)
   const onEdit = () => edit?.()
 
   const showInfo = () => {
-    popover.hide()
+    tippy.hide()
     pushModal(EventInfo, {event})
   }
 </script>

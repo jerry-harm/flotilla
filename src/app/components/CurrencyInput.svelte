@@ -1,9 +1,10 @@
 <script lang="ts">
-  import {spec} from "@welshman/lib"
   import cx from "classnames"
   import {writable} from "svelte/store"
   import type {Writable} from "svelte/store"
   import type {Instance} from "tippy.js"
+  import {spec} from "@welshman/lib"
+  import type {Maybe} from "@welshman/lib"
   import {preventDefault} from "@lib/html"
   import {createSearch} from "@welshman/app"
   import {currencyOptions, displayCurrency} from "@lib/currency"
@@ -12,6 +13,7 @@
   import AltArrowDown from "@assets/icons/alt-arrow-down.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
+  import type {TippyController} from "@lib/components/Tippy.svelte"
 
   interface Props {
     value: string
@@ -36,7 +38,7 @@
   const selectCurrency = (code: string) => {
     value = code
     term.set("")
-    popover?.hide()
+    tippy?.hide()
   }
 
   const clearAndFocus = () => {
@@ -46,7 +48,7 @@
   }
 
   const onKeyDown = (e: Event) => {
-    if (instance?.onKeyDown(e)) {
+    if (tippy?.content?.onKeyDown(e)) {
       e.preventDefault()
     }
   }
@@ -54,15 +56,13 @@
   const currency = $derived(currencyOptions.find(spec({code: value})))
 
   let wrapper: Element | undefined = $state()
-  let popover: Instance | undefined = $state()
-  let showPopover: () => void = $state(() => {})
-  let instance: any = $state()
+  let tippy: Maybe<TippyController> = $state()
 
   $effect(() => {
     if ($term) {
-      showPopover()
+      tippy?.show()
     } else {
-      popover?.hide()
+      tippy?.hide()
     }
   })
 </script>
@@ -82,9 +82,7 @@
     <input {autofocus} class="grow" type="text" bind:value={$term} onkeydown={onKeyDown} />
   {/if}
   <Tippy
-    bind:popover
-    bind:show={showPopover}
-    bind:instance
+    bind:controller={tippy}
     component={Suggestions}
     props={{
       term,

@@ -1,9 +1,10 @@
 <script lang="ts">
-  import {type Instance} from "tippy.js"
   import {between, throttle} from "@welshman/lib"
+  import type {Maybe} from "@welshman/lib"
   import {isMobile} from "@lib/html"
   import Button from "@lib/components/Button.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
+  import type {TippyController} from "@lib/components/Tippy.svelte"
   import IconPickerModal from "@app/components/IconPickerModal.svelte"
   import IconPickerPopover from "@app/components/IconPickerPopover.svelte"
   import {pushModal, popModal} from "@app/modal"
@@ -14,7 +15,7 @@
     if (isMobile) {
       pushModal(IconPickerModal, {onSelect: onClick}, {nested: true})
     } else {
-      showPopover()
+      tippy?.show()
     }
   }
 
@@ -22,7 +23,7 @@
     if (isMobile) {
       popModal()
     } else {
-      popover?.hide()
+      tippy?.hide()
     }
   }
 
@@ -31,25 +32,21 @@
     close()
   }
 
-  const onMouseMove = throttle(300, ({clientX, clientY}: any) => {
-    if (popover) {
-      const {x, width} = popover.popper.getBoundingClientRect()
+  const onMouseMove = throttle(300, ({clientX}: MouseEvent) => {
+    const rect = tippy?.rect()
 
-      if (!between([x - 50, x + width + 50], clientX)) {
-        popover.hide()
-      }
+    if (rect && !between([rect.x - 50, rect.x + rect.width + 50], clientX)) {
+      tippy!.hide()
     }
   })
 
-  let popover: Instance | undefined = $state()
-  let showPopover: () => void = $state(() => {})
+  let tippy: Maybe<TippyController> = $state()
 </script>
 
 <svelte:document onmousemove={onMouseMove} />
 
 <Tippy
-  bind:popover
-  bind:show={showPopover}
+  bind:controller={tippy}
   component={IconPickerPopover}
   props={{onSelect: onClick}}
   params={{trigger: "manual", interactive: true, placement: "top-end"}}>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import cx from "classnames"
-  import {type Instance} from "tippy.js"
   import {hash, formatTimestampAsTime} from "@welshman/lib"
+  import type {Maybe} from "@welshman/lib"
   import type {TrustedEvent, EventContent} from "@welshman/util"
   import {Thunks} from "@welshman/app"
   import {isMobile} from "@lib/html"
@@ -10,6 +10,7 @@
   import Button from "@lib/components/Button.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
   import TapTarget from "@lib/components/TapTarget.svelte"
+  import type {TippyController} from "@lib/components/Tippy.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import {publishWrappedReaction, retractWrappedReaction} from "@app/reactions"
   import Content from "@app/components/Content.svelte"
@@ -52,17 +53,9 @@
 
   const showMobileMenu = () => pushModal(ChatMessageMenuMobile, {event, pubkeys, reply, edit})
 
-  const togglePopover = () => {
-    if (popoverIsVisible) {
-      popover?.hide()
-    } else {
-      showPopover()
-    }
-  }
+  const togglePopover = () => tippy?.toggle()
 
-  let popover: Instance | undefined = $state()
-  let showPopover: () => void = $state(() => {})
-  let popoverIsVisible = $state(false)
+  let tippy: Maybe<TippyController> = $state()
 </script>
 
 <ThunkFailure showToastOnRetry {thunk} class="mt-1" />
@@ -71,20 +64,10 @@
   class={cx("group flex items-center justify-end gap-1 px-2", {"flex-row-reverse": !isOwn})}>
   {#if !isMobile}
     <Tippy
-      bind:popover
-      bind:show={showPopover}
+      bind:controller={tippy}
       component={ChatMessageMenu}
-      props={{event, pubkeys, popover, replyTo, edit}}
-      params={{
-        interactive: true,
-        trigger: "manual",
-        onShow() {
-          popoverIsVisible = true
-        },
-        onHidden() {
-          popoverIsVisible = false
-        },
-      }}>
+      props={{event, pubkeys, tippy, replyTo, edit}}
+      params={{interactive: true, trigger: "manual"}}>
       <button
         type="button"
         class="opacity-0 transition-all"

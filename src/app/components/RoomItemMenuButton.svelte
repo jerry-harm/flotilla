@@ -1,48 +1,42 @@
 <script lang="ts">
-  import {type Instance} from "tippy.js"
   import {between} from "@welshman/lib"
+  import type {Maybe} from "@welshman/lib"
   import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
+  import type {TippyController} from "@lib/components/Tippy.svelte"
   import RoomItemMenu from "@app/components/RoomItemMenu.svelte"
 
   const {url, event} = $props()
 
-  const onClick = () => popover?.hide()
+  const open = () => tippy?.show()
 
-  const onShow = () => {
-    visible = true
-  }
+  const onClick = () => tippy?.hide()
 
-  const onHidden = () => {
-    visible = false
-  }
+  const onMouseMove = ({clientX, clientY}: MouseEvent) => {
+    const rect = tippy?.rect()
 
-  const onMouseMove = ({clientX, clientY}: any) => {
-    if (popover) {
-      const {x, y, width, height} = popover.popper.getBoundingClientRect()
+    if (rect) {
+      const {x, y, width, height} = rect
 
       if (!between([x, x + width], clientX) || !between([y - 50, y + height + 50], clientY)) {
-        popover.hide()
+        tippy!.hide()
       }
     }
   }
 
-  let popover: Instance | undefined = $state()
-  let open: () => void = $state(() => {})
-  let visible = $state(false)
+  let tippy: Maybe<TippyController> = $state()
 </script>
 
-<svelte:document onmousemove={visible ? onMouseMove : undefined} />
+<svelte:document onmousemove={tippy?.visible ? onMouseMove : undefined} />
 
 <Button onclick={open} class="button button-xs button-neutral join-item">
   <Tippy
-    bind:popover
-    bind:show={open}
+    bind:controller={tippy}
     component={RoomItemMenu}
     props={{url, event, onClick}}
-    params={{trigger: "manual", interactive: true, onShow, onHidden}}>
+    params={{trigger: "manual", interactive: true}}>
     <Icon icon={MenuDots} size={4} />
   </Tippy>
 </Button>
