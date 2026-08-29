@@ -52,7 +52,7 @@
       {createReaction}
       reactionClass="tip tip-left" />
     {#if showActivity}
-      <EventActivity {url} {path} {event} />
+      <EventActivity {path} {event} {context} />
     {/if}
     <EventActions {url} {event} noun="Event">
       {#snippet customActions()}

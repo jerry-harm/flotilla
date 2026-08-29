@@ -3,14 +3,16 @@
   import {matchMd} from "@lib/theme"
   import RoomNameWithImage from "@app/components/RoomNameWithImage.svelte"
   import ThreadBoardItem from "@app/components/ThreadBoardItem.svelte"
+  import type {FeedContext} from "@app/feeds"
 
   type Props = {
     url: string
     h: string
     threads: TrustedEvent[]
+    context: FeedContext
   }
 
-  const {url, h, threads}: Props = $props()
+  const {url, h, threads, context}: Props = $props()
 </script>
 
 <section class="card card-flat p-0">
@@ -42,7 +44,7 @@
         </thead>
         <tbody>
           {#each threads as event (event.id)}
-            <ThreadBoardItem {url} {event} />
+            <ThreadBoardItem {url} {event} {context} />
           {/each}
         </tbody>
       </table>
@@ -50,7 +52,7 @@
   {:else}
     <div class="pb-4">
       {#each threads as event (event.id)}
-        <ThreadBoardItem mobile {url} {event} />
+        <ThreadBoardItem mobile {url} {event} {context} />
       {/each}
     </div>
   {/if}

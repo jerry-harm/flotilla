@@ -1,25 +1,28 @@
 <script lang="ts">
   import {goto} from "$app/navigation"
-  import {formatTimestamp, max} from "@welshman/lib"
+  import {derived} from "svelte/store"
+  import {filter, formatTimestamp, max, spec} from "@welshman/lib"
   import type {TrustedEvent} from "@welshman/util"
-  import {getCommentFiltersForRoot, tagSpec, tagValue} from "@welshman/util"
+  import {COMMENT, tagSpec, tagValue} from "@welshman/util"
   import {fade} from "@lib/transition"
   import Link from "@lib/components/Link.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import ProfileName from "@app/components/ProfileName.svelte"
-  import {deriveEventsForUrl} from "@app/repository"
+  import type {FeedContext} from "@app/feeds"
   import {notifications} from "@app/notifications"
   import {makeThreadPath} from "@app/routes"
 
   type Props = {
     url: string
     event: TrustedEvent
+    context: FeedContext
     mobile?: boolean
   }
 
-  const {url, event, mobile = false}: Props = $props()
+  const {url, event, context, mobile = false}: Props = $props()
 
-  const replies = deriveEventsForUrl(url, getCommentFiltersForRoot([event]))
+  const related = context.related(event)
+  const replies = derived(related, $related => filter(spec({kind: COMMENT}), $related))
   const replyCount = $derived($replies.length)
   const lastActive = $derived(max([...$replies, event].map(e => e.created_at)))
   const title = tagValue(tagSpec("title"), event.tags)

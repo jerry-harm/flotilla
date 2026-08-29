@@ -1,24 +1,19 @@
 <script lang="ts">
-  import {onMount} from "svelte"
-  import {max, gt, formatTimestampRelative} from "@welshman/lib"
-  import {getCommentFiltersForRoot} from "@welshman/util"
+  import {derived} from "svelte/store"
+  import {filter, max, gt, spec, formatTimestampRelative} from "@welshman/lib"
+  import {COMMENT} from "@welshman/util"
   import type {TrustedEvent} from "@welshman/util"
   import Reply from "@assets/icons/reply-2.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
-  import {deriveEvents} from "@app/repository"
-  import {network} from "@app/core"
+  import type {FeedContext} from "@app/feeds"
   import {deriveChecked} from "@app/notifications"
 
-  const {url, path, event}: {url: string; path: string; event: TrustedEvent} = $props()
+  const {path, event, context}: {path: string; event: TrustedEvent; context: FeedContext} = $props()
 
   const checked = deriveChecked(path)
-  const filters = getCommentFiltersForRoot([event])
-  const replies = deriveEvents(filters)
+  const related = context.related(event)
+  const replies = derived(related, $related => filter(spec({kind: COMMENT}), $related))
   const lastActive = $derived(max([...$replies, event].map(e => e.created_at)))
-
-  onMount(() => {
-    $network.load({relays: [url], filters})
-  })
 </script>
 
 <div class="flex-inline button button-neutral button-xs gap-1 rounded-full">

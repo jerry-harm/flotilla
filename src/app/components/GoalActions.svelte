@@ -47,7 +47,7 @@
       {createReaction}
       reactionClass="tip-left" />
     {#if showActivity}
-      <EventActivity {url} {path} {event} />
+      <EventActivity {path} {event} {context} />
     {/if}
     <EventActions {url} {event} hideZap noun="Goal" />
   </ThunkStatusOrDeleted>

@@ -39,7 +39,7 @@
         {createReaction}
         reactionClass="tip-left" />
       {#if showActivity && path}
-        <EventActivity {url} {path} {event} />
+        <EventActivity {path} {event} {context} />
       {/if}
       <EventActions {url} {event} noun="Comment" />
     </ThunkStatusOrDeleted>

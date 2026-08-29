@@ -1,12 +1,16 @@
-import {readable, writable} from "svelte/store"
+import {derived, readable, writable} from "svelte/store"
 import type {Readable} from "svelte/store"
 import {batch, between, call, int, now, on, sortBy, uniqBy, MONTH, YEAR} from "@welshman/lib"
 import {
+  COMMENT,
   DELETE,
   EVENT_TIME,
+  addressTags,
   getAddress,
+  getCommentFiltersForRoot,
   getReplyFilters,
   hexTags,
+  isReplaceableKind,
   matchFilters,
   tagSpec,
   tagValue,
@@ -17,11 +21,23 @@ import {mergeRepositoryUpdates} from "@welshman/net"
 import type {RepositoryUpdate} from "@welshman/net"
 import {createScroller} from "@lib/html"
 import {daysBetween} from "@lib/util"
-import {REACTION_DISPLAY_KINDS, REACTION_KINDS} from "@app/content"
+import {EVENT_CONTEXT_KINDS, REACTION_KINDS} from "@app/content"
 import {app, network} from "@app/core"
 import {getEventsForUrl} from "@app/repository"
 
 const noEvents: TrustedEvent[] = []
+
+// Reactions, zaps and reports point at their subject with `e`/`a`. A NIP-22 comment instead
+// points at its thread *root* with `E`/`A`, so filing it by those tags puts a whole thread in
+// the root's bucket — which is the scope a reply count wants.
+const getTargets = ({kind, tags}: TrustedEvent) =>
+  kind === COMMENT
+    ? [...tagValues(hexTags("E"), tags), ...tagValues(addressTags("A"), tags)]
+    : [...tagValues(hexTags("e"), tags), ...tagValues(addressTags("a"), tags)]
+
+// A related event may point at a replaceable one by either id or address, so both are keys
+const getKeys = (event: TrustedEvent) =>
+  isReplaceableKind(event.kind) ? [event.id, getAddress(event)] : [event.id]
 
 export const makeFeedContext = ({relays}: {relays: string[] | Promise<string[]>}) => {
   const {repository} = app.get()
@@ -35,7 +51,7 @@ export const makeFeedContext = ({relays}: {relays: string[] | Promise<string[]>}
     // An event seen before its target was tracked stays unfiled, so that adding the target
     // later can pick it up out of the repository
     if (!targetsByEventId.has(event.id)) {
-      const eventTargets = tagValues(hexTags("e"), event.tags).filter(target => targets.has(target))
+      const eventTargets = getTargets(event).filter(target => targets.has(target))
 
       if (eventTargets.length > 0) {
         targetsByEventId.set(event.id, eventTargets)
@@ -81,9 +97,10 @@ export const makeFeedContext = ({relays}: {relays: string[] | Promise<string[]>}
 
     // What's already local — an earlier page, our own optimistic reactions — never comes
     // through the update listener, so file it before asking the network for the rest
-    for (const event of repository.query(
-      getReplyFilters(events, {kinds: REACTION_DISPLAY_KINDS}),
-    )) {
+    for (const event of repository.query([
+      ...getReplyFilters(events, {kinds: EVENT_CONTEXT_KINDS}),
+      ...getCommentFiltersForRoot(events),
+    ])) {
       addEvent(event, touched)
     }
 
@@ -94,7 +111,10 @@ export const makeFeedContext = ({relays}: {relays: string[] | Promise<string[]>}
     const context = await network.get().load({
       relays: urls,
       signal: controller.signal,
-      filters: getReplyFilters(events, {kinds: REACTION_KINDS}),
+      filters: [
+        ...getReplyFilters(events, {kinds: REACTION_KINDS}),
+        ...getCommentFiltersForRoot(events),
+      ],
     })
 
     if (context.length > 0) {
@@ -114,7 +134,7 @@ export const makeFeedContext = ({relays}: {relays: string[] | Promise<string[]>}
       const touched = new Set<string>()
 
       for (const event of added) {
-        if (REACTION_DISPLAY_KINDS.includes(event.kind)) {
+        if (EVENT_CONTEXT_KINDS.includes(event.kind)) {
           addEvent(event, touched)
         }
       }
@@ -130,35 +150,49 @@ export const makeFeedContext = ({relays}: {relays: string[] | Promise<string[]>}
   // Track an event so its context gets requested with the rest of the batch
   const add = (event: TrustedEvent) => {
     if (!targets.has(event.id)) {
-      targets.add(event.id)
+      for (const key of getKeys(event)) {
+        targets.add(key)
+      }
+
       loadContext(event)
     }
   }
+
+  const relatedForKey = (key: string) =>
+    readable(eventsByTarget.get(key) || noEvents, set => {
+      let subscribers = subscribersByTarget.get(key)
+
+      if (!subscribers) {
+        subscribers = new Set()
+        subscribersByTarget.set(key, subscribers)
+      }
+
+      subscribers.add(set)
+      set(eventsByTarget.get(key) || noEvents)
+
+      return () => {
+        subscribers.delete(set)
+
+        if (subscribers.size === 0) {
+          subscribersByTarget.delete(key)
+        }
+      }
+    })
 
   return {
     add,
     related: (event: TrustedEvent): Readable<TrustedEvent[]> => {
       add(event)
 
-      return readable(eventsByTarget.get(event.id) || noEvents, set => {
-        let subscribers = subscribersByTarget.get(event.id)
+      const [key, ...rest] = getKeys(event)
 
-        if (!subscribers) {
-          subscribers = new Set()
-          subscribersByTarget.set(event.id, subscribers)
-        }
-
-        subscribers.add(set)
-        set(eventsByTarget.get(event.id) || noEvents)
-
-        return () => {
-          subscribers.delete(set)
-
-          if (subscribers.size === 0) {
-            subscribersByTarget.delete(event.id)
-          }
-        }
-      })
+      // A replaceable event collects both its buckets, and something tagging it by id and
+      // address at once lands in both
+      return rest.length > 0
+        ? derived([relatedForKey(key), ...rest.map(relatedForKey)], buckets =>
+            uniqBy(event => event.id, buckets.flat()),
+          )
+        : relatedForKey(key)
     },
     cleanup: () => {
       controller.abort()
