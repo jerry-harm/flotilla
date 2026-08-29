@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {onMount} from "svelte"
+  import {onDestroy, onMount} from "svelte"
   import {page} from "$app/stores"
   import History from "@assets/icons/history.svg?dataurl"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
@@ -9,12 +9,16 @@
   import PageContent from "@lib/components/PageContent.svelte"
   import SpaceBar from "@app/components/SpaceBar.svelte"
   import RecentItem from "@app/components/RecentItem.svelte"
+  import {makeFeedContext} from "@app/feeds"
   import SpaceSearch from "@app/components/SpaceSearch.svelte"
   import {decodeRelay} from "@app/relays"
   import {deriveRecentActivity} from "@app/recent"
   import {pushModal} from "@app/modal"
 
   const url = decodeRelay($page.params.relay!)
+  const context = makeFeedContext({relays: [url]})
+
+  onDestroy(context.cleanup)
 
   const recentActivity = deriveRecentActivity(url)
 
@@ -57,7 +61,7 @@
     <p class="flex flex-col items-center py-20 text-center">No recent activity found!</p>
   {:else}
     {#each $recentActivity.slice(0, limit) as item (item.event.id)}
-      <RecentItem {url} {item} />
+      <RecentItem {url} {item} {context} />
     {/each}
   {/if}
 </PageContent>

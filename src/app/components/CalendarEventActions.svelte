@@ -8,6 +8,7 @@
   import RoomName from "@app/components/RoomName.svelte"
   import {publishReaction, retractReaction} from "@app/reactions"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
+  import type {FeedContext} from "@app/feeds"
   import ThunkStatusOrDeleted from "@app/components/ThunkStatusOrDeleted.svelte"
   import EventActivity from "@app/components/EventActivity.svelte"
   import EventActions from "@app/components/EventActions.svelte"
@@ -21,9 +22,10 @@
     event: TrustedEvent
     showRoom?: boolean
     showActivity?: boolean
+    context: FeedContext
   }
 
-  const {url, event, showRoom, showActivity}: Props = $props()
+  const {url, event, showRoom, showActivity, context}: Props = $props()
 
   const h = $derived(tagValue(tagSpec("h"), event.tags))
   const path = $derived(makeCalendarPath(url, getAddress(event)))
@@ -42,7 +44,13 @@
     </Link>
   {/if}
   <ThunkStatusOrDeleted {event}>
-    <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip tip-left" />
+    <ReactionSummary
+      {url}
+      {event}
+      {context}
+      {deleteReaction}
+      {createReaction}
+      reactionClass="tip tip-left" />
     {#if showActivity}
       <EventActivity {url} {path} {event} />
     {/if}

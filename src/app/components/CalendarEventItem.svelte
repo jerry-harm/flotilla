@@ -3,6 +3,7 @@
   import {getAddress, tagValue, tagSpec} from "@welshman/util"
   import Link from "@lib/components/Link.svelte"
   import CalendarEventActions from "@app/components/CalendarEventActions.svelte"
+  import type {FeedContext} from "@app/feeds"
   import CalendarEventHeader from "@app/components/CalendarEventHeader.svelte"
   import ProfileLink from "@app/components/ProfileLink.svelte"
   import RoomLink from "@app/components/RoomLink.svelte"
@@ -11,9 +12,10 @@
   type Props = {
     url: string
     event: TrustedEvent
+    context: FeedContext
   }
 
-  const {url, event}: Props = $props()
+  const {url, event, context}: Props = $props()
 
   const h = $derived(tagValue(tagSpec("h"), event.tags))
 </script>
@@ -29,6 +31,6 @@
         in <RoomLink {url} {h} />
       {/if}
     </span>
-    <CalendarEventActions showActivity {url} {event} />
+    <CalendarEventActions showActivity {url} {event} {context} />
   </div>
 </Link>

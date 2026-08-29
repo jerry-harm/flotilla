@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {onDestroy} from "svelte"
   import {derived} from "svelte/store"
   import {page} from "$app/stores"
   import {formatTimestamp, sleep} from "@welshman/lib"
@@ -13,14 +14,18 @@
   import EventComments from "@app/components/EventComments.svelte"
   import {reader} from "@app/core"
   import {deriveEvent} from "@app/repository"
+  import {makeFeedContext} from "@app/feeds"
   import {decodeRelay} from "@app/relays"
 
   const {relay, address} = $page.params as MakeNonOptional<typeof $page.params>
   const url = decodeRelay(relay)
+  const context = makeFeedContext({relays: [url]})
   const event = deriveEvent(address, [url])
   const article = derived(event, $event => ($event ? reader(Article)($event) : undefined))
 
   const back = () => history.back()
+
+  onDestroy(context.cleanup)
 </script>
 
 <SpaceBar {back}>
@@ -46,10 +51,10 @@
           <p class="text-lg opacity-75">{$article.summary()}</p>
         {/if}
         <ContentMarkdown event={$event} {url} />
-        <ArticleActions showRoom event={$event} {url} />
+        <ArticleActions showRoom event={$event} {url} {context} />
       </div>
     </NoteCard>
-    <EventComments event={$event} {url} />
+    <EventComments event={$event} {url} {context} />
   {:else}
     <div class="flex justify-center py-20">
       {#await sleep(5000)}

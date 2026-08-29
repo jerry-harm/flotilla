@@ -10,15 +10,17 @@
   import {publishReaction, retractReaction} from "@app/reactions"
   import NoteCard from "@app/components/NoteCard.svelte"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
+  import type {FeedContext} from "@app/feeds"
   import {router} from "@app/core"
 
   type Props = {
     event: TrustedEvent
     children?: Snippet
+    context: FeedContext
     url?: string
   }
 
-  const {url, event, children}: Props = $props()
+  const {url, event, children, context}: Props = $props()
 
   const getRelays = () => (url ? [url] : $router.resolver.relays([seen(event)]))
 
@@ -34,7 +36,13 @@
 <NoteCard {event} {url} class="cv card card-interactive">
   <NoteContent {event} expandMode="inline" />
   <div class="flex w-full justify-between gap-2">
-    <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-right">
+    <ReactionSummary
+      {url}
+      {event}
+      {context}
+      {deleteReaction}
+      {createReaction}
+      reactionClass="tip-right">
       <EmojiButton {onEmoji} class="button button-neutral button-xs h-[26px] rounded-2xl">
         <Icon icon={SmileCircle} size={4} />
       </EmojiButton>

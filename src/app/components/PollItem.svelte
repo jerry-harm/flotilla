@@ -4,6 +4,7 @@
   import Link from "@lib/components/Link.svelte"
   import NoteContent from "@app/components/NoteContent.svelte"
   import PollActions from "@app/components/PollActions.svelte"
+  import type {FeedContext} from "@app/feeds"
   import RoomLink from "@app/components/RoomLink.svelte"
   import ProfileLink from "@app/components/ProfileLink.svelte"
   import {makePollPath} from "@app/routes"
@@ -11,9 +12,10 @@
   type Props = {
     url: string
     event: TrustedEvent
+    context: FeedContext
   }
 
-  const {url, event}: Props = $props()
+  const {url, event, context}: Props = $props()
 
   const h = tagValue(tagSpec("h"), event.tags)
 </script>
@@ -29,6 +31,6 @@
         in <RoomLink {url} {h} />
       {/if}
     </span>
-    <PollActions showActivity {url} {event} />
+    <PollActions showActivity {url} {event} {context} />
   </div>
 </Link>

@@ -14,6 +14,7 @@
   import {publishWrappedReaction, retractWrappedReaction} from "@app/reactions"
   import Content from "@app/components/Content.svelte"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
+  import type {FeedContext} from "@app/feeds"
   import ThunkFailure from "@app/components/ThunkFailure.svelte"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
   import ChatMessageMenu from "@app/components/ChatMessageMenu.svelte"
@@ -29,9 +30,10 @@
     onEdit?: (event: TrustedEvent) => void
     pubkeys: string[]
     showPubkey?: boolean
+    context: FeedContext
   }
 
-  const {event, replyTo, canEdit, onEdit, pubkeys, showPubkey = false}: Props = $props()
+  const {event, replyTo, canEdit, onEdit, pubkeys, showPubkey = false, context}: Props = $props()
 
   const isOwn = event.pubkey === $user.pubkey
   const profileDisplay = $profiles.display(event.pubkey).$
@@ -117,7 +119,7 @@
       </div>
     </TapTarget>
     <div class="flex gap-2 z-feature -mt-4 ml-4">
-      <ReactionSummary {event} {deleteReaction} {createReaction} noTooltip />
+      <ReactionSummary {event} {context} {deleteReaction} {createReaction} noTooltip />
     </div>
   </div>
 </div>

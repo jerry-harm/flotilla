@@ -8,6 +8,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import CommentTree from "@app/components/CommentTree.svelte"
+  import type {FeedContext} from "@app/feeds"
   import CommentCompose from "@app/components/CommentCompose.svelte"
   import {network} from "@app/core"
   import {deriveEventsById} from "@app/repository"
@@ -16,9 +17,10 @@
   type Props = {
     event: TrustedEvent
     url?: string
+    context: FeedContext
   }
 
-  const {event, url}: Props = $props()
+  const {event, url, context}: Props = $props()
 
   const relays = removeUndefined([url])
   const filters = getCommentFiltersForRoot([event])
@@ -49,7 +51,7 @@
 
 <div class="flex flex-col gap-3">
   {#each nodes as node (node.comment.id)}
-    <CommentTree {node} root={event} {replyTo} {setReplyTo} {url} />
+    <CommentTree {node} root={event} {replyTo} {setReplyTo} {url} {context} />
   {/each}
 </div>
 {#if url}

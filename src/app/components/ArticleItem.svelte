@@ -7,15 +7,17 @@
   import Content from "@app/components/Content.svelte"
   import ProfileLink from "@app/components/ProfileLink.svelte"
   import ArticleActions from "@app/components/ArticleActions.svelte"
+  import type {FeedContext} from "@app/feeds"
   import {reader} from "@app/core"
   import {makeArticlePath} from "@app/routes"
 
   type Props = {
     url: string
     event: TrustedEvent
+    context: FeedContext
   }
 
-  const {url, event}: Props = $props()
+  const {url, event, context}: Props = $props()
 
   const article = $derived(reader(Article)(event))
   const title = $derived(article.title())
@@ -52,7 +54,7 @@
         Written by
         <ProfileLink pubkey={event.pubkey} {url} />
       </span>
-      <ArticleActions showRoom showActivity {url} {event} />
+      <ArticleActions showRoom showActivity {url} {event} {context} />
     </div>
   </div>
 </div>

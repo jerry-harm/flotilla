@@ -8,6 +8,7 @@
   import NoteCard from "@app/components/NoteCard.svelte"
   import NoteContent from "@app/components/NoteContent.svelte"
   import CommentActions from "@app/components/CommentActions.svelte"
+  import type {FeedContext} from "@app/feeds"
   import type {CommentNode} from "@app/social"
 
   type Props = {
@@ -16,9 +17,10 @@
     replyTo?: TrustedEvent
     setReplyTo: (comment?: TrustedEvent) => void
     url?: string
+    context: FeedContext
   }
 
-  const {node, root, replyTo, setReplyTo, url}: Props = $props()
+  const {node, root, replyTo, setReplyTo, url, context}: Props = $props()
 
   const composing = $derived(replyTo?.id === node.comment.id)
 
@@ -37,7 +39,7 @@
             <Icon icon={Reply} />
             Reply
           </Button>
-          <CommentActions event={node.comment} {url} />
+          <CommentActions event={node.comment} {url} {context} />
         </div>
       {/if}
     </div>
@@ -55,7 +57,7 @@
   {#if node.children.length > 0}
     <div class="flex flex-col gap-3 border-l border-solid border-line ml-4 pl-4">
       {#each node.children as child (child.comment.id)}
-        <CommentTree node={child} {root} {replyTo} {setReplyTo} {url} />
+        <CommentTree node={child} {root} {replyTo} {setReplyTo} {url} {context} />
       {/each}
     </div>
   {/if}

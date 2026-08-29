@@ -1,9 +1,11 @@
 <script lang="ts">
+  import {onDestroy} from "svelte"
   import History from "@assets/icons/history.svg?dataurl"
   import AltArrowRight from "@assets/icons/alt-arrow-right.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Link from "@lib/components/Link.svelte"
   import RecentItem from "@app/components/RecentItem.svelte"
+  import {makeFeedContext} from "@app/feeds"
   import {deriveRecentActivity} from "@app/recent"
   import {makeSpacePath} from "@app/routes"
 
@@ -12,9 +14,12 @@
   }
 
   const {url}: Props = $props()
+  const context = makeFeedContext({relays: [url]})
 
   const recentActivity = deriveRecentActivity(url)
   const recentPath = makeSpacePath(url, "recent")
+
+  onDestroy(context.cleanup)
 </script>
 
 <div class="card flex flex-col gap-3">
@@ -27,7 +32,7 @@
   {:else}
     <div class="flex flex-col gap-2">
       {#each $recentActivity.slice(0, 3) as item (item.event.id)}
-        <RecentItem {url} {item} />
+        <RecentItem {url} {item} {context} />
       {/each}
     </div>
   {/if}

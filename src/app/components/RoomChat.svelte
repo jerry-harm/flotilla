@@ -41,7 +41,7 @@
     prependParent,
   } from "@app/rooms"
   import {userSettingsValues} from "@app/settings"
-  import {makeFeed} from "@app/feeds"
+  import {makeFeed, makeFeedContext} from "@app/feeds"
   import {checked, deferredRoomPath, setChecked} from "@app/notifications"
   import {makeRoomPath} from "@app/routes"
   import {pendingShare, type Share} from "@app/share"
@@ -53,6 +53,10 @@
   }
 
   const {url, h}: Props = $props()
+
+  const context = makeFeedContext({relays: [url]})
+
+  onDestroy(context.cleanup)
 
   const room = h ? $rooms.forRoom(url, h) : readable(undefined)
   const addMemberKind = h ? ROOM_ADD_MEMBER : RELAY_ADD_MEMBER
@@ -427,6 +431,7 @@
       filters: [
         h ? {kinds: [MESSAGE, addMemberKind], "#h": [h]} : {kinds: [MESSAGE, addMemberKind]},
       ],
+      onEvent: context.add,
       onBackwardExhausted: () => {
         loadingBackward = false
       },
@@ -575,6 +580,7 @@
                   {event}
                   {replyTo}
                   {showPubkey}
+                  {context}
                   canEdit={canEditEvent}
                   onEdit={onEditEvent} />
               {/if}

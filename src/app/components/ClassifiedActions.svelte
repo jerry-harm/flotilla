@@ -11,6 +11,7 @@
   import RoomName from "@app/components/RoomName.svelte"
   import {publishReaction, retractReaction} from "@app/reactions"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
+  import type {FeedContext} from "@app/feeds"
   import ClassifiedStatus from "@app/components/ClassifiedStatus.svelte"
   import ThunkStatusOrDeleted from "@app/components/ThunkStatusOrDeleted.svelte"
   import EventActivity from "@app/components/EventActivity.svelte"
@@ -25,9 +26,10 @@
     event: TrustedEvent
     showRoom?: boolean
     showActivity?: boolean
+    context: FeedContext
   }
 
-  const {url, event, showRoom, showActivity}: Props = $props()
+  const {url, event, showRoom, showActivity, context}: Props = $props()
 
   // Editing a listing hands this a new version of the event, so every value read off it has to be
   // recomputed rather than captured when the component was created.
@@ -60,7 +62,13 @@
     {#snippet status()}
       <ClassifiedStatus {event} />
     {/snippet}
-    <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
+    <ReactionSummary
+      {url}
+      {event}
+      {context}
+      {deleteReaction}
+      {createReaction}
+      reactionClass="tip-left" />
     {#if showActivity}
       <EventActivity {url} {path} {event} />
     {/if}

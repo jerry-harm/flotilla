@@ -6,6 +6,7 @@
   import Content from "@app/components/Content.svelte"
   import ProfileLink from "@app/components/ProfileLink.svelte"
   import GoalActions from "@app/components/GoalActions.svelte"
+  import type {FeedContext} from "@app/feeds"
   import GoalSummary from "@app/components/GoalSummary.svelte"
   import RoomLink from "@app/components/RoomLink.svelte"
   import {makeGoalPath} from "@app/routes"
@@ -13,9 +14,10 @@
   type Props = {
     url: string
     event: TrustedEvent
+    context: FeedContext
   }
 
-  const {url, event}: Props = $props()
+  const {url, event, context}: Props = $props()
 
   const goal = reader(ZapGoal)(event)
 
@@ -42,6 +44,6 @@
         in <RoomLink {url} {h} />
       {/if}
     </span>
-    <GoalActions showActivity {url} {event} />
+    <GoalActions showActivity {url} {event} {context} />
   </div>
 </Link>

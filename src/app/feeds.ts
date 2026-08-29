@@ -1,18 +1,179 @@
-import {writable} from "svelte/store"
+import {readable, writable} from "svelte/store"
+import type {Readable} from "svelte/store"
 import {batch, between, call, int, now, on, sortBy, uniqBy, MONTH, YEAR} from "@welshman/lib"
-import {EVENT_TIME, getAddress, matchFilters, tagSpec, tagValue} from "@welshman/util"
+import {
+  DELETE,
+  EVENT_TIME,
+  getAddress,
+  getReplyFilters,
+  hexTags,
+  matchFilters,
+  tagSpec,
+  tagValue,
+  tagValues,
+} from "@welshman/util"
 import type {Filter, TrustedEvent} from "@welshman/util"
 import {mergeRepositoryUpdates} from "@welshman/net"
 import type {RepositoryUpdate} from "@welshman/net"
 import {createScroller} from "@lib/html"
 import {daysBetween} from "@lib/util"
+import {REACTION_DISPLAY_KINDS, REACTION_KINDS} from "@app/content"
 import {app, network} from "@app/core"
 import {getEventsForUrl} from "@app/repository"
+
+const noEvents: TrustedEvent[] = []
+
+export const makeFeedContext = ({relays}: {relays: string[] | Promise<string[]>}) => {
+  const {repository} = app.get()
+  const controller = new AbortController()
+  const targets = new Set<string>()
+  const eventsByTarget = new Map<string, TrustedEvent[]>()
+  const targetsByEventId = new Map<string, string[]>()
+  const subscribersByTarget = new Map<string, Set<(events: TrustedEvent[]) => void>>()
+
+  const addEvent = (event: TrustedEvent, touched: Set<string>) => {
+    // An event seen before its target was tracked stays unfiled, so that adding the target
+    // later can pick it up out of the repository
+    if (!targetsByEventId.has(event.id)) {
+      const eventTargets = tagValues(hexTags("e"), event.tags).filter(target => targets.has(target))
+
+      if (eventTargets.length > 0) {
+        targetsByEventId.set(event.id, eventTargets)
+
+        for (const target of eventTargets) {
+          eventsByTarget.set(target, [...(eventsByTarget.get(target) || []), event])
+          touched.add(target)
+        }
+      }
+    }
+  }
+
+  const removeEvent = (id: string, touched: Set<string>) => {
+    const eventTargets = targetsByEventId.get(id)
+
+    if (eventTargets) {
+      targetsByEventId.delete(id)
+
+      for (const target of eventTargets) {
+        const events = eventsByTarget.get(target)!.filter(event => event.id !== id)
+
+        if (events.length > 0) {
+          eventsByTarget.set(target, events)
+        } else {
+          eventsByTarget.delete(target)
+        }
+
+        touched.add(target)
+      }
+    }
+  }
+
+  const notify = (touched: Set<string>) => {
+    for (const target of touched) {
+      for (const subscriber of subscribersByTarget.get(target) || []) {
+        subscriber(eventsByTarget.get(target) || noEvents)
+      }
+    }
+  }
+
+  const loadContext = batch(100, async (events: TrustedEvent[]) => {
+    const touched = new Set<string>()
+
+    // What's already local — an earlier page, our own optimistic reactions — never comes
+    // through the update listener, so file it before asking the network for the rest
+    for (const event of repository.query(
+      getReplyFilters(events, {kinds: REACTION_DISPLAY_KINDS}),
+    )) {
+      addEvent(event, touched)
+    }
+
+    notify(touched)
+
+    const urls = await relays
+
+    const context = await network.get().load({
+      relays: urls,
+      signal: controller.signal,
+      filters: getReplyFilters(events, {kinds: REACTION_KINDS}),
+    })
+
+    if (context.length > 0) {
+      network.get().load({
+        relays: urls,
+        signal: controller.signal,
+        filters: getReplyFilters(context, {kinds: [DELETE]}),
+      })
+    }
+  })
+
+  const unsubscribe = on(
+    repository,
+    "update",
+    batch(150, (updates: RepositoryUpdate[]) => {
+      const {added, removed} = mergeRepositoryUpdates(updates)
+      const touched = new Set<string>()
+
+      for (const event of added) {
+        if (REACTION_DISPLAY_KINDS.includes(event.kind)) {
+          addEvent(event, touched)
+        }
+      }
+
+      for (const id of removed) {
+        removeEvent(id, touched)
+      }
+
+      notify(touched)
+    }),
+  )
+
+  // Track an event so its context gets requested with the rest of the batch
+  const add = (event: TrustedEvent) => {
+    if (!targets.has(event.id)) {
+      targets.add(event.id)
+      loadContext(event)
+    }
+  }
+
+  return {
+    add,
+    related: (event: TrustedEvent): Readable<TrustedEvent[]> => {
+      add(event)
+
+      return readable(eventsByTarget.get(event.id) || noEvents, set => {
+        let subscribers = subscribersByTarget.get(event.id)
+
+        if (!subscribers) {
+          subscribers = new Set()
+          subscribersByTarget.set(event.id, subscribers)
+        }
+
+        subscribers.add(set)
+        set(eventsByTarget.get(event.id) || noEvents)
+
+        return () => {
+          subscribers.delete(set)
+
+          if (subscribers.size === 0) {
+            subscribersByTarget.delete(event.id)
+          }
+        }
+      })
+    },
+    cleanup: () => {
+      controller.abort()
+      unsubscribe()
+    },
+  }
+}
+
+export type FeedContext = ReturnType<typeof makeFeedContext>
 
 export const makeFeed = ({
   relays,
   filters,
   element,
+  onEvent,
   onBackwardExhausted,
   onForwardExhausted,
   at = now(),
@@ -20,6 +181,7 @@ export const makeFeed = ({
   relays: string[]
   filters: Filter[]
   element: HTMLElement
+  onEvent?: (event: TrustedEvent) => void
   onBackwardExhausted?: () => void
   onForwardExhausted?: () => void
   at?: number
@@ -63,6 +225,10 @@ export const makeFeed = ({
 
     if (visible.length > 0) {
       visible.sort((a, b) => a.created_at - b.created_at)
+
+      for (const event of visible) {
+        onEvent?.(event)
+      }
 
       events.update($events => {
         const merged: TrustedEvent[] = []
@@ -223,11 +389,13 @@ export const makeCalendarFeed = ({
   relays,
   filters,
   element,
+  onEvent,
   onExhausted,
 }: {
   relays: string[]
   filters: Filter[]
   element: HTMLElement
+  onEvent?: (event: TrustedEvent) => void
   onExhausted?: () => void
 }) => {
   const interval = int(5, MONTH)
@@ -260,6 +428,7 @@ export const makeCalendarFeed = ({
 
     for (const event of valid) {
       seen.add(event.id)
+      onEvent?.(event)
     }
 
     valid.sort((a, b) => getStart(a) - getStart(b))
