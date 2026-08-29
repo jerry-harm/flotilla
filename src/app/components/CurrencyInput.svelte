@@ -55,11 +55,12 @@
 
   let wrapper: Element | undefined = $state()
   let popover: Instance | undefined = $state()
+  let showPopover: () => void = $state(() => {})
   let instance: any = $state()
 
   $effect(() => {
     if ($term) {
-      popover?.show()
+      showPopover()
     } else {
       popover?.hide()
     }
@@ -82,6 +83,7 @@
   {/if}
   <Tippy
     bind:popover
+    bind:show={showPopover}
     bind:instance
     component={Suggestions}
     props={{

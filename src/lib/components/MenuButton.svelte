@@ -22,16 +22,16 @@
     "aria-label": ariaLabel,
   }: Props = $props()
 
-  const showPopover = () => popover?.show()
-
   const hidePopover = () => popover?.hide()
 
   let popover: Instance | undefined = $state()
+  let showPopover: () => void = $state(() => {})
 </script>
 
 <Button class={className} aria-label={ariaLabel} onclick={showPopover}>
   <Tippy
     bind:popover
+    bind:show={showPopover}
     {component}
     props={{...componentProps, onClick: hidePopover}}
     params={{trigger: "manual", interactive: true, placement: "bottom-end"}}>

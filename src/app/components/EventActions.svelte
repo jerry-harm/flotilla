@@ -28,8 +28,6 @@
 
   const shouldProtect = $relays.hasNip(url, 70)
 
-  const showPopover = () => popover?.show()
-
   const hidePopover = () => popover?.hide()
 
   const onEmoji = async (emoji: NativeEmoji) => {
@@ -48,6 +46,7 @@
   }
 
   let popover: Instance | undefined = $state()
+  let showPopover: () => void = $state(() => {})
 </script>
 
 <div class="items-center join">
@@ -62,6 +61,7 @@
   <Button onclick={showPopover} class="flex join-item button button-neutral button-xs">
     <Tippy
       bind:popover
+      bind:show={showPopover}
       component={EventMenu}
       props={{url, noun, event, customActions, onClick: hidePopover}}
       params={{trigger: "manual", interactive: true}}>

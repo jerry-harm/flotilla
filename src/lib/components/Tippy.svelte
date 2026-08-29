@@ -4,7 +4,7 @@
   import tippy from "tippy.js"
   import type {Instance} from "tippy.js"
   import {onMount, mount, unmount} from "svelte"
-  import {isMobile} from "@lib/html"
+  import {getTippyTarget, isMobile} from "@lib/html"
 
   let {
     component,
@@ -13,6 +13,7 @@
     params = {},
     popover = $bindable(),
     instance = $bindable(),
+    show = $bindable(),
     ...restProps
   } = $props()
 
@@ -23,17 +24,14 @@
   // the props it was first mounted with, showing stale data after the source updates.
   const mountedProps = $state({...props})
 
-  $effect(() => {
-    Object.assign(mountedProps, props)
-  })
-
-  onMount(() => {
-    const target = document.createElement("div")
-
-    popover = tippy(element, {
+  // Building a tippy costs a popper element and a set of listeners, which is wasted on the
+  // hover menus of a chat row nobody ever opens. Only a real trigger needs the instance up
+  // front — tippy is the one listening for it. A manual one can wait for `show`.
+  const create = () => {
+    popover ??= tippy(element, {
       content: target,
       animation: "shift-away",
-      appendTo: document.querySelector(".tippy-target")!,
+      appendTo: getTippyTarget(),
       trigger: isMobile ? "click" : "mouseenter focus",
       ...params,
       onShow: (tippyInstance: Instance) => {
@@ -42,6 +40,22 @@
         return params.onShow?.(tippyInstance)
       },
     })
+
+    return popover
+  }
+
+  const target = document.createElement("div")
+
+  show = () => create().show()
+
+  $effect(() => {
+    Object.assign(mountedProps, props)
+  })
+
+  onMount(() => {
+    if (params.trigger !== "manual") {
+      create()
+    }
 
     return () => {
       popover?.destroy()

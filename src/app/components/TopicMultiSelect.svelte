@@ -67,11 +67,12 @@
 
   let label: Element | undefined = $state()
   let popover: Instance | undefined = $state()
+  let showPopover: () => void = $state(() => {})
   let instance: any = $state()
 
   $effect(() => {
     if ($term.trim()) {
-      popover?.show()
+      showPopover()
     } else {
       popover?.hide()
     }
@@ -101,6 +102,7 @@
   </label>
   <Tippy
     bind:popover
+    bind:show={showPopover}
     bind:instance
     component={Suggestions}
     props={{

@@ -9,8 +9,6 @@
 
   const {url, event} = $props()
 
-  const open = () => popover?.show()
-
   const onClick = () => popover?.hide()
 
   const onShow = () => {
@@ -32,6 +30,7 @@
   }
 
   let popover: Instance | undefined = $state()
+  let open: () => void = $state(() => {})
   let visible = $state(false)
 </script>
 
@@ -40,6 +39,7 @@
 <Button onclick={open} class="button button-xs button-neutral join-item">
   <Tippy
     bind:popover
+    bind:show={open}
     component={RoomItemMenu}
     props={{url, event, onClick}}
     params={{trigger: "manual", interactive: true, onShow, onHidden}}>

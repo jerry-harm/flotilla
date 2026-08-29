@@ -14,7 +14,7 @@
     if (isMobile) {
       pushModal(IconPickerModal, {onSelect: onClick}, {nested: true})
     } else {
-      popover?.show()
+      showPopover()
     }
   }
 
@@ -42,12 +42,14 @@
   })
 
   let popover: Instance | undefined = $state()
+  let showPopover: () => void = $state(() => {})
 </script>
 
 <svelte:document onmousemove={onMouseMove} />
 
 <Tippy
   bind:popover
+  bind:show={showPopover}
   component={IconPickerPopover}
   props={{onSelect: onClick}}
   params={{trigger: "manual", interactive: true, placement: "top-end"}}>

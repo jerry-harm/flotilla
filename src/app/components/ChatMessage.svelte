@@ -56,11 +56,12 @@
     if (popoverIsVisible) {
       popover?.hide()
     } else {
-      popover?.show()
+      showPopover()
     }
   }
 
   let popover: Instance | undefined = $state()
+  let showPopover: () => void = $state(() => {})
   let popoverIsVisible = $state(false)
 </script>
 
@@ -71,6 +72,7 @@
   {#if !isMobile}
     <Tippy
       bind:popover
+      bind:show={showPopover}
       component={ChatMessageMenu}
       props={{event, pubkeys, popover, replyTo, edit}}
       params={{

@@ -8,8 +8,6 @@
 
   const {tippyParams = {}, ...props} = $props()
 
-  const open = () => popover?.show()
-
   const onClick = (emoji: NativeEmoji) => {
     props.onEmoji(emoji)
     popover?.hide()
@@ -34,6 +32,7 @@
   })
 
   let popover: Instance | undefined = $state()
+  let open: () => void = $state(() => {})
   let visible = $state(false)
 </script>
 
@@ -42,6 +41,7 @@
 <Button onclick={open} class={props.class}>
   <Tippy
     bind:popover
+    bind:show={open}
     class="flex"
     component={EmojiPicker}
     props={{onClick}}

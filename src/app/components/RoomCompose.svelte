@@ -52,8 +52,6 @@
 
   const uploadFiles = () => editor.then(ed => ed.chain().selectFiles().run())
 
-  const showPopover = () => popover?.show()
-
   const hidePopover = () => popover?.hide()
 
   const submit = async () => {
@@ -70,6 +68,7 @@
   }
 
   let popover: Instance | undefined = $state()
+  let showPopover: () => void = $state(() => {})
   let content = $state(
     initialValues?.type === "text" ? initialValues.value : (draftKey?.get()?.content ?? ""),
   )
@@ -126,6 +125,7 @@
       class="join-item h-10 w-10 min-w-10 button button-neutral">
       <Tippy
         bind:popover
+        bind:show={showPopover}
         component={ComposeMenu}
         props={{url, h, onClick: hidePopover}}
         params={{trigger: "manual", interactive: true}}>

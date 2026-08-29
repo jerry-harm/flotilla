@@ -15,16 +15,16 @@
 
   const {pubkey, url, customActions}: Props = $props()
 
-  const showPopover = () => popover?.show()
-
   const hidePopover = () => popover?.hide()
 
   let popover: Instance | undefined = $state()
+  let showPopover: () => void = $state(() => {})
 </script>
 
 <Button onclick={showPopover} class="button button-circle button-ghost button-sm">
   <Tippy
     bind:popover
+    bind:show={showPopover}
     component={ProfileMenuList}
     props={{pubkey, url, customActions, onClick: hidePopover}}
     params={{trigger: "manual", interactive: true, placement: "bottom-end"}}>
