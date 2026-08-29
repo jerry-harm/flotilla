@@ -8,7 +8,7 @@
   import SecondaryNavHeader from "@lib/components/SecondaryNavHeader.svelte"
   import SpaceMenuRoomItem from "@app/components/SpaceMenuRoomItem.svelte"
   import RoomCreate from "@app/components/RoomCreate.svelte"
-  import {relays, roomLists, rooms, user} from "@app/core"
+  import {relays} from "@app/core"
   import {deriveUserCanCreateRoom} from "@app/management"
   import {deriveUserRooms, deriveOtherRooms, deriveOtherVoiceRooms, displayRoom} from "@app/rooms"
   import {pushModal} from "@app/modal"
