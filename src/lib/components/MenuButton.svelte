@@ -1,9 +1,10 @@
 <script lang="ts">
   import type {Component} from "svelte"
-  import type {Instance} from "tippy.js"
+  import type {Maybe} from "@welshman/lib"
   import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
+  import type {TippyController} from "@lib/components/Tippy.svelte"
   import Button from "@lib/components/Button.svelte"
 
   type Props = {
@@ -22,16 +23,16 @@
     "aria-label": ariaLabel,
   }: Props = $props()
 
-  const showPopover = () => popover?.show()
+  const showPopover = () => tippy?.show()
 
-  const hidePopover = () => popover?.hide()
+  const hidePopover = () => tippy?.hide()
 
-  let popover: Instance | undefined = $state()
+  let tippy: Maybe<TippyController> = $state()
 </script>
 
 <Button class={className} aria-label={ariaLabel} onclick={showPopover}>
   <Tippy
-    bind:popover
+    bind:controller={tippy}
     {component}
     props={{...componentProps, onClick: hidePopover}}
     params={{trigger: "manual", interactive: true, placement: "bottom-end"}}>

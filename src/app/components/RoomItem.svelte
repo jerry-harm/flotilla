@@ -41,6 +41,7 @@
   import {profiles, thunks, user} from "@app/core"
   import {colors} from "@app/theme"
   import {ENABLE_ZAPS} from "@app/env"
+  import type {FeedContext} from "@app/feeds"
   import {deriveEvent, deriveEventsForUrl} from "@app/repository"
   import {makeContentPath} from "@app/routes"
   import {pushModal} from "@app/modal"
@@ -50,11 +51,20 @@
     event: TrustedEvent
     replyTo?: (event: TrustedEvent) => void
     showPubkey?: boolean
+    context: FeedContext
     canEdit: (event: TrustedEvent) => boolean
     onEdit: (event: TrustedEvent) => void
   }
 
-  const {url, event, replyTo = undefined, showPubkey = false, canEdit, onEdit}: Props = $props()
+  const {
+    url,
+    event,
+    replyTo = undefined,
+    showPubkey = false,
+    context,
+    canEdit,
+    onEdit,
+  }: Props = $props()
 
   const h = tagValue(tagSpec("h"), event.tags)
   const today = formatTimestampAsDate(now())
@@ -139,6 +149,7 @@
     <ReactionSummary
       {url}
       {event}
+      {context}
       {deleteReaction}
       {createReaction}
       reactionClass="tip-right"

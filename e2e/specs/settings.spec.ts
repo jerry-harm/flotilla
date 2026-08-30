@@ -544,8 +544,10 @@ test("US-091 set up how people zap you", async ({seed, as}) => {
   await expect(address).toHaveCount(0)
   await expect(page.getByText("Not set")).toBeVisible()
 
-  // Each preset is a row: its own remove button and the amount side by side.
-  const presets = page.locator("form div.items-center.gap-2")
+  // Each preset is a row with a remove button and an amount input. The same utility classes land on
+  // other rows (a button's spinner), so pin it to the zap-amounts form's rows that hold an input.
+  const zapForm = page.locator("form").filter({hasText: "Zap Amounts"})
+  const presets = zapForm.locator("div.items-center.gap-2:has(input)")
 
   await expect(presets).toHaveCount(4)
 
@@ -582,7 +584,10 @@ test("US-091 set up how people zap you", async ({seed, as}) => {
   await waitForToastToClear(page)
   await page.reload()
 
-  const saved = page.locator("form div.items-center.gap-2")
+  const saved = page
+    .locator("form")
+    .filter({hasText: "Zap Amounts"})
+    .locator("div.items-center.gap-2:has(input)")
 
   await expect(saved).toHaveCount(1)
   await expect(saved.first().locator("input")).toHaveValue("500")

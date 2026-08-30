@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {onDestroy} from "svelte"
   import {derived} from "svelte/store"
   import {page} from "$app/stores"
   import {sleep} from "@welshman/lib"
@@ -20,10 +21,12 @@
   import EventReply from "@app/components/EventReply.svelte"
   import {network, reader} from "@app/core"
   import {deriveEvent, deriveEventsById} from "@app/repository"
+  import {makeFeedContext} from "@app/feeds"
   import {decodeRelay} from "@app/relays"
 
   const {relay, address} = $page.params as MakeNonOptional<typeof $page.params>
   const url = decodeRelay(relay)
+  const context = makeFeedContext({relays: [url]})
   const event = deriveEvent(address, [url])
   const classified = derived(event, $event => ($event ? reader(Classified)($event) : undefined))
   const filters = $derived($event ? getCommentFiltersForRoot([$event]) : [])
@@ -42,6 +45,8 @@
   const expand = () => {
     showAll = true
   }
+
+  onDestroy(context.cleanup)
 
   let showAll = $state(false)
   let showReply = $state(false)
@@ -69,7 +74,7 @@
       <NoteCard event={$event} {url} class="card z-feature w-full">
         <div class="flex flex-col gap-3 ml-12">
           <NoteContent showEntire event={$event} {url} />
-          <ClassifiedActions showRoom event={$event} {url} />
+          <ClassifiedActions showRoom event={$event} {url} {context} />
         </div>
       </NoteCard>
       {#if !showAll && $replies.length > 4}
@@ -84,7 +89,7 @@
         <NoteCard event={reply} {url} class="card z-feature w-full">
           <div class="flex flex-col gap-3 ml-12">
             <NoteContent showEntire event={reply} {url} />
-            <CommentActions segment="classifieds" event={reply} {url} />
+            <CommentActions segment="classifieds" event={reply} {url} {context} />
           </div>
         </NoteCard>
       {/each}

@@ -1,12 +1,10 @@
 <script lang="ts">
   import cx from "classnames"
-  import {onMount} from "svelte"
   import {derived} from "svelte/store"
   import type {Snippet} from "svelte"
   import {
-    batch,
-    call,
     displayList,
+    filter,
     groupBy,
     map,
     removeUndefined,
@@ -15,17 +13,7 @@
     uniq,
     uniqBy,
   } from "@welshman/lib"
-  import {
-    REPORT,
-    REACTION,
-    ZAP_RECEIPT,
-    getReplyFilters,
-    fromMsats,
-    matchTag,
-    tagSpec,
-    userInbox,
-    DELETE,
-  } from "@welshman/util"
+  import {REPORT, REACTION, ZAP_RECEIPT, fromMsats, matchTag, tagSpec} from "@welshman/util"
   import type {TrustedEvent, EventContent} from "@welshman/util"
   import {getEmojis} from "@welshman/domain"
   import type {Zap} from "@welshman/domain"
@@ -34,13 +22,12 @@
   import Danger from "@assets/icons/danger-triangle.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
-  import {deriveEvents} from "@app/repository"
   import Reaction from "@app/components/Reaction.svelte"
   import ReportDetails from "@app/components/ReportDetails.svelte"
   import ProfileList from "@app/components/ProfileList.svelte"
   import ZapModal from "@app/components/Zap.svelte"
-  import {REACTION_KINDS} from "@app/content"
-  import {app, network, router, user} from "@app/core"
+  import {app, user} from "@app/core"
+  import type {FeedContext} from "@app/feeds"
   import {deriveUserIsSpaceAdmin} from "@app/management"
   import {pushModal} from "@app/modal"
   import {deriveDisplaysByPubkey} from "@app/social"
@@ -53,6 +40,7 @@
     reactionClass?: string
     noTooltip?: boolean
     innerEvent?: TrustedEvent
+    context: FeedContext
     children?: Snippet
   }
 
@@ -64,16 +52,19 @@
     reactionClass = "",
     noTooltip = false,
     innerEvent = undefined,
+    context,
     children,
   }: Props = $props()
 
-  const eventIds = innerEvent ? [event.id, innerEvent.id] : [event.id]
+  const ownRelated = context.related(event)
 
-  const reports = deriveEvents([{kinds: [REPORT], "#e": [event.id]}])
+  const related = innerEvent
+    ? derived([ownRelated, context.related(innerEvent)], ([$own, $inner]) => [...$own, ...$inner])
+    : ownRelated
 
-  const reactions = deriveEvents([{kinds: [REACTION], "#e": eventIds}])
-
-  const receipts = deriveEvents([{kinds: [ZAP_RECEIPT], "#e": eventIds}])
+  const reports = derived(ownRelated, $ownRelated => filter(spec({kind: REPORT}), $ownRelated))
+  const reactions = derived(related, $related => filter(spec({kind: REACTION}), $related))
+  const receipts = derived(related, $related => filter(spec({kind: ZAP_RECEIPT}), $related))
 
   // A receipt can be a zap of either the event or the one it wraps
   const zaps = derived<typeof receipts, Zap[]>(
@@ -155,32 +146,6 @@
   )
 
   const groupedZaps = $derived(groupBy(e => getReactionKey(e.request), $zaps.values()))
-
-  onMount(() => {
-    const controller = new AbortController()
-
-    call(async () => {
-      const relays = url ? [url] : await $router.resolver.relays([userInbox()])
-
-      if (relays.length > 0) {
-        $network.load({
-          relays,
-          signal: controller.signal,
-          filters: getReplyFilters([event], {kinds: REACTION_KINDS}),
-          onEvent: batch(300, (events: TrustedEvent[]) => {
-            $network.load({
-              relays,
-              filters: getReplyFilters(events, {kinds: [DELETE]}),
-            })
-          }),
-        })
-      }
-    })
-
-    return () => {
-      controller.abort()
-    }
-  })
 </script>
 
 {#if $reactions.length > 0 || $zaps.length || $reports.length > 0 || children}

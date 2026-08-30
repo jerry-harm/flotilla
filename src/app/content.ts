@@ -36,6 +36,8 @@ export const makeDeleteFilter = (kinds: number[], extra: Filter = {}) => ({
 
 export const REPOST_KINDS = [REPOST, GENERIC_REPOST]
 
+export const EVENT_CONTEXT_KINDS = [REPORT, REACTION, ZAP_RECEIPT, COMMENT]
+
 export const REACTION_KINDS = [REPORT, DELETE, REACTION]
 
 if (ENABLE_ZAPS) {

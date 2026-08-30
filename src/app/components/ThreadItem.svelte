@@ -6,15 +6,17 @@
   import Content from "@app/components/Content.svelte"
   import ProfileLink from "@app/components/ProfileLink.svelte"
   import ThreadActions from "@app/components/ThreadActions.svelte"
+  import type {FeedContext} from "@app/feeds"
   import RoomLink from "@app/components/RoomLink.svelte"
   import {makeThreadPath} from "@app/routes"
 
   type Props = {
     url: string
     event: TrustedEvent
+    context: FeedContext
   }
 
-  const {url, event}: Props = $props()
+  const {url, event, context}: Props = $props()
 
   const title = tagValue(tagSpec("title"), event.tags)
   const h = tagValue(tagSpec("h"), event.tags)
@@ -44,6 +46,6 @@
         in <RoomLink {url} {h} />
       {/if}
     </span>
-    <ThreadActions showActivity {url} {event} />
+    <ThreadActions showActivity {url} {event} {context} />
   </div>
 </Link>

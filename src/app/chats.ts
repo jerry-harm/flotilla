@@ -1,5 +1,5 @@
 import {derived, readable} from "svelte/store"
-import {append, call, on, reject, remove, sort, sortBy, spec, uniq, uniqBy} from "@welshman/lib"
+import {append, call, on, remove, sort, sortBy, uniq, uniqBy} from "@welshman/lib"
 import type {Override} from "@welshman/lib"
 import {DELETE, PROFILE, hexTags, tagValues} from "@welshman/util"
 import type {TrustedEvent} from "@welshman/util"
@@ -95,18 +95,18 @@ export const chatsById = call(() => {
     const removeEvents = (removed: Set<string>) => {
       let dirty = false
 
-      for (const id of removed) {
-        const event = app.get().repository.getEvent(id)
+      // Drop the removed ids from whatever chats hold them, matching on id alone. A removed event
+      // can't be looked up in the repository — a cancelled delayed send is dropped from it outright
+      // (unlike a delete, which leaves the target flagged), so `getEvent` would return nothing and
+      // the message would linger. Replace each affected chat with a fresh object rather than mutating
+      // its messages in place: deriveChat is deduplicated by reference (see makeDeriveItem/
+      // deriveDeduplicated), so a chat whose identity is unchanged never reaches the ui.
+      for (const [chatId, chat] of chatsById) {
+        const messages = chat.messages.filter(e => !removed.has(e.id))
 
-        if (event && DM_KINDS.includes(event.kind)) {
-          for (const chatId of chatsByPubkey.get(event.pubkey) || []) {
-            const chat = chatsById.get(chatId)
-
-            if (chat) {
-              chat.messages = reject(spec({id: event.id}), chat.messages)
-              dirty = true
-            }
-          }
+        if (messages.length !== chat.messages.length) {
+          chatsById.set(chatId, {...chat, messages})
+          dirty = true
         }
       }
 

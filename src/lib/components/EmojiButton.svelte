@@ -1,51 +1,45 @@
 <script lang="ts">
-  import {type Instance} from "tippy.js"
   import type {NativeEmoji} from "emoji-picker-element/shared"
   import {between, throttle} from "@welshman/lib"
+  import type {Maybe} from "@welshman/lib"
   import Button from "@lib/components/Button.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
+  import type {TippyController} from "@lib/components/Tippy.svelte"
   import EmojiPicker from "@lib/components/EmojiPicker.svelte"
 
   const {tippyParams = {}, ...props} = $props()
 
-  const open = () => popover?.show()
+  const open = () => tippy?.show()
 
   const onClick = (emoji: NativeEmoji) => {
     props.onEmoji(emoji)
-    popover?.hide()
-  }
-
-  const onShow = () => {
-    visible = true
-  }
-
-  const onHidden = () => {
-    visible = false
+    tippy?.hide()
   }
 
   const onMouseMove = throttle(300, ({clientX, clientY}: MouseEvent) => {
-    if (popover) {
-      const {x, y, width, height} = popover.popper.getBoundingClientRect()
+    const rect = tippy?.rect()
+
+    if (rect) {
+      const {x, y, width, height} = rect
 
       if (!between([x, x + width], clientX) || !between([y - 100, y + height + 100], clientY)) {
-        popover.hide()
+        tippy!.hide()
       }
     }
   })
 
-  let popover: Instance | undefined = $state()
-  let visible = $state(false)
+  let tippy: Maybe<TippyController> = $state()
 </script>
 
-<svelte:document onmousemove={visible ? onMouseMove : undefined} />
+<svelte:document onmousemove={tippy?.visible ? onMouseMove : undefined} />
 
 <Button onclick={open} class={props.class}>
   <Tippy
-    bind:popover
+    bind:controller={tippy}
     class="flex"
     component={EmojiPicker}
     props={{onClick}}
-    params={{trigger: "manual", interactive: true, ...tippyParams, onShow, onHidden}}>
+    params={{trigger: "manual", interactive: true, ...tippyParams}}>
     {@render props.children?.()}
   </Tippy>
 </Button>

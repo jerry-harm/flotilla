@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {onMount} from "svelte"
+  import {onDestroy, onMount} from "svelte"
   import {readable} from "svelte/store"
   import type {Readable} from "svelte/store"
   import {page} from "$app/stores"
@@ -21,10 +21,13 @@
   import {reader} from "@app/core"
   import {decodeRelay} from "@app/relays"
   import {makeCommentFilter} from "@app/content"
-  import {makeFeed} from "@app/feeds"
+  import {makeFeed, makeFeedContext} from "@app/feeds"
   import {pushModal} from "@app/modal"
 
   const url = decodeRelay($page.params.relay!)
+  const context = makeFeedContext({relays: [url]})
+
+  onDestroy(context.cleanup)
 
   let loading = $state(true)
   let author: string | undefined = $state()
@@ -60,6 +63,7 @@
     const feed = makeFeed({
       relays: [url],
       element: element!,
+      onEvent: context.add,
       filters: [{kinds: [LONG_FORM]}, makeCommentFilter([LONG_FORM])],
       onBackwardExhausted: () => {
         loading = false
@@ -68,9 +72,7 @@
 
     events = feed.events
 
-    return () => {
-      feed.cleanup()
-    }
+    return () => feed.cleanup()
   })
 </script>
 
@@ -93,7 +95,7 @@
   <div class="flex min-w-0 grow flex-col gap-2 sm:gap-4 p-2 sm:p-4 lg:pr-0">
     {#each filtered as event (getAddress(event))}
       <div in:fly>
-        <ArticleItem {url} {event} />
+        <ArticleItem {url} {event} {context} />
       </div>
     {/each}
     <p class="flex h-10 items-center justify-center py-20">

@@ -1,5 +1,6 @@
 import {readable} from "svelte/store"
 import {sleep, randomId} from "@welshman/lib"
+import type {Maybe} from "@welshman/lib"
 import {Capacitor} from "@capacitor/core"
 export {preventDefault, stopPropagation} from "svelte/legacy"
 
@@ -151,6 +152,18 @@ export const createScroller = ({
 }
 
 export const isMobile = "ontouchstart" in document.documentElement
+
+// The layout's single popover host. Cached, because with a couple of popovers per chat row
+// this runs thousands of times against a document that is itself thousands of nodes.
+let tippyTarget: Maybe<Element>
+
+export const getTippyTarget = () => {
+  if (!tippyTarget?.isConnected) {
+    tippyTarget = document.querySelector(".tippy-target")!
+  }
+
+  return tippyTarget
+}
 
 export const downloadText = async (filename: string, text: string) => {
   // The <a download> blob trick is a no-op in native WebViews (Android in

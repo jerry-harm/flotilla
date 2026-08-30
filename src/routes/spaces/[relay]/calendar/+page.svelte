@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {onMount} from "svelte"
+  import {onDestroy, onMount} from "svelte"
   import type {Readable} from "svelte/store"
   import {readable} from "svelte/store"
   import {page} from "$app/stores"
@@ -20,15 +20,18 @@
   import {pushModal} from "@app/modal"
   import {decodeRelay} from "@app/relays"
   import {makeCommentFilter} from "@app/content"
-  import {makeCalendarFeed} from "@app/feeds"
+  import {makeCalendarFeed, makeFeedContext} from "@app/feeds"
 
   const url = decodeRelay($page.params.relay!)
+  const context = makeFeedContext({relays: [url]})
 
   const makeEvent = () => pushModal(CalendarEventCreate, {url})
 
   const getStart = (event: TrustedEvent) => parseInt(tagValue(tagSpec("start"), event.tags) || "")
 
   let element: HTMLElement | undefined = $state()
+  onDestroy(context.cleanup)
+
   let loading = $state(true)
   let events: Readable<TrustedEvent[]> = $state(readable([]))
 
@@ -94,6 +97,7 @@
     const feed = makeCalendarFeed({
       relays: [url],
       element: element!,
+      onEvent: context.add,
       filters: [{kinds: [EVENT_TIME]}, makeCommentFilter([EVENT_TIME])],
       onExhausted: () => {
         loading = false
@@ -102,9 +106,7 @@
 
     events = feed.events
 
-    return () => {
-      feed.cleanup()
-    }
+    return () => feed.cleanup()
   })
 </script>
 
@@ -136,7 +138,7 @@
       {#if dateDisplay}
         <Divider>{dateDisplay}</Divider>
       {/if}
-      <CalendarEventItem {url} {event} />
+      <CalendarEventItem {url} {event} {context} />
     </div>
   {/each}
   {#if loading}

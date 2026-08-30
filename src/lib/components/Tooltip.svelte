@@ -30,7 +30,7 @@
 
   import tippy from "tippy.js"
   import {onMount} from "svelte"
-  import {isMobile} from "@lib/html"
+  import {getTippyTarget, isMobile} from "@lib/html"
 
   let {
     content,
@@ -50,7 +50,7 @@
       interactive,
       animation: "shift-away",
       theme: "tooltip",
-      appendTo: document.querySelector(".tippy-target")!,
+      appendTo: getTippyTarget(),
       trigger: isMobile ? "click" : "mouseenter focus",
     })
 

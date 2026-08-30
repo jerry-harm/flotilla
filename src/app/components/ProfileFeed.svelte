@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {onMount} from "svelte"
+  import {onDestroy, onMount} from "svelte"
   import {sortBy, uniqBy} from "@welshman/lib"
   import {feedFromFilter, makeIntersectionFeed, makeRelayFeed} from "@welshman/feeds"
   import {NOTE} from "@welshman/util"
@@ -11,6 +11,7 @@
   import Spinner from "@lib/components/Spinner.svelte"
   import NoteItem from "@app/components/NoteItem.svelte"
   import {app} from "@app/core"
+  import {makeFeedContext} from "@app/feeds"
 
   type Props = {
     url: string
@@ -21,6 +22,10 @@
 
   let {url, pubkey, events = $bindable([]), hideLoading = false}: Props = $props()
 
+  const context = makeFeedContext({relays: [url]})
+
+  onDestroy(context.cleanup)
+
   const ctrl = $app.use(Feeds).makeFeedController({
     useWindowing: true,
     feed: makeIntersectionFeed(
@@ -30,6 +35,7 @@
     onEvent: (event: TrustedEvent) => {
       if (getReplyTags(event.tags).replies.length === 0) {
         buffer.push(event)
+        context.add(event)
       }
     },
   })
@@ -64,7 +70,7 @@
   <div class="flex flex-col gap-2">
     {#each events as event (event.id)}
       <div in:fly>
-        <NoteItem {url} {event} />
+        <NoteItem {url} {event} {context} />
       </div>
     {/each}
     {#if !hideLoading}

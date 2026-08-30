@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {onMount} from "svelte"
+  import {onDestroy, onMount} from "svelte"
   import {derived, writable} from "svelte/store"
   import type {Writable} from "svelte/store"
   import {sortBy, uniqBy, now} from "@welshman/lib"
@@ -11,7 +11,7 @@
   import Spinner from "@lib/components/Spinner.svelte"
   import NoteItem from "@app/components/NoteItem.svelte"
   import {app, network, router} from "@app/core"
-  import {makeFeed} from "@app/feeds"
+  import {makeFeed, makeFeedContext} from "@app/feeds"
 
   type Props = {
     pubkey: string
@@ -20,6 +20,10 @@
   const {pubkey}: Props = $props()
 
   const relays = $router.resolver.relays([outbox(pubkey)])
+  const context = makeFeedContext({relays})
+
+  onDestroy(context.cleanup)
+
   const pinnedIds = derived($app.use(PinLists).one(pubkey), $pinList => $pinList?.ids() ?? [])
 
   $effect(() => {
@@ -58,6 +62,7 @@
         relays: $relays,
         element: element!,
         filters: [{kinds: [NOTE], authors: [pubkey]}],
+        onEvent: context.add,
         onBackwardExhausted: () => {
           exhausted = true
         },
@@ -74,7 +79,7 @@
 <div class="flex flex-col gap-4" bind:this={element}>
   {#each feedEvents as event (event.id)}
     <div in:fly>
-      <NoteItem {event} />
+      <NoteItem {event} {context} />
     </div>
   {:else}
     {#if exhausted}

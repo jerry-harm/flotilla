@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {onDestroy} from "svelte"
   import * as nip19 from "nostr-tools/nip19"
   import {page} from "$app/stores"
   import {goto} from "$app/navigation"
@@ -20,6 +21,7 @@
   import RoomName from "@app/components/RoomName.svelte"
   import {deriveEvent, deriveEventsById} from "@app/repository"
   import {network} from "@app/core"
+  import {makeFeedContext} from "@app/feeds"
   import {decodeRelay} from "@app/relays"
   import {makeSpacePath, scrollToEvent} from "@app/routes"
 
@@ -28,6 +30,8 @@
   const {relay, id} = $page.params as MakeNonOptional<typeof $page.params>
   const url = decodeRelay(relay)
   const event = deriveEvent(id, [url])
+  // Rows register themselves with `related`, so the whole page's reactions load in one batch
+  const context = makeFeedContext({relays: [url]})
   const filters = $derived($event ? getCommentFiltersForRoot([$event]) : [])
   const replies = $derived(deriveEventsAsc(deriveEventsById(filters)))
 
@@ -95,6 +99,8 @@
       replyTo = $event
     }
   }
+
+  onDestroy(context.cleanup)
 
   let showReply = $state(false)
   let replyTo: TrustedEvent | undefined = $state()
@@ -172,7 +178,7 @@
   {#if $event}
     <div class="bg-surface border-y" style="border-color: var(--line)">
       {#each pagePosts as post (post.id)}
-        <ThreadPost {url} event={post} threadPubkey={$event.pubkey} onReply={openReply} />
+        <ThreadPost {url} {context} event={post} threadPubkey={$event.pubkey} onReply={openReply} />
       {/each}
     </div>
     {#if pageCount > 1}

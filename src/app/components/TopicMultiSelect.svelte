@@ -3,6 +3,7 @@
   import type {Writable} from "svelte/store"
   import type {Instance} from "tippy.js"
   import {remove, reject, spec, uniq} from "@welshman/lib"
+  import type {Maybe} from "@welshman/lib"
   import {Topics, createSearch} from "@welshman/app"
   import {normalizeTopic} from "@lib/util"
   import Suggestions from "@lib/components/Suggestions.svelte"
@@ -10,6 +11,7 @@
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
+  import type {TippyController} from "@lib/components/Tippy.svelte"
   import Button from "@lib/components/Button.svelte"
   import TopicSuggestion from "@app/components/TopicSuggestion.svelte"
   import {app} from "@app/core"
@@ -41,7 +43,7 @@
     }
 
     term.set("")
-    popover?.hide()
+    tippy?.hide()
   }
 
   const removeTopic = (topic: string) => {
@@ -49,7 +51,7 @@
   }
 
   const onKeyDown = (e: KeyboardEvent) => {
-    if (instance?.onKeyDown(e)) {
+    if (tippy?.content?.onKeyDown(e)) {
       e.preventDefault()
       return
     }
@@ -62,18 +64,17 @@
 
   const onBlur = () => {
     term.set("")
-    popover?.hide()
+    tippy?.hide()
   }
 
   let label: Element | undefined = $state()
-  let popover: Instance | undefined = $state()
-  let instance: any = $state()
+  let tippy: Maybe<TippyController> = $state()
 
   $effect(() => {
     if ($term.trim()) {
-      popover?.show()
+      tippy?.show()
     } else {
-      popover?.hide()
+      tippy?.hide()
     }
   })
 </script>
@@ -100,8 +101,7 @@
       onblur={onBlur} />
   </label>
   <Tippy
-    bind:popover
-    bind:instance
+    bind:controller={tippy}
     component={Suggestions}
     props={{
       term,

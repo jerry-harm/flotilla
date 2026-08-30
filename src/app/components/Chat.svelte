@@ -1,6 +1,6 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
-  import {onMount} from "svelte"
+  import {onDestroy, onMount} from "svelte"
   import {goto} from "$app/navigation"
   import {
     ago,
@@ -19,7 +19,7 @@
   } from "@welshman/lib"
   import type {Maybe} from "@welshman/lib"
   import type {TrustedEvent, EventTemplate, EventContent} from "@welshman/util"
-  import {makeEvent, DIRECT_MESSAGE, DIRECT_MESSAGE_FILE} from "@welshman/util"
+  import {makeEvent, userInbox, DIRECT_MESSAGE, DIRECT_MESSAGE_FILE} from "@welshman/util"
   import {parse, isLink} from "@welshman/content"
   import {MessagingRelayLists, Thunks} from "@welshman/app"
   import Danger from "@assets/icons/danger-triangle.svg?dataurl"
@@ -41,9 +41,10 @@
   import ChatComposeEdit from "@app/components/ChatComposeEdit.svelte"
   import ChatComposeParent from "@app/components/ChatComposeParent.svelte"
   import ThunkToast from "@app/components/ThunkToast.svelte"
-  import {app, deletes, user, wraps} from "@app/core"
+  import {app, deletes, router, user, wraps} from "@app/core"
   import {userSettingsValues} from "@app/settings"
   import {deriveChat, makeChatId} from "@app/chats"
+  import {makeFeedContext} from "@app/feeds"
   import {pushModal} from "@app/modal"
   import {DraftKey, type Draft} from "@app/drafts"
   import {prependParent} from "@app/rooms"
@@ -58,6 +59,9 @@
   const {pubkeys, info}: Props = $props()
 
   const chatId = makeChatId(pubkeys)
+  const context = makeFeedContext({relays: $router.resolver.relays([userInbox()])})
+
+  onDestroy(context.cleanup)
   const chat = deriveChat(chatId)
   const draftKey = new DraftKey<Draft>(`dm:${chatId}`)
   const others = remove($user.pubkey, pubkeys)
@@ -313,6 +317,7 @@
           event={$state.snapshot(value as TrustedEvent)}
           {pubkeys}
           {showPubkey}
+          {context}
           {replyTo}
           canEdit={canEditEvent}
           onEdit={onEditEvent} />

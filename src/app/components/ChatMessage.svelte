@@ -1,7 +1,7 @@
 <script lang="ts">
   import cx from "classnames"
-  import {type Instance} from "tippy.js"
   import {hash, formatTimestampAsTime} from "@welshman/lib"
+  import type {Maybe} from "@welshman/lib"
   import type {TrustedEvent, EventContent} from "@welshman/util"
   import {Thunks} from "@welshman/app"
   import {isMobile} from "@lib/html"
@@ -10,10 +10,12 @@
   import Button from "@lib/components/Button.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
   import TapTarget from "@lib/components/TapTarget.svelte"
+  import type {TippyController} from "@lib/components/Tippy.svelte"
   import ProfileCircle from "@app/components/ProfileCircle.svelte"
   import {publishWrappedReaction, retractWrappedReaction} from "@app/reactions"
   import Content from "@app/components/Content.svelte"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
+  import type {FeedContext} from "@app/feeds"
   import ThunkFailure from "@app/components/ThunkFailure.svelte"
   import ProfileDetail from "@app/components/ProfileDetail.svelte"
   import ChatMessageMenu from "@app/components/ChatMessageMenu.svelte"
@@ -29,9 +31,10 @@
     onEdit?: (event: TrustedEvent) => void
     pubkeys: string[]
     showPubkey?: boolean
+    context: FeedContext
   }
 
-  const {event, replyTo, canEdit, onEdit, pubkeys, showPubkey = false}: Props = $props()
+  const {event, replyTo, canEdit, onEdit, pubkeys, showPubkey = false, context}: Props = $props()
 
   const isOwn = event.pubkey === $user.pubkey
   const profileDisplay = $profiles.display(event.pubkey).$
@@ -50,16 +53,9 @@
 
   const showMobileMenu = () => pushModal(ChatMessageMenuMobile, {event, pubkeys, reply, edit})
 
-  const togglePopover = () => {
-    if (popoverIsVisible) {
-      popover?.hide()
-    } else {
-      popover?.show()
-    }
-  }
+  const togglePopover = () => tippy?.toggle()
 
-  let popover: Instance | undefined = $state()
-  let popoverIsVisible = $state(false)
+  let tippy: Maybe<TippyController> = $state()
 </script>
 
 <ThunkFailure showToastOnRetry {thunk} class="mt-1" />
@@ -68,19 +64,10 @@
   class={cx("group flex items-center justify-end gap-1 px-2", {"flex-row-reverse": !isOwn})}>
   {#if !isMobile}
     <Tippy
-      bind:popover
+      bind:controller={tippy}
       component={ChatMessageMenu}
-      props={{event, pubkeys, popover, replyTo, edit}}
-      params={{
-        interactive: true,
-        trigger: "manual",
-        onShow() {
-          popoverIsVisible = true
-        },
-        onHidden() {
-          popoverIsVisible = false
-        },
-      }}>
+      props={{event, pubkeys, tippy, replyTo, edit}}
+      params={{interactive: true, trigger: "manual"}}>
       <button
         type="button"
         class="opacity-0 transition-all"
@@ -117,7 +104,7 @@
       </div>
     </TapTarget>
     <div class="flex gap-2 z-feature -mt-4 ml-4">
-      <ReactionSummary {event} {deleteReaction} {createReaction} noTooltip />
+      <ReactionSummary {event} {context} {deleteReaction} {createReaction} noTooltip />
     </div>
   </div>
 </div>

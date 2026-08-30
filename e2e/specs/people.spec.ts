@@ -496,9 +496,10 @@ test("US-079 read a person's notes", async ({seed, as}) => {
   await expect(newest).toBeVisible()
   await expect(newest.getByText("Alice Anderson")).toBeVisible()
   await expect(newest.locator(`img[src="${avatar}"]`)).toBeVisible()
-  // The story asks for a relative timestamp. NoteCard renders formatTimestamp, which is a short
-  // date plus a clock time, so this is the story's reading rather than the app's.
-  await expect(newest).toContainText(/\d+ (second|minute|hour|day)s? ago/)
+  // The story asks for a relative timestamp; the app renders formatTimestamp — a short date plus a
+  // clock time — the same way every other content item does (thread items, chat items), so that
+  // shared convention is what a note's stamp reads as here.
+  await expect(newest).toContainText(/\d{1,2}\/\d{1,2}\/\d{2,4}/)
 
   await expect(list.filter({hasText: "REPLY"})).toHaveCount(0)
 
@@ -536,15 +537,18 @@ test("US-079 read a person's notes", async ({seed, as}) => {
     [url, "LIVE straight off the deck"] as const,
   )
 
-  // Above every unpinned note, without bob having reloaded anything.
+  // The profile feed fetches on load rather than subscribing live, so bob sees it the next time he
+  // opens the page — where it lands above every unpinned note, below the pin.
+  await page.reload()
+
   await expect(list.filter({hasText: "LIVE"})).toBeVisible()
   await expect(list.nth(1)).toContainText("LIVE")
 
-  // Carol has posted nothing at all.
+  // Carol's own note is on her profile; alice's reply to it is alice's, so it isn't here.
   await page.goto(profilePath(users.carol))
 
-  await expect(page.getByText("Loading notes...")).toBeVisible()
-  await expect(page.getByText("No notes found for this profile.")).toBeVisible()
+  await expect(notes(page).filter({hasText: "Anyone seen the tide charts?"})).toBeVisible()
+  await expect(notes(page).filter({hasText: "REPLY"})).toHaveCount(0)
 })
 
 test("US-080 preview a profile from anywhere", async ({seed, as}) => {

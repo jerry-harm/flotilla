@@ -3,12 +3,14 @@
   import type {Writable} from "svelte/store"
   import {type Instance} from "tippy.js"
   import {append, remove, uniq} from "@welshman/lib"
+  import type {Maybe} from "@welshman/lib"
   import {decodePubkey} from "@lib/util"
   import Suggestions from "@lib/components/Suggestions.svelte"
   import CloseCircle from "@assets/icons/close-circle.svg?dataurl"
   import Magnifier from "@assets/icons/magnifier.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
+  import type {TippyController} from "@lib/components/Tippy.svelte"
   import Button from "@lib/components/Button.svelte"
   import Badge from "@lib/components/Badge.svelte"
   import ProfileSuggestion from "@app/editor/ProfileSuggestion.svelte"
@@ -31,7 +33,7 @@
 
   const selectPubkey = (pubkey: string) => {
     term.set("")
-    popover?.hide()
+    tippy?.hide()
     value = uniq(append(pubkey, value))
   }
 
@@ -48,23 +50,22 @@
   }
 
   const onKeyDown = (e: Event) => {
-    if (instance?.onKeyDown(e)) {
+    if (tippy?.content?.onKeyDown(e)) {
       e.preventDefault()
     }
   }
 
   let label: Element | undefined = $state()
-  let popover: Instance | undefined = $state()
-  let instance: any = $state()
+  let tippy: Maybe<TippyController> = $state()
 
   $effect(() => {
     // @ts-ignore
     oninput?.($term)
 
     if ($term) {
-      popover?.show()
+      tippy?.show()
     } else {
-      popover?.hide()
+      tippy?.hide()
     }
   })
 </script>
@@ -96,8 +97,7 @@
       onkeydown={onKeyDown} />
   </label>
   <Tippy
-    bind:popover
-    bind:instance
+    bind:controller={tippy}
     component={Suggestions}
     props={{
       term,

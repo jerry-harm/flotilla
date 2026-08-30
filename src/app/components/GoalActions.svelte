@@ -4,6 +4,7 @@
   import Link from "@lib/components/Link.svelte"
   import {reader} from "@app/core"
   import ReactionSummary from "@app/components/ReactionSummary.svelte"
+  import type {FeedContext} from "@app/feeds"
   import {publishReaction, retractReaction} from "@app/reactions"
   import ThunkStatusOrDeleted from "@app/components/ThunkStatusOrDeleted.svelte"
   import EventActivity from "@app/components/EventActivity.svelte"
@@ -16,9 +17,10 @@
     event: TrustedEvent
     showRoom?: boolean
     showActivity?: boolean
+    context: FeedContext
   }
 
-  const {url, event, showRoom, showActivity}: Props = $props()
+  const {url, event, showRoom, showActivity, context}: Props = $props()
 
   const path = makeGoalPath(url, event.id)
   const goal = reader(ZapGoal)(event)
@@ -37,9 +39,15 @@
     </Link>
   {/if}
   <ThunkStatusOrDeleted {event}>
-    <ReactionSummary {url} {event} {deleteReaction} {createReaction} reactionClass="tip-left" />
+    <ReactionSummary
+      {url}
+      {event}
+      {context}
+      {deleteReaction}
+      {createReaction}
+      reactionClass="tip-left" />
     {#if showActivity}
-      <EventActivity {url} {path} {event} />
+      <EventActivity {path} {event} {context} />
     {/if}
     <EventActions {url} {event} hideZap noun="Goal" />
   </ThunkStatusOrDeleted>

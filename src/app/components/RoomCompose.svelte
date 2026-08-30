@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type {Instance} from "tippy.js"
   import {writable} from "svelte/store"
+  import type {Maybe} from "@welshman/lib"
   import type {EventContent} from "@welshman/util"
   import {isMobile, preventDefault} from "@lib/html"
   import GallerySend from "@assets/icons/gallery-send.svg?dataurl"
@@ -9,6 +9,7 @@
   import Icon from "@lib/components/Icon.svelte"
   import Button from "@lib/components/Button.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
+  import type {TippyController} from "@lib/components/Tippy.svelte"
   import Spinner from "@lib/components/Spinner.svelte"
   import ComposeMenu from "@app/components/ComposeMenu.svelte"
   import EditorContent from "@app/editor/EditorContent.svelte"
@@ -52,9 +53,9 @@
 
   const uploadFiles = () => editor.then(ed => ed.chain().selectFiles().run())
 
-  const showPopover = () => popover?.show()
+  const showPopover = () => tippy?.show()
 
-  const hidePopover = () => popover?.hide()
+  const hidePopover = () => tippy?.hide()
 
   const submit = async () => {
     if ($uploading) return
@@ -69,7 +70,7 @@
     ed.chain().clearContent().run()
   }
 
-  let popover: Instance | undefined = $state()
+  let tippy: Maybe<TippyController> = $state()
   let content = $state(
     initialValues?.type === "text" ? initialValues.value : (draftKey?.get()?.content ?? ""),
   )
@@ -125,7 +126,7 @@
       onclick={showPopover}
       class="join-item h-10 w-10 min-w-10 button button-neutral">
       <Tippy
-        bind:popover
+        bind:controller={tippy}
         component={ComposeMenu}
         props={{url, h, onClick: hidePopover}}
         params={{trigger: "manual", interactive: true}}>

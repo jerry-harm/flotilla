@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {onMount} from "svelte"
+  import {onDestroy, onMount} from "svelte"
   import {readable} from "svelte/store"
   import type {Readable} from "svelte/store"
   import {page} from "$app/stores"
@@ -18,10 +18,13 @@
   import {decodeRelay} from "@app/relays"
   import {displayRoom} from "@app/rooms"
   import {makeCommentFilter} from "@app/content"
-  import {makeFeed} from "@app/feeds"
+  import {makeFeed, makeFeedContext} from "@app/feeds"
   import {pushModal} from "@app/modal"
 
   const url = decodeRelay($page.params.relay!)
+  const context = makeFeedContext({relays: [url]})
+
+  onDestroy(context.cleanup)
 
   let loading = $state(true)
   let element: HTMLElement | undefined = $state()
@@ -54,6 +57,7 @@
     const feed = makeFeed({
       relays: [url],
       element: element!,
+      onEvent: context.add,
       filters: [{kinds: [THREAD]}, makeCommentFilter([THREAD])],
       onBackwardExhausted: () => {
         loading = false
@@ -62,9 +66,7 @@
 
     events = feed.events
 
-    return () => {
-      feed.cleanup()
-    }
+    return () => feed.cleanup()
   })
 </script>
 
@@ -85,7 +87,7 @@
 
 <PageContent bind:element class="flex flex-col gap-2 p-2 sm:gap-4 sm:p-4">
   {#each threadFeed.boards as [h, threads] (h || "general")}
-    <ThreadBoard {url} {h} {threads} />
+    <ThreadBoard {url} {h} {threads} {context} />
   {/each}
   <p class="flex h-10 items-center justify-center py-20">
     <Spinner {loading}>

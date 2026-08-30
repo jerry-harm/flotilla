@@ -10,15 +10,17 @@
   import Content from "@app/components/Content.svelte"
   import ProfileLink from "@app/components/ProfileLink.svelte"
   import ClassifiedActions from "@app/components/ClassifiedActions.svelte"
+  import type {FeedContext} from "@app/feeds"
   import RoomLink from "@app/components/RoomLink.svelte"
   import {makeClassifiedPath} from "@app/routes"
 
   type Props = {
     url: string
     event: TrustedEvent
+    context: FeedContext
   }
 
-  const {url, event}: Props = $props()
+  const {url, event, context}: Props = $props()
 
   const classified = $derived(reader(Classified)(event))
   const title = $derived(classified.title())
@@ -59,6 +61,6 @@
         in <RoomLink {url} {h} />
       {/if}
     </span>
-    <ClassifiedActions showActivity {url} {event} />
+    <ClassifiedActions showActivity {url} {event} {context} />
   </div>
 </Link>

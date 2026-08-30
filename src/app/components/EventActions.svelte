@@ -1,6 +1,6 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
-  import type {Instance} from "tippy.js"
+  import type {Maybe} from "@welshman/lib"
   import type {NativeEmoji} from "emoji-picker-element/shared"
   import type {TrustedEvent} from "@welshman/util"
   import {tagSpec, tagValue} from "@welshman/util"
@@ -9,6 +9,7 @@
   import MenuDots from "@assets/icons/menu-dots.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
   import Tippy from "@lib/components/Tippy.svelte"
+  import type {TippyController} from "@lib/components/Tippy.svelte"
   import Button from "@lib/components/Button.svelte"
   import EmojiButton from "@lib/components/EmojiButton.svelte"
   import ZapButton from "@app/components/ZapButton.svelte"
@@ -28,9 +29,9 @@
 
   const shouldProtect = $relays.hasNip(url, 70)
 
-  const showPopover = () => popover?.show()
+  const showPopover = () => tippy?.show()
 
-  const hidePopover = () => popover?.hide()
+  const hidePopover = () => tippy?.hide()
 
   const onEmoji = async (emoji: NativeEmoji) => {
     const protect = await shouldProtect
@@ -47,7 +48,7 @@
     return command.publishToRelays([url])
   }
 
-  let popover: Instance | undefined = $state()
+  let tippy: Maybe<TippyController> = $state()
 </script>
 
 <div class="items-center join">
@@ -61,7 +62,7 @@
   </EmojiButton>
   <Button onclick={showPopover} class="flex join-item button button-neutral button-xs">
     <Tippy
-      bind:popover
+      bind:controller={tippy}
       component={EventMenu}
       props={{url, noun, event, customActions, onClick: hidePopover}}
       params={{trigger: "manual", interactive: true}}>

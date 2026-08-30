@@ -8,30 +8,32 @@
   import CalendarEventItem from "@app/components/CalendarEventItem.svelte"
   import PollItem from "@app/components/PollItem.svelte"
   import RecentConversation from "@app/components/RecentConversation.svelte"
+  import type {FeedContext} from "@app/feeds"
   import type {RecentActivityItem} from "@app/recent"
 
   type Props = {
     url: string
     item: RecentActivityItem
+    context: FeedContext
   }
 
-  const {url, item}: Props = $props()
+  const {url, item, context}: Props = $props()
 </script>
 
 {#if item.type === "message"}
   <RecentConversation {url} event={item.event} count={item.count} />
 {:else if item.event.kind === THREAD}
-  <ThreadItem {url} event={item.event} />
+  <ThreadItem {url} {context} event={item.event} />
 {:else if item.event.kind === CLASSIFIED}
-  <ClassifiedItem {url} event={item.event} />
+  <ClassifiedItem {url} {context} event={item.event} />
 {:else if item.event.kind === LONG_FORM}
-  <ArticleItem {url} event={item.event} />
+  <ArticleItem {url} {context} event={item.event} />
 {:else if item.event.kind === ZAP_GOAL}
-  <GoalItem {url} event={item.event} />
+  <GoalItem {url} {context} event={item.event} />
 {:else if item.event.kind === EVENT_TIME}
-  <CalendarEventItem {url} event={item.event} />
+  <CalendarEventItem {url} {context} event={item.event} />
 {:else if item.event.kind === POLL}
-  <PollItem {url} event={item.event} />
+  <PollItem {url} {context} event={item.event} />
 {:else}
-  <NoteItem {url} event={item.event} />
+  <NoteItem {url} {context} event={item.event} />
 {/if}
