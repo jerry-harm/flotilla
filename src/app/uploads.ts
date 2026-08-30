@@ -1,8 +1,9 @@
-import {first, normalizeUrl, parseJson, sha256, simpleCache} from "@welshman/lib"
-import {canUploadBlob, encryptFile, makeBlossomAuthEvent, uploadBlob} from "@welshman/util"
+import {first, normalizeUrl, parseJson, simpleCache} from "@welshman/lib"
+import {canUploadBlob, makeBlossomAuthEvent, uploadBlob} from "@welshman/util"
 import {Nip01Signer} from "@welshman/signer"
 import type {UploadTask} from "@welshman/editor"
 import {compressFile} from "@lib/html"
+import {sha256, encryptFile} from "@lib/util"
 import {app, blossomServerLists, relays} from "@app/core"
 import {DEFAULT_BLOSSOM_SERVERS} from "@app/env"
 
@@ -120,6 +121,13 @@ export const uploadFile = async (file: File, options: UploadFileOptions = {}) =>
 
     const ext = "." + type.split("/")[1]
     const server = await getBlossomServer(options)
+
+    // No blossom server configured (and none from the user's profile): fail fast with a
+    // readable error instead of letting uploadBlob throw on an invalid URL.
+    if (!server) {
+      return {error: "No blossom server is configured for this deployment"}
+    }
+
     const hashes = [await sha256(await file.arrayBuffer())]
     const $signer = app.get().user?.signer || Nip01Signer.ephemeral()
     const authTemplate = makeBlossomAuthEvent({action: "upload", server, hashes})

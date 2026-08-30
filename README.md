@@ -36,6 +36,7 @@ You can also optionally create an `.env.local` file and populate it with the fol
 - `VITE_PUSH_BRIDGE` - WebSocket URL of the push notification relay bridge
 - `VITE_POMADE_SIGNERS` - A comma-separated list of Pomade signer server URLs (3+ required to enable email signup)
 - `VITE_THUMBNAIL_URL` - URL of the image thumbnail service
+- `VITE_DUFFLEPUD_URL` - URL of the dufflepud proxy used for link previews and cross-device read-state sync. Leave unset to disable those features and avoid connections to the default instance.
 
 These values **won't** be used for a built version. Instead, env variables should be provided to `scripts/build.sh` directly or to the built container.
 

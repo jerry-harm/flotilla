@@ -5,7 +5,6 @@ import {normalizeRelayUrl} from "@welshman/util"
 import {Zooid, describeDockerProblem} from "./zooid/relay"
 import {
   installHttpRoutes,
-  mockAnalytics,
   mockBlossom,
   mockDufflepud,
   mockHosting,
@@ -173,7 +172,6 @@ export const test = base.extend<HarnessFixtures, HarnessWorkerFixtures>({
       await installHttpRoutes(context)
       await installWebSocketRoutes(context, zooid)
       await mockRelayInfo(context, options.relayInfo ?? {})
-      await mockAnalytics(context)
       await mockDufflepud(context)
       await mockHosting(context, options.hosting)
       await mockPushServer(context)

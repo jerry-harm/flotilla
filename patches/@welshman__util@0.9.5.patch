@@ -1,0 +1,16 @@
+diff --git a/dist/util/src/Pow.js b/dist/util/src/Pow.js
+index 697a2c90068bc26a01f07cd6cfa2a4a4d4d1acf5..7ec17003348ca29a360b350ca85d323b90cbb064 100644
+--- a/dist/util/src/Pow.js
++++ b/dist/util/src/Pow.js
+@@ -118,6 +118,11 @@ call(() => {
+     if (typeof Worker === "undefined") {
+         return;
+     }
++    // The worker hashes with crypto.subtle, which only exists in secure contexts (https or
++    // localhost). Skip the benchmark over plain http rather than failing inside the worker.
++    if (typeof crypto === "undefined" || !crypto.subtle) {
++        return;
++    }
+     const secret = makeSecret();
+     const pubkey = getPubkey(secret);
+     const event = own(makeEvent(1, {}), pubkey);

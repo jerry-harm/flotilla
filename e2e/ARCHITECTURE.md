@@ -133,7 +133,7 @@ A browser has a fixed set of ways to put bytes on a wire.
 | `img`, `script`, `link`, fonts, media, and every other subresource  | the same route. Images never reach it — `mockImages` answers anything with `resourceType() === "image"` with a 1×1 png                                         |
 | navigation, including the external links the ui offers              | the same route: a document request is routed like any other, and a popup opens in the context that owns it                                                     |
 | `EventSource`                                                       | the same route. Neither `src` nor welshman constructs one                                                                                                      |
-| `navigator.sendBeacon`                                              | no call site. The one script that would use it is the plausible tag in `src/app.html`, served with an empty body                                               |
+| `navigator.sendBeacon`                                              | no call site                                                                                                                                                   |
 | a service worker                                                    | `serviceWorkers: "block"` on the context. Playwright does not route a worker's requests, so the worker is refused instead                                      |
 | a web worker                                                        | no call site in `src`; `@pomade/core`'s is argon2, which is cpu and no socket                                                                                  |
 | Capacitor's native http and push plugins                            | not reachable from a browser, and the zooid config leaves `[push]` disabled so nothing is asked to register                                                    |
@@ -163,8 +163,8 @@ Grepping the repo for hostnames accounts for all of them, and there are only thr
 `href` in help text — nostr.com, nostrapps.com, nsec.app, nosta.me, nostr.how, github.com,
 fountain.fm, cal.com, figma.com, coracle.tools, gitea.coracle.social, nwc.getalby.com, and the
 `coracle.social` entity links `src/app/env.ts` builds — reachable only by clicking, and routed if
-clicked. Two are fetched: dufflepud, whose origin is the one service url hard-coded rather than read
-from `VITE_`, and the plausible tag in `src/app.html`. Both are mocked. The rest are in comments.
+clicked. One is fetched: dufflepud, whose origin is the one service url hard-coded rather than read
+from `VITE_`. It is mocked. The rest are in comments.
 Under `e2e` the only hostnames are the four service origins `net/http.ts` matches on, the virtual
 relays' own `.test` names, and the loopback address `zooid/transport.ts` dials.
 

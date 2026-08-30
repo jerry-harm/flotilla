@@ -1,16 +1,10 @@
 <script lang="ts">
   import {onMount, onDestroy} from "svelte"
   import {displayUrl, once} from "@welshman/lib"
-  import {
-    getBlob,
-    decryptFile,
-    makeBlossomAuthEvent,
-    matchTags,
-    tagSpec,
-    tagValue,
-  } from "@welshman/util"
+  import {getBlob, makeBlossomAuthEvent, matchTags, tagSpec, tagValue} from "@welshman/util"
   import LinkRound from "@assets/icons/link-round.svg?dataurl"
   import Icon from "@lib/components/Icon.svelte"
+  import {decryptFile} from "@lib/util"
   import {user} from "@app/core"
 
   const {value, event, ...props} = $props()

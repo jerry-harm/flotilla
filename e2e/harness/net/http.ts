@@ -13,9 +13,6 @@ const DUFFLEPUD_ORIGIN = "https://dufflepud.coracle.social"
 const PUSH_SERVER_ORIGIN = "https://nps.flotilla.social"
 const HOSTING_ORIGIN = "https://api.hosting.coracle.social"
 
-// Hard-coded in src/app.html, so every navigation asks for it whatever the scenario is doing.
-const PLAUSIBLE_ORIGIN = "https://plausible.coracle.social"
-
 // Where the hosting api sends a browser to pay. Nothing serves it — `.test` resolves nowhere and
 // the block-all aborts the navigation — so a spec sees the redirect without one leaving.
 const CHECKOUT_ORIGIN = "https://checkout.test"
@@ -168,17 +165,6 @@ export const mockRelayInfo = (context: BrowserContext, overrides: RelayInfoOverr
     },
   )
 }
-
-/**
- * The analytics script src/app.html loads on every page. Answering with an empty body leaves
- * `window.plausible` as the queueing shim src/app/analytics.ts installs, so pageviews accumulate
- * in memory and nothing is ever sent — and `assertNoBlockedRequests` stays a statement about the
- * scenario rather than about the page shell.
- */
-export const mockAnalytics = (context: BrowserContext) =>
-  context.route(`${PLAUSIBLE_ORIGIN}/**`, route =>
-    route.fulfill({contentType: "application/javascript", body: ""}),
-  )
 
 export type DufflepudFixtures = {
   // The remote half of the read-state sync in src/app/notifications.ts, keyed by path.

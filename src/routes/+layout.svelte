@@ -7,6 +7,7 @@
   import {get} from "svelte/store"
   import {App, type URLOpenListenerEvent} from "@capacitor/app"
   import {Capacitor} from "@capacitor/core"
+  import {polyfillCryptoSubtle} from "$lib/cryptoSubtle"
   import {NostrSignerPlugin} from "nostr-signer-capacitor-plugin"
   import {dev} from "$app/environment"
   import {goto} from "$app/navigation"
@@ -22,7 +23,6 @@
   import ModalContainer from "@app/components/ModalContainer.svelte"
   import * as core from "@app/core"
   import {setupHistory} from "@app/routes"
-  import {setupAnalytics} from "@app/analytics"
   import {setupLogging} from "@app/logger"
   import "@app/policies"
   import {restoreSession} from "@app/session"
@@ -50,6 +50,10 @@
   import NewNotificationSound from "@src/app/components/NewNotificationSound.svelte"
 
   const {children} = $props()
+
+  // Do this before anything else touches WebCrypto: welshman's negentropy sync hashes with
+  // crypto.subtle unconditionally, which is missing over plain http (e.g. i2p).
+  polyfillCryptoSubtle()
 
   // Do this asap to avoid a flash of the wrong font size or theme. The stores these mirror live in
   // indexeddb, which doesn't load until well after first paint.
@@ -189,7 +193,7 @@
     unsubscribers.push(closeStorage)
 
     // History, navigation, application data
-    unsubscribers.push(setupHistory(), setupAnalytics(), syncApplicationData())
+    unsubscribers.push(setupHistory(), syncApplicationData())
 
     // Listen for links shared into the app from elsewhere on the device
     unsubscribers.push(setupShareIntents())
