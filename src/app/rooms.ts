@@ -63,7 +63,7 @@ export const addRoomMembers = async (url: string, room: RoomMeta, pubkeys: strin
       rooms
         .get()
         .addMember(url, room, pk)
-        .then(command => command.publish().waitForError()),
+        .then(command => command.publishToRelays([url]).waitForError()),
     ),
   )
 

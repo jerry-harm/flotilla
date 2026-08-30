@@ -55,7 +55,7 @@
         "This room will no longer be accessible to space members, and all messages posted to it will be deleted.",
       confirm: async () => {
         const command = await $rooms.deleteRoom(url, {h})
-        const thunk = command.publish()
+        const thunk = command.publishToRelays([url])
         const message = await thunk.waitForError()
 
         if (message) {
