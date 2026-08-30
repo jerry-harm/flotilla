@@ -2,7 +2,7 @@
   import {writable} from "svelte/store"
   import {now, randomId} from "@welshman/lib"
   import {Article} from "@welshman/domain"
-  import {publish} from "@welshman/app"
+  import {publishToRelays} from "@welshman/app"
   import {isMobile, preventDefault} from "@lib/html"
   import Paperclip from "@assets/icons/paperclip-2.svg?dataurl"
   import AltArrowLeft from "@assets/icons/alt-arrow-left.svg?dataurl"
@@ -91,7 +91,7 @@
         eventWriter.setRoom(url, h)
       }
 
-      const thunk = await command(eventWriter).then(publish)
+      const thunk = await command(eventWriter).then(publishToRelays([url]))
       const error = await thunk.waitForError()
 
       if (error) {

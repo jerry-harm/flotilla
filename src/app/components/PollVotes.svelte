@@ -49,7 +49,7 @@
       // Give the user time to check more boxes before the vote actually goes out.
       activeThunk = $thunks.publish({
         event: responseCommand.event,
-        relays: responseCommand.relays,
+        relays: [url],
         delay: pollType === "multiplechoice" ? 1000 : undefined,
       })
     }

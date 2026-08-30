@@ -14,7 +14,7 @@ import {
   type ManagementResponse,
 } from "@welshman/util"
 import {RelayJoin, RelayLeave, RoomJoin, RoomLeave} from "@welshman/domain"
-import {Sync, User, publish} from "@welshman/app"
+import {Sync, User, publish, publishToRelays} from "@welshman/app"
 import {stripPrefix} from "@lib/util"
 import {app, command, relayManagement, roomLists, thunks, writer} from "@app/core"
 import {PLATFORM_URL} from "@app/env"
@@ -107,11 +107,11 @@ export const publishJoinRequest = (url: string, claim?: string) => {
     eventWriter.setClaim(claim)
   }
 
-  return command(eventWriter).then(publish)
+  return command(eventWriter).then(publishToRelays([url]))
 }
 
 export const publishLeaveRequest = (url: string) =>
-  command(writer(RelayLeave).forceRelays(url)).then(publish)
+  command(writer(RelayLeave).forceRelays(url)).then(publishToRelays([url]))
 
 // A relay answers a re-sent request with "duplicate:" and a membership it already has with
 // "already a member" — both leave us where we wanted to be, so only anything else is a refusal.
@@ -127,7 +127,7 @@ export const joinRoom = async (url: string, h: string, code?: string) => {
     eventWriter.setClaim(code)
   }
 
-  const thunk = await command(eventWriter).then(publish)
+  const thunk = await command(eventWriter).then(publishToRelays([url]))
   const error = await thunk.waitForError()
 
   if (isMembershipRefusal(error)) {
@@ -138,7 +138,7 @@ export const joinRoom = async (url: string, h: string, code?: string) => {
 }
 
 export const leaveRoom = async (url: string, h: string) => {
-  const thunk = await command(writer(RoomLeave).setRoom(url, h)).then(publish)
+  const thunk = await command(writer(RoomLeave).setRoom(url, h)).then(publishToRelays([url]))
   const error = await thunk.waitForError()
 
   if (isMembershipRefusal(error)) {

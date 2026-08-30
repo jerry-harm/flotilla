@@ -1,7 +1,7 @@
 <script lang="ts">
   import {writable} from "svelte/store"
   import {ZapGoal} from "@welshman/domain"
-  import {publish} from "@welshman/app"
+  import {publishToRelays} from "@welshman/app"
   import {isMobile, preventDefault} from "@lib/html"
   import Paperclip from "@assets/icons/paperclip-2.svg?dataurl"
   import Bolt from "@assets/icons/bolt.svg?dataurl"
@@ -90,7 +90,7 @@
         eventWriter.setRoom(url, h)
       }
 
-      const goalThunk = await command(eventWriter).then(publish)
+      const goalThunk = await command(eventWriter).then(publishToRelays([url]))
       const error = await goalThunk.waitForError()
 
       if (error) {

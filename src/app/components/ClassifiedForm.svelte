@@ -1,7 +1,7 @@
 <script lang="ts">
   import type {Snippet} from "svelte"
   import {removeUndefined, randomId, uniq} from "@welshman/lib"
-  import {publish} from "@welshman/app"
+  import {publishToRelays} from "@welshman/app"
   import {Classified} from "@welshman/domain"
   import {isMobile, preventDefault} from "@lib/html"
   import {normalizeTopic} from "@lib/util"
@@ -115,7 +115,7 @@
         eventWriter.forceRelays(url)
       }
 
-      const classifiedThunk = await command(eventWriter).then(publish)
+      const classifiedThunk = await command(eventWriter).then(publishToRelays([url]))
       const error = await classifiedThunk.waitForError()
 
       if (error) {

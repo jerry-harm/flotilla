@@ -2,7 +2,7 @@
   import type {Snippet} from "svelte"
   import {writable} from "svelte/store"
   import {randomId} from "@welshman/lib"
-  import {publish} from "@welshman/app"
+  import {publishToRelays} from "@welshman/app"
   import {TimeEvent} from "@welshman/domain"
   import {preventDefault} from "@lib/html"
   import GallerySend from "@assets/icons/gallery-send.svg?dataurl"
@@ -103,7 +103,7 @@
         eventWriter.forceRelays(url)
       }
 
-      const calendarThunk = await command(eventWriter).then(publish)
+      const calendarThunk = await command(eventWriter).then(publishToRelays([url]))
       const error = await calendarThunk.waitForError()
 
       if (error) {

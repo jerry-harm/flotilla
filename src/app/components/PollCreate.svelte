@@ -1,6 +1,6 @@
 <script lang="ts">
   import {insertAt, now, randomId, removeAt, removeUndefined, spec} from "@welshman/lib"
-  import {publish} from "@welshman/app"
+  import {publishToRelays} from "@welshman/app"
   import {Poll} from "@welshman/domain"
   import type {PollType} from "@welshman/domain"
   import {isMobile, preventDefault} from "@lib/html"
@@ -142,7 +142,7 @@
         eventWriter.forceRelays(url)
       }
 
-      const pollThunk = await command(eventWriter).then(publish)
+      const pollThunk = await command(eventWriter).then(publishToRelays([url]))
       const error = await pollThunk.waitForError()
 
       if (error) {
