@@ -39,9 +39,6 @@ export default defineConfig({
     // },
     // cors: true,
   },
-  build: {
-    sourcemap: true,
-  },
   plugins: [
     sveltekit(),
     SvelteKitPWA({
