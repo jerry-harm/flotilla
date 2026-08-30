@@ -14,6 +14,28 @@ index 697a2c90068bc26a01f07cd6cfa2a4a4d4d1acf5..7ec17003348ca29a360b350ca85d323b
      const secret = makeSecret();
      const pubkey = getPubkey(secret);
      const event = own(makeEvent(1, {}), pubkey);
+diff --git a/dist/util/src/Relay.js b/dist/util/src/Relay.js
+index a2521d644261a4fcaf20e86018acdd981c499d4d..6c0800981b48981dc9cee05e4508c4fadc931915 100644
+--- a/dist/util/src/Relay.js
++++ b/dist/util/src/Relay.js
+@@ -24,13 +24,16 @@ export const isRelayUrl = (url) => {
+     return true;
+ };
+ export const isOnionUrl = (url) => Boolean(stripProtocol(url).match(/^[a-z2-7]{56}.onion/));
++// i2p relays serve plaintext (the tunnel already encrypts), and their self-signed certs
++// fail browser TLS handshakes, so default them to ws:// like onion relays.
++export const isI2pUrl = (url) => Boolean(stripProtocol(url).match(/\.i2p([/?#]|$)/i));
+ export const isLocalUrl = (url) => Boolean(url.match(/\.local(:[\d]+)?\/?$/) || stripProtocol(url).match(/^localhost:/));
+ export const isIPAddress = (url) => Boolean(url.match(/\d+\.\d+\.\d+\.\d+/));
+ export const isShareableRelayUrl = (url) => Boolean(isRelayUrl(url) && !isLocalUrl(url));
+ export const normalizeRelayUrl = (url) => {
+     if (url === LOCAL_RELAY_URL)
+         return url;
+-    const prefix = url.match(/^wss?:\/\//)?.[0] || (isOnionUrl(url) ? "ws://" : "wss://");
++    const prefix = url.match(/^wss?:\/\//)?.[0] || (isOnionUrl(url) || isI2pUrl(url) ? "ws://" : "wss://");
+     // Use our library to normalize
+     url = normalizeUrl(url, { stripHash: true, stripAuthentication: false });
+     // Strip the protocol, lowercase
 diff --git a/dist/util/src/RelaySelection.js b/dist/util/src/RelaySelection.js
 index 608a9cae13f42038a8d8f5fe0742f467eb424aa6..ce9f9ac2a43fde2d179f25923d9cce763f831699 100644
 --- a/dist/util/src/RelaySelection.js
